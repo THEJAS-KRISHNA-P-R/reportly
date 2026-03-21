@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Geist } from "next/font/google";
+import '@fontsource/dm-sans/400.css';
+import '@fontsource/dm-sans/500.css';
+import '@fontsource/dm-sans/600.css';
+import '@fontsource/dm-mono/400.css';
 import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: 'Reportly — Automated client reporting for agencies',
@@ -16,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("h-full", "font-sans", geist.variable)}>
+    <html lang="en" className={cn("h-full", "font-sans")}>
       <body className="min-h-full antialiased">{children}</body>
     </html>
   );

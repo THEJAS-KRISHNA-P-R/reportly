@@ -1,52 +1,20 @@
-import { cn } from '@/lib/utils';
-import React from 'react';
+import * as React from "react"
+import { Input as InputPrimitive } from "@base-ui/react/input"
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?:     string;
-  error?:     string;
-  hint?:      string;
-  icon?:      React.ReactNode;
+import { cn } from "@/lib/utils"
+
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <InputPrimitive
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, icon, className, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
-    return (
-      <div className="flex flex-col gap-1.5">
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="text-[13px] font-medium text-[var(--text-secondary)]"
-          >
-            {label}
-          </label>
-        )}
-        <div className="relative">
-          {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] flex items-center">
-              {icon}
-            </div>
-          )}
-          <input
-            ref={ref}
-            id={inputId}
-            className={cn(
-              'w-full h-10 px-3 rounded-[var(--radius-md)]',
-              'bg-[var(--bg-primary)] border border-[var(--border)]',
-              'text-[14px] text-[var(--text-primary)] placeholder:text-[var(--text-placeholder)]',
-              'transition-all duration-[120ms] ease-[ease]',
-              'focus:outline-none focus:border-[var(--accent)] focus:shadow-[var(--shadow-focus)]',
-              error && 'border-[var(--error)] focus:border-[var(--error)] focus:shadow-[0_0_0_3px_rgba(139,31,42,0.12)]',
-              icon && 'pl-9',
-              className,
-            )}
-            {...props}
-          />
-        </div>
-        {error && <p className="text-[12px] text-[var(--error)]">{error}</p>}
-        {hint && !error && <p className="text-[12px] text-[var(--text-muted)]">{hint}</p>}
-      </div>
-    );
-  }
-);
-Input.displayName = 'Input';
+export { Input }

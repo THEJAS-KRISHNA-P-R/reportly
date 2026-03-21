@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Button } from './Button';
+import { Button } from './button';
 import React from 'react';
 import Link from 'next/link';
 
@@ -22,10 +22,10 @@ export function EmptyState({ icon, title, body, action, className }: EmptyStateP
       {action && (
         action.href ? (
           <Link href={action.href}>
-            <Button variant="primary">{action.label}</Button>
+            <Button size="default">{action.label}</Button>
           </Link>
         ) : (
-          <Button variant="primary" onClick={action.onClick}>{action.label}</Button>
+          <Button size="default" onClick={action.onClick}>{action.label}</Button>
         )
       )}
     </div>

@@ -1,6 +1,6 @@
-import { Button }     from '@/components/ui/Button';
-import { Badge }      from '@/components/ui/Badge';
-import { Card }       from '@/components/ui/Card';
+import { Button }     from '@/components/ui/button';
+import { Badge }      from '@/components/ui/badge';
+import { Card }       from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Plus, Users, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
@@ -19,13 +19,13 @@ export default async function ClientsPage() {
           </p>
         </div>
         <Link href="/dashboard/clients/new">
-          <Button variant="primary" icon={<Plus size={16} strokeWidth={2} />} id="add-client-btn">
-            Add Client
+          <Button size="default" className="gap-2" id="add-client-btn">
+            <Plus size={16} strokeWidth={2} /> Add Client
           </Button>
         </Link>
       </div>
 
-      <Card padding="none">
+      <Card className="p-0 overflow-hidden border-border bg-surface">
         {clients.length === 0 ? (
           <EmptyState
             icon={<Users size={20} strokeWidth={1.5} />}
@@ -63,7 +63,7 @@ export default async function ClientsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <Badge variant={client.connected ? 'success' : 'error'}>
+                      <Badge className={client.connected ? 'bg-green-100 text-green-800 hover:bg-green-100 shadow-none border-transparent' : 'bg-red-100 text-red-800 hover:bg-red-100 shadow-none border-transparent'}>
                         {client.connected ? 'Connected' : 'Disconnected'}
                       </Badge>
                     </td>
@@ -72,8 +72,8 @@ export default async function ClientsPage() {
                     <td className="px-4 py-4 text-[13px] text-[var(--text-muted)]">0 reports</td>
                     <td className="px-4 py-4 pr-6 text-right">
                       <Link href={`/dashboard/clients/${client.id}`}>
-                        <Button variant="ghost" size="sm" iconRight={<ExternalLink size={13} />}>
-                          Manage
+                        <Button variant="ghost" size="sm" className="gap-2">
+                          Manage <ExternalLink size={13} />
                         </Button>
                       </Link>
                     </td>

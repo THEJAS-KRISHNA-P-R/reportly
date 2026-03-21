@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input }   from '@/components/ui/Input';
-import { Button }  from '@/components/ui/Button';
+import { Input }   from '@/components/ui/input';
+import { Button }  from '@/components/ui/button';
 import { Shield }  from 'lucide-react';
 
 export default function OnboardingPage() {
@@ -58,15 +58,18 @@ export default function OnboardingPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <Input
-            label="Agency Name"
-            placeholder="e.g. Pixel Digital, Growth Media Co."
-            value={name}
-            onChange={e => setName(e.target.value)}
-            error={error}
-            required
-            id="agency-name"
-          />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="agency-name" className="text-[13px] font-medium text-[var(--text-secondary)]">Agency Name</label>
+            <Input
+              id="agency-name"
+              placeholder="e.g. Pixel Digital, Growth Media Co."
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+              className={error ? "border-destructive focus-visible:ring-destructive" : ""}
+            />
+            {error && <p className="text-[12px] text-destructive">{error}</p>}
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <label className="text-[13px] font-medium text-[var(--text-secondary)]">
@@ -100,13 +103,12 @@ export default function OnboardingPage() {
 
           <Button
             type="submit"
-            variant="primary"
             size="lg"
-            loading={loading}
+            disabled={loading}
             className="w-full mt-2"
             id="onboarding-submit"
           >
-            Get started →
+            {loading ? 'Processing...' : 'Get started →'}
           </Button>
         </form>
 

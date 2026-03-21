@@ -1,7 +1,7 @@
 import { MetricCard }   from '@/components/ui/MetricCard';
-import { Badge }         from '@/components/ui/Badge';
-import { Button }        from '@/components/ui/Button';
-import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge }         from '@/components/ui/badge';
+import { Button }        from '@/components/ui/button';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState }    from '@/components/ui/EmptyState';
 import { FileText, Plus, RefreshCw, Users } from 'lucide-react';
 
@@ -21,8 +21,8 @@ export default async function DashboardPage() {
             Here&apos;s what&apos;s happening with your agency today.
           </p>
         </div>
-        <Button variant="primary" icon={<Plus size={16} strokeWidth={2} />} id="generate-report-btn">
-          Generate Report
+        <Button size="default" className="gap-2" id="generate-report-btn">
+          <Plus size={16} strokeWidth={2} /> Generate Report
         </Button>
       </div>
 
@@ -37,11 +37,11 @@ export default async function DashboardPage() {
       {/* Two column layout */}
       <div className="grid lg:grid-cols-[1fr_340px] gap-6">
         {/* Recent reports */}
-        <Card padding="none">
-          <CardHeader className="px-6 pt-5 pb-4 border-b border-[var(--border)]">
+        <Card className="p-0 overflow-hidden border-border bg-surface">
+          <CardHeader className="px-6 pt-5 pb-4 border-b border-[var(--border)] flex flex-row items-center justify-between space-y-0">
             <CardTitle>Recent Reports</CardTitle>
-            <Button variant="ghost" size="sm" icon={<RefreshCw size={14} />} id="refresh-reports-btn">
-              Refresh
+            <Button variant="ghost" size="sm" className="gap-2" id="refresh-reports-btn">
+              <RefreshCw size={14} /> Refresh
             </Button>
           </CardHeader>
           <div className="overflow-x-auto">

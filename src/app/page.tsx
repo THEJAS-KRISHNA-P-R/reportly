@@ -1,11 +1,11 @@
-import { MarketingNav } from '@/components/marketing/Nav';
+import { Nav as MarketingNav } from '@/components/marketing/Nav';
 import { Hero }         from '@/components/marketing/Hero';
 import { HowItWorks }  from '@/components/marketing/HowItWorks';
 import { Features }    from '@/components/marketing/Features';
 import { Stats }       from '@/components/marketing/Stats';
 import { Pricing }     from '@/components/marketing/Pricing';
 import { Footer }      from '@/components/marketing/Footer';
-import { Button }      from '@/components/ui/Button';
+import { Button }      from '@/components/ui/button';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -67,7 +67,7 @@ export default function HomePage() {
               Connect your Google Analytics and we&apos;ll handle the rest.
             </p>
             <Link href="/register">
-              <Button variant="primary" size="lg">
+              <Button size="lg">
                 Get started free
               </Button>
             </Link>

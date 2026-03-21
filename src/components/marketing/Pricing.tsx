@@ -1,155 +1,154 @@
 'use client';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Check } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
+import { staggerContainer, fadeUp } from '@/lib/animations';
 
 const plans = [
   {
-    name:     'Starter',
-    monthly:  1499,
-    annual:   1199,
-    clients:  'Up to 5 clients',
-    featured: false,
+    name: 'Starter',
+    desc: 'For freelancers and tiny agencies just getting started.',
+    priceMonthly: 0,
+    priceAnnual: 0,
     features: [
-      'Google Analytics integration',
-      'AI-written narratives',
-      'Branded PDF reports',
-      'Automated email delivery',
-      'Full audit trail',
+      'Up to 3 active clients',
+      'Google Analytics 4 integration',
+      'Basic AI narrative generation',
+      'Standard PDF template'
     ],
+    cta: 'Start for free',
+    popular: false
   },
   {
-    name:     'Growth',
-    monthly:  3499,
-    annual:   2799,
-    clients:  'Up to 15 clients',
-    featured: true,
+    name: 'Growth',
+    desc: 'For agencies ready to automate their reporting entirely.',
+    priceMonthly: 79,
+    priceAnnual: 65,
     features: [
+      'Up to 15 active clients',
       'Everything in Starter',
-      'Priority report queue',
-      'Custom brand color',
-      'Logo on reports',
-      'Priority support',
+      'Advanced narrative editing',
+      'White-labeled PDF (your logo)',
+      'Automated email delivery'
     ],
+    cta: 'Start 14-day trial',
+    popular: true
   },
   {
-    name:     'Agency Pro',
-    monthly:  6999,
-    annual:   5599,
-    clients:  'Up to 40 clients',
-    featured: false,
+    name: 'Scale',
+    desc: 'For high-volume teams managing dozens of accounts.',
+    priceMonthly: 199,
+    priceAnnual: 165,
     features: [
+      'Unlimited clients',
       'Everything in Growth',
-      'White-label reports',
-      'Multiple team members',
-      'API access',
-      'Dedicated support',
+      'Custom fonts and brand styling',
+      'Client approval portal',
+      'API access & priority support'
     ],
-  },
+    cta: 'Contact Sales',
+    popular: false
+  }
 ];
 
 export function Pricing() {
-  const [annual, setAnnual] = useState(false);
+  const [isAnnual, setIsAnnual] = useState(false);
 
   return (
-    <section id="pricing" className="py-24 px-6 bg-[var(--bg-surface)]">
-      <div className="max-w-[1200px] mx-auto">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="h-px flex-1 max-w-12 bg-[var(--accent)]/30" />
-          <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--accent)]">Pricing</span>
-          <div className="h-px flex-1 max-w-12 bg-[var(--accent)]/30" />
-        </div>
-        <h2 className="text-[30px] md:text-[36px] font-semibold text-[var(--text-primary)] text-center tracking-[-0.02em] mb-3">
-          Simple, honest pricing
-        </h2>
-        <p className="text-[16px] text-[var(--text-secondary)] text-center mb-8">
-          No hidden fees. No per-report charges. Cancel anytime.
-        </p>
-
-        {/* Toggle */}
-        <div className="flex items-center justify-center gap-3 mb-12">
-          <span className={cn('text-[14px]', !annual ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-muted)]')}>
-            Monthly
-          </span>
-          <button
-            id="pricing-toggle"
-            onClick={() => setAnnual(a => !a)}
-            className={cn(
-              'relative w-10 h-5 rounded-full transition-colors duration-[200ms] ease-[ease] focus:outline-none focus:shadow-[var(--shadow-focus)]',
-              annual ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]',
-            )}
-            aria-label="Toggle annual billing"
-          >
-            <div className={cn(
-              'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-[200ms] ease-[ease]',
-              annual ? 'translate-x-5' : 'translate-x-0.5',
-            )} />
-          </button>
-          <span className={cn('text-[14px]', annual ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-muted)]')}>
-            Annual
-            <span className="ml-1.5 text-[11px] font-medium text-[var(--success)] bg-[var(--success-bg)] px-1.5 py-0.5 rounded-full">
-              Save 20%
-            </span>
-          </span>
+    <section id="pricing" className="py-24 sm:py-32 bg-surface">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-8">
+        
+        <div className="text-center max-w-[600px] mx-auto mb-16">
+          <h2 className="text-[32px] sm:text-[40px] font-bold tracking-[-0.02em] text-foreground mb-4">
+            Simple, transparent pricing.
+          </h2>
+          <p className="text-[17px] text-muted-foreground mb-10">
+            Start for free. Upgrade when you're saving more billable hours than the platform costs.
+          </p>
+          
+          <div className="flex items-center justify-center gap-4">
+            <Label htmlFor="pricing-toggle" className={`text-sm ${!isAnnual ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+              Pay monthly
+            </Label>
+            <Switch
+              id="pricing-toggle"
+              checked={isAnnual}
+              onCheckedChange={setIsAnnual}
+            />
+            <Label htmlFor="pricing-toggle" className={`flex items-center gap-2 text-sm ${isAnnual ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+              Pay annually
+              <span className="inline-block px-2 py-0.5 rounded-full bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider">
+                Save 20%
+              </span>
+            </Label>
+          </div>
         </div>
 
-        {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {plans.map(plan => (
-            <div
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-[1000px] mx-auto"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-10%" }}
+          variants={staggerContainer}
+        >
+          {plans.map((plan) => (
+            <motion.div 
               key={plan.name}
-              className={cn(
-                'bg-[var(--bg-primary)] rounded-[var(--radius-xl)] border p-7 flex flex-col transition-shadow duration-[200ms] ease-[ease]',
-                plan.featured
-                  ? 'border-[var(--accent)] shadow-[var(--shadow-lg)] scale-[1.02]'
-                  : 'border-[var(--border)] hover:shadow-[var(--shadow-hover)]',
-              )}
+              variants={fadeUp}
+              className={`relative flex flex-col p-8 rounded-2xl border ${
+                plan.popular 
+                  ? 'bg-background border-primary shadow-[0_8px_32px_rgba(193,123,47,0.12)] z-10 scale-100 md:scale-105' 
+                  : 'bg-background border-border shadow-sm'
+              }`}
             >
-              {plan.featured && (
-                <div className="inline-flex mb-4">
-                  <span className="text-[10px] font-medium uppercase tracking-wider px-2.5 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent-dark)] border border-[var(--accent)]/30">
-                    Most Popular
-                  </span>
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-white text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">
+                  Most Popular
                 </div>
               )}
-              <h3 className="text-[17px] font-semibold text-[var(--text-primary)] mb-1">{plan.name}</h3>
-              <p className="text-[13px] text-[var(--text-muted)] mb-5">{plan.clients}</p>
+              
               <div className="mb-6">
-                <span className="text-[40px] font-semibold text-[var(--text-primary)] tracking-tight">
-                  ₹{annual ? plan.annual.toLocaleString() : plan.monthly.toLocaleString()}
+                <h3 className="text-[20px] font-bold text-foreground mb-2">{plan.name}</h3>
+                <p className="text-[14px] text-muted-foreground leading-relaxed h-[42px]">{plan.desc}</p>
+              </div>
+
+              <div className="mb-8 flex items-baseline gap-1">
+                <span className="text-[40px] font-bold tracking-tight text-foreground">
+                  ${isAnnual ? plan.priceAnnual : plan.priceMonthly}
                 </span>
-                <span className="text-[14px] text-[var(--text-muted)]">/month</span>
-                {annual && (
-                  <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
-                    Billed ₹{(plan.annual * 12).toLocaleString()}/year
-                  </p>
+                {plan.priceMonthly > 0 && (
+                  <span className="text-[14px] text-muted-foreground">/mo</span>
                 )}
               </div>
-              <ul className="space-y-2.5 mb-8 flex-1">
-                {plan.features.map(f => (
-                  <li key={f} className="flex items-start gap-2.5 text-[14px] text-[var(--text-secondary)]">
-                    <Check size={14} className="text-[var(--success)] mt-0.5 shrink-0" strokeWidth={2.5} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register" className="block">
-                <Button
-                  variant={plan.featured ? 'primary' : 'secondary'}
-                  className="w-full"
-                >
-                  Start free trial
-                </Button>
-              </Link>
-            </div>
-          ))}
-        </div>
 
-        <p className="text-center text-[13px] text-[var(--text-muted)] mt-8">
-          All plans include a 14-day free trial. No credit card required.
-        </p>
+              <Button 
+                variant={plan.popular ? "default" : "outline"}
+                size="lg"
+                className="w-full mb-8 font-semibold"
+              >
+                {plan.cta}
+              </Button>
+
+              <div className="flex-1">
+                <p className="text-[12px] font-bold uppercase tracking-widest text-foreground mb-4">
+                  What's included
+                </p>
+                <ul className="space-y-4">
+                  {plan.features.map((feat, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[14px] text-muted-foreground">
+                      <Check size={16} className="text-primary shrink-0 mt-0.5" />
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
       </div>
     </section>
   );

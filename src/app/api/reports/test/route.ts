@@ -40,27 +40,52 @@ export async function POST(request: Request) {
     const periodEnd = new Date(end);
     const label = periodStart.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    // 1. Create a placeholder report using upsert exactly as requested
-    const { data: upsertData, error: upsertError } = await db.from('reports').upsert({
-      client_id:        clientId,
-      agency_id:        agencyId,
-      period_start:     periodStart.toISOString(),
-      period_end:       periodEnd.toISOString(),
-      status:           'pending',
-      prompt_version:   'v1.0',
-      template_version: 'v1.0',
-      logic_version:    'v1.0',
-    }, {
-      onConflict: 'client_id,period_start,period_end',
-      ignoreDuplicates: false,
-    }).select('id').single();
+    // Delete any existing report for this period
+    const { data: existing } = await db
+      .from('reports')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('period_start', periodStart.toISOString())
+      .eq('period_end', periodEnd.toISOString())
+      .maybeSingle();
 
-    if (upsertError || !upsertData) {
-      throw new Error(`Failed to map report via upsert: ${upsertError?.message}`);
+    if (existing) {
+      await db.from('audit_logs')
+        .delete()
+        .eq('report_id', existing.id);
+      await db.from('job_queue')
+        .delete()
+        .eq('report_id', existing.id);
+      await db.from('reports')
+        .delete()
+        .eq('id', existing.id);
     }
 
-    const reportId = upsertData.id;
-    logger.info({ reportId }, 'Test report created/upserted');
+    // Now create fresh
+    const { data: report, error } = await db
+      .from('reports')
+      .insert({
+        client_id:        clientId,
+        agency_id:        agencyId,
+        period_start:     periodStart.toISOString(),
+        period_end:       periodEnd.toISOString(),
+        status:           'pending',
+        prompt_version:   'v1.0',
+        template_version: 'v1.0',
+        logic_version:    'v1.0',
+      })
+      .select()
+      .single();
+
+    if (error || !report) {
+      return NextResponse.json(
+        { error: '[createReport] ' + (error?.message || 'Failed to create report') },
+        { status: 500 }
+      );
+    }
+
+    const reportId = report.id;
+    logger.info({ reportId }, 'Test report created freshly');
 
     // 2. Create a job
     const job = await createJob({

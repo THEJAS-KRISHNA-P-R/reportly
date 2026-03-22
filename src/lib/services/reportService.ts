@@ -21,6 +21,7 @@ export async function runReportGeneration(
   reportId: string,
   jobId: string
 ): Promise<void> {
+  console.error('[DEBUG] Pipeline starting for:', reportId);
   const context: PipelineContext = {
     clientId,
     agencyId,
@@ -39,32 +40,55 @@ export async function runReportGeneration(
   pipeline.addStep('Audit Log', auditLogStep, false); // Final audit (never blocks)
 
   try {
-    // A. Transition report and job to 'generating' / 'processing'
-    await updateReportStatus(reportId, 'generating' as any); // 'generating' is our internal progress state
-    await updateJobStatus(jobId, 'processing', { 
-        started_at: new Date().toISOString(),
-        attempts: 1 
-    });
+    console.error('[DEBUG] About to run: Status Update (generating)');
+    try {
+      await updateReportStatus(reportId, 'generating' as any); // pending -> generating
+      await updateJobStatus(jobId, 'processing', { 
+          started_at: new Date().toISOString(),
+          attempts: 1 
+      });
+      console.error('[DEBUG] Completed: Status Update (generating)');
+    } catch (statusErr: any) {
+      console.error('[DEBUG] FAILED: Status Update (generating)', statusErr);
+      logger.error({ reportId, err: statusErr.message }, 'Failed to transition to generating');
+      throw statusErr;
+    }
 
-    // B. Run the actual pipeline
-    await pipeline.run(context);
+    console.error('[DEBUG] About to run: pipeline.run');
+    try {
+      await pipeline.run(context);
+      console.error('[DEBUG] Completed: pipeline.run');
+    } catch (e: any) {
+      console.error('[DEBUG] FAILED: pipeline.run', e);
+      throw e;
+    }
     
-    // C. Success: Finalize report to 'draft'
-    await updateReportStatus(reportId, 'draft', { generation_started_at: new Date().toISOString() });
-    await updateJobStatus(jobId, 'completed', { completed_at: new Date().toISOString() });
+    console.error('[DEBUG] About to run: Status Update (draft)');
+    try {
+      await updateReportStatus(reportId, 'draft', { generation_started_at: new Date().toISOString() });
+      await updateJobStatus(jobId, 'completed', { completed_at: new Date().toISOString() });
+      console.error('[DEBUG] Completed: Status Update (draft)');
+    } catch (statusErr: any) {
+      console.error('[DEBUG] FAILED: Status Update (draft)', statusErr);
+      logger.error({ reportId, err: statusErr.message }, 'Failed to transition to draft');
+    }
     
   } catch (error: any) {
-    // D. Failure: Update report and job to 'failed'
     logger.error({ reportId, err: error.message }, 'Report Generation Pipeline Failed');
     
-    await updateReportStatus(reportId, 'failed', { cancelled_reason: error.message });
-    await updateJobStatus(jobId, 'failed', { 
-      last_error: error.message, 
-      completed_at: new Date().toISOString() 
-    });
+    console.error('[DEBUG] About to run: Status Update (failed)');
+    try {
+      await updateReportStatus(reportId, 'failed', { cancelled_reason: error.message });
+      await updateJobStatus(jobId, 'failed', { 
+        last_error: error.message, 
+        completed_at: new Date().toISOString() 
+      });
+      console.error('[DEBUG] Completed: Status Update (failed)');
+    } catch (statusErr: any) {
+      console.error('[DEBUG] FAILED: Status Update (failed)', statusErr);
+      logger.error({ reportId, err: statusErr.message }, 'Failed to transition to failed status');
+    }
 
-    // Write failure to audit log specifically as 'validation_failure' if relevant, or 'ai_failure'
-    // This is handled within steps for specific failures, but here is the final catch-all.
     throw error;
   }
 }

@@ -24,16 +24,29 @@ export class Pipeline {
   }
 
   async run(context: PipelineContext): Promise<void> {
-    for (const { name, step, critical } of this.steps) {
-      try {
-        await step(context);
-      } catch (error: any) {
-        if (critical) {
-          throw error; // Stop pipeline for critical failures
+    console.error(`[Pipeline] Starting report ${context.reportId}`);
+    let finalStatus = 'success';
+    try {
+      for (const { name, step, critical } of this.steps) {
+        console.error(`[Pipeline] Running step: ${name}`);
+        try {
+          await step(context);
+          console.error(`[Pipeline] Step completed: ${name}`);
+        } catch (error: any) {
+          console.error(`[Pipeline] Step FAILED: ${name}`, error);
+          if (critical) {
+            finalStatus = 'failed';
+            throw error; // Stop pipeline for critical failures
+          }
+          // Non-critical: log and proceed
+          console.warn(`Non-critical pipeline step [${name}] failed: ${error.message}`);
         }
-        // Non-critical: log and proceed
-        console.warn(`Non-critical pipeline step [${name}] failed: ${error.message}`);
       }
+    } catch (err: any) {
+      finalStatus = 'failed';
+      throw err;
+    } finally {
+      console.error(`[Pipeline] Complete. Status: ${finalStatus}`);
     }
   }
 }

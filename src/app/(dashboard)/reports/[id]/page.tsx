@@ -1,126 +1,157 @@
 'use client';
+
 import { useState } from 'react';
-import { Button }     from '@/components/ui/button';
-import { Badge }      from '@/components/ui/badge';
-import { MetricCard } from '@/components/ui/MetricCard';
-import { Card }       from '@/components/ui/card';
-import { AlertTriangle, CheckCircle, RotateCcw, Info } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
-export default function ReportReviewPage({ params }: { params: { id: string } }) {
-  const [narrative, setNarrative] = useState('');
-  const [approving, setApproving] = useState(false);
+interface ReportPageProps {
+  params: {
+    id: string;
+  };
+}
 
-  // Suppress unused param warning until wired to real data
-  void params;
+export default function ReportPage({ params }: ReportPageProps) {
+  const router = useRouter();
+  const [status, setStatus] = useState<'draft' | 'pending_review' | 'approved' | 'sent'>('draft');
+  const [loading, setLoading] = useState(false);
+
+  // TODO: Fetch report details from API using params.id
+
+  const handleSubmitForReview = async () => {
+    setLoading(true);
+    try {
+      // TODO: Call API to update report status
+      setStatus('pending_review');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    setLoading(true);
+    try {
+      // TODO: Call API to approve report
+      setStatus('approved');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSend = async () => {
+    setLoading(true);
+    try {
+      // TODO: Call API to send report
+      setStatus('sent');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statusColors = {
+    draft: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
+    pending_review: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+    approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
+    sent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+  };
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb + actions */}
-      <div className="flex items-start justify-between gap-4">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-2 text-[13px] text-[var(--text-muted)] mb-1">
-            <Link href="/dashboard/reports" className="hover:text-[var(--text-primary)] transition-colors">
-              Reports
-            </Link>
-            <span>/</span>
-            <span className="text-[var(--text-secondary)]">Client Name</span>
-            <span>/</span>
-            <span className="text-[var(--text-primary)]">March 2025</span>
-          </div>
-          <h1 className="text-[24px] font-semibold text-[var(--text-primary)] tracking-[-0.01em]">
-            Report Review
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Report</h1>
+          <p className="mt-2 text-slate-600 dark:text-slate-400">January 2024 Report</p>
         </div>
-        <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
-          <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent shadow-none">Draft — Awaiting Approval</Badge>
-          <Button variant="ghost" size="sm" id="reject-btn" className="gap-2">
-            <RotateCcw size={14} /> Reject &amp; Regenerate
-          </Button>
-          <Button
-            size="default"
-            disabled={approving}
-            onClick={() => setApproving(true)}
-            id="approve-btn"
-            className="gap-2"
-          >
-            <CheckCircle size={16} /> {approving ? 'Approving...' : 'Approve & Send'}
-          </Button>
-        </div>
+
+        <span className={`rounded-full px-4 py-2 text-sm font-medium ${statusColors[status]}`}>
+          {status === 'draft'
+            ? 'Draft'
+            : status === 'pending_review'
+              ? 'Pending Review'
+              : status === 'approved'
+                ? 'Approved'
+                : 'Sent'}
+        </span>
       </div>
 
-      {/* Two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
-        {/* Narrative editor */}
-        <div className="space-y-4">
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[16px] font-semibold text-[var(--text-primary)]">AI Narrative</h2>
-              <span className="text-[12px] text-[var(--text-muted)]">Edit freely before approving</span>
-            </div>
-            <textarea
-              value={narrative}
-              onChange={e => setNarrative(e.target.value)}
-              placeholder="AI narrative will appear here after generation..."
-              id="narrative-editor"
-              className="
-                w-full min-h-[300px] p-4 rounded-[var(--radius-md)]
-                bg-[var(--bg-surface)] border border-[var(--border)]
-                text-[15px] text-[var(--text-primary)] leading-[1.7]
-                placeholder:text-[var(--text-placeholder)]
-                resize-none
-                focus:outline-none focus:border-[var(--accent)] focus:shadow-[var(--shadow-focus)]
-                transition-all duration-[120ms] ease-[ease]
-              "
-            />
-            <div className="flex items-center justify-between mt-3">
-              <span className="text-[12px] text-[var(--text-muted)]">{narrative.length} / 10,000 characters</span>
-              <div className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]">
-                <Info size={12} strokeWidth={1.5} />
-                This is what your client receives
-              </div>
-            </div>
-          </Card>
+      {/* Metrics Overview */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400">Users</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">2,543</p>
+          <p className="text-xs text-green-600 dark:text-green-400">+12% from last month</p>
+        </Card>
 
-          <Card className="p-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] text-[var(--text-muted)]">Overall confidence:</span>
-                <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-transparent shadow-none">High Confidence</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[12px] text-[var(--text-muted)]">Generated by:</span>
-                <span className="text-[12px] font-medium text-[var(--text-secondary)] bg-[var(--bg-surface)] border border-[var(--border)] px-2 py-0.5 rounded-md">
-                  Claude Haiku
-                </span>
-              </div>
-            </div>
-          </Card>
-        </div>
+        <Card className="p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400">Sessions</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">12,847</p>
+          <p className="text-xs text-green-600 dark:text-green-400">+8.5% from last month</p>
+        </Card>
 
-        {/* Metrics column */}
-        <div className="space-y-3">
-          <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">Verified Metrics</h2>
-          <MetricCard label="Sessions"    value="12,450" delta={22.1} source="Google Analytics" confidence="high" />
-          <MetricCard label="Users"       value="9,830"  delta={21.4} source="Google Analytics" confidence="high" />
-          <MetricCard label="Bounce Rate" value="42.3%"  delta={-6.2} source="Google Analytics" confidence="high" />
-          <MetricCard label="Avg Session" value="3m 07s" delta={13.3} source="Google Analytics" confidence="high" />
+        <Card className="p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400">Bounce Rate</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">34.2%</p>
+          <p className="text-xs text-red-600 dark:text-red-400">+2.3% from last month</p>
+        </Card>
 
-          {/* Data warning */}
-          <div className="flex items-start gap-3 p-3 rounded-[var(--radius-md)] bg-[var(--warning-bg)] border border-[var(--warning)]/20">
-            <AlertTriangle size={14} className="text-[var(--warning)] mt-0.5 shrink-0" strokeWidth={1.5} />
-            <div>
-              <p className="text-[12px] font-medium text-[var(--warning-text)]">Preliminary data</p>
-              <p className="text-[12px] text-[var(--warning-text)]/80">
-                Bounce rate may take up to 48 hours to finalize in Google Analytics.
-              </p>
-            </div>
-          </div>
+        <Card className="p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400">Avg. Duration</p>
+          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">2m 34s</p>
+          <p className="text-xs text-green-600 dark:text-green-400">+15 seconds from last month</p>
+        </Card>
+      </div>
 
-          <p className="text-[11px] text-[var(--text-muted)] text-center pt-2">
-            Last updated from Google Analytics: 2 hours ago
+      {/* AI Narrative */}
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Report Summary</h2>
+        <div className="mt-4 space-y-4 text-slate-700 dark:text-slate-300">
+          <p>
+            This month saw strong user growth with a 12% increase in unique visitors compared to December. The website attracted 2,543 users who initiated 12,847 sessions, representing steady platform engagement.
+          </p>
+          <p>
+            Session quality metrics show users spending an average of 2 minutes and 34 seconds on the site, up significantly from the previous month. However, the bounce rate increased to 34.2%, which warrants attention to entry page optimization.
+          </p>
+          <p>
+            Peak traffic occurred on Thursdays and Fridays, with the product pages driving the highest engagement. We recommend focusing marketing efforts on these high-performing segments.
           </p>
         </div>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-3">
+        {status === 'draft' && (
+          <Button onClick={handleSubmitForReview} disabled={loading}>
+            {loading ? 'Submitting...' : 'Submit for Review'}
+          </Button>
+        )}
+
+        {status === 'pending_review' && (
+          <>
+            <Button onClick={handleApprove} disabled={loading}>
+              {loading ? 'Approving...' : 'Approve Report'}
+            </Button>
+            <Button variant="outline" disabled={loading}>
+              Request Changes
+            </Button>
+          </>
+        )}
+
+        {(status === 'approved' || status === 'pending_review') && (
+          <Button onClick={handleSend} disabled={loading} variant={status === 'approved' ? 'primary' : 'secondary'}>
+            {loading ? 'Sending...' : 'Send Report'}
+          </Button>
+        )}
+
+        {status === 'sent' && <Button disabled>Report Sent</Button>}
+
+        <Button
+          variant="outline"
+          onClick={() => router.back()}
+          disabled={loading}
+        >
+          Back
+        </Button>
       </div>
     </div>
   );

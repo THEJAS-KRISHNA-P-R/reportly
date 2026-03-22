@@ -1,104 +1,176 @@
-import { getClientById } from '@/lib/db/repositories/clientRepo';
-import { getReportsByClient } from '@/lib/db/repositories/reportRepo';
-import { getConnectionsByClient } from '@/lib/db/repositories/connectionRepo';
-import { createSupabaseServerClient } from '@/lib/db/client';
-import { notFound, redirect } from 'next/navigation';
+'use client';
 
-export default async function ClientDetailPage({ params }: { params: { id: string } }) {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
-  const agencyId = (user.user_metadata as any).agency_id;
-  const client = await getClientById(params.id, agencyId);
-  if (!client) notFound();
+interface ClientPageProps {
+  params: {
+    id: string;
+  };
+}
 
-  const connections = await getConnectionsByClient(client.id);
-  const reports = await getReportsByClient(client.id, agencyId);
+export default function ClientPage({ params }: ClientPageProps) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('Acme Inc.');
+  const [website, setWebsite] = useState('https://acme.com');
+  const [ga4Id, setGa4Id] = useState('123456789');
 
-  const ga4 = connections.find(c => c.platform === 'ga4');
+  // TODO: Fetch client details from API using params.id
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // TODO: Call API to update client
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this client?')) return;
+    setSaving(true);
+    try {
+      // TODO: Call API to delete client
+      router.push('/clients');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center gap-4 mb-8">
-        <a href="/clients" className="text-gray-500 hover:text-white transition-colors">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </a>
-        <h1 className="text-2xl font-bold text-white">{client.name}</h1>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Client Info & Connections */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Client Details</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Email</label>
-                <p className="text-white text-sm">{client.contact_email || 'No email set'}</p>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Schedule</label>
-                <p className="text-white text-sm">Every month on the {client.schedule_day}{client.schedule_day === 1 ? 'st' : 'th'}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Connections</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${ga4?.status === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-white font-medium text-sm">Google Analytics 4</span>
-                </div>
-                {ga4?.status === 'connected' ? (
-                  <span className="text-xs text-gray-500 underline">{ga4.account_id}</span>
-                ) : (
-                  <a 
-                    href={`/api/oauth/ga4?clientId=${client.id}`}
-                    className="text-xs text-indigo-400 hover:underline font-bold"
-                  >
-                    Connect
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{name}</h1>
+          <p className="mt-2 text-slate-600 dark:text-slate-400">Client management and settings</p>
         </div>
 
-        {/* Right Column: Report History */}
-        <div className="lg:col-span-2">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-800 bg-gray-800/50">
-              <h3 className="text-sm font-semibold text-white">Report History</h3>
-            </div>
-            <table className="w-full text-left text-sm">
-              <tbody className="divide-y divide-gray-800">
-                {reports.length === 0 ? (
-                  <tr><td className="px-6 py-12 text-center text-gray-500 italic">No reports yet.</td></tr>
-                ) : (
-                  reports.map(report => (
-                    <tr key={report.id} className="hover:bg-gray-800/20 transition-colors">
-                      <td className="px-6 py-4 text-white">
-                        {new Date(report.period_start).toLocaleDateString([], { month: 'long', year: 'numeric' })}
-                      </td>
-                      <td className="px-6 py-4 text-gray-400 font-bold uppercase text-[10px]">
-                        {report.status}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <a href={`/reports/${report.id}`} className="text-indigo-400 hover:text-indigo-300">View</a>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {!editing && (
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            Edit Details
+          </Button>
+        )}
       </div>
+
+      {/* Details Card */}
+      <Card className="p-6">
+        <h2 className="mb-6 text-lg font-semibold text-slate-900 dark:text-white">Client Information</h2>
+
+        {editing ? (
+          <form className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="name" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
+                Name
+              </label>
+              <Input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={saving}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="website" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
+                Website
+              </label>
+              <Input
+                id="website"
+                type="url"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                disabled={saving}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="ga4" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
+                GA4 Property ID
+              </label>
+              <Input
+                id="ga4"
+                type="text"
+                value={ga4Id}
+                onChange={(e) => setGa4Id(e.target.value)}
+                disabled={saving}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditing(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <dl className="space-y-4">
+            <div>
+              <dt className="text-sm font-medium text-slate-600 dark:text-slate-400">Name</dt>
+              <dd className="mt-1 text-slate-900 dark:text-white">{name}</dd>
+            </div>
+
+            <div>
+              <dt className="text-sm font-medium text-slate-600 dark:text-slate-400">Website</dt>
+              <dd className="mt-1 text-slate-900 dark:text-white">{website}</dd>
+            </div>
+
+            <div>
+              <dt className="text-sm font-medium text-slate-600 dark:text-slate-400">GA4 Property ID</dt>
+              <dd className="mt-1 text-slate-900 dark:text-white">{ga4Id}</dd>
+            </div>
+          </dl>
+        )}
+      </Card>
+
+      {/* Reports for this client */}
+      <Card>
+        <div className="border-b border-slate-200 p-6 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Reports</h2>
+        </div>
+
+        <div className="p-6 text-center">
+          <p className="text-slate-600 dark:text-slate-400">No reports generated yet</p>
+          <Button asChild className="mt-4">
+            <a href="/reports">Generate Report</a>
+          </Button>
+        </div>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-red-200 bg-red-50 p-6 dark:border-red-900/30 dark:bg-red-900/10">
+        <h3 className="mb-4 text-lg font-semibold text-red-900 dark:text-red-200">Danger Zone</h3>
+        <p className="mb-4 text-sm text-red-800 dark:text-red-300">
+          This action cannot be undone. All associated reports will be archived.
+        </p>
+        <Button variant="destructive" onClick={handleDelete} disabled={saving}>
+          {saving ? 'Deleting...' : 'Delete Client'}
+        </Button>
+      </Card>
+
+      {/* Back Button */}
+      <Button variant="outline" onClick={() => router.back()}>
+        Back to Clients
+      </Button>
     </div>
   );
 }

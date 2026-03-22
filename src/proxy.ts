@@ -28,6 +28,7 @@ export async function proxy(request: NextRequest) {
 
   // 2. Bypass auth for public routes
   const publicPaths = [
+    '/',
     '/login',
     '/register',
     '/auth/callback',

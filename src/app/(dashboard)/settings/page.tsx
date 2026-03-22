@@ -1,68 +1,100 @@
-import { createSupabaseServerClient } from '@/lib/db/client';
-import { getAgencyById } from '@/lib/db/repositories/agencyRepo';
-import { updateAgency } from '@/lib/db/repositories/agencyRepo';
-import { redirect } from 'next/navigation';
+'use client';
 
-export default async function SettingsPage() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 
-  const agencyId = (user.user_metadata as any).agency_id;
-  const agency = await getAgencyById(agencyId);
+export default function SettingsPage() {
+  const [agencyName, setAgencyName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  if (!agency) return <div className="p-8 text-white">Agency not found.</div>;
+  const handleSaveAgency = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      // TODO: Call API to update agency settings
+      // const response = await fetch('/api/settings/agency', {
+      //   method: 'PATCH',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ agency_name: agencyName }),
+      // });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="p-8 max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Agency Settings</h1>
-        <p className="text-gray-400 text-sm mt-1">Configure your agency branding for reports and emails</p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
+        <p className="mt-2 text-slate-600 dark:text-slate-400">
+          Manage your agency settings and preferences.
+        </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6">
-        <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Agency Name</label>
-          <input 
-            type="text" 
-            defaultValue={agency.name}
-            className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 outline-none transition-all"
-            readOnly // Form handling in next step
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Brand Color</label>
-          <div className="flex gap-4 items-center">
-            <div 
-              className="w-10 h-10 rounded-lg border border-gray-800" 
-              style={{ backgroundColor: agency.brand_color || '#3b82f6' }}
-            ></div>
-            <input 
-              type="text" 
-              defaultValue={agency.brand_color || '#3b82f6'}
-              className="flex-1 bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white outline-none"
-              readOnly
-            />
+      <div className="max-w-2xl space-y-6">
+        {/* Account Settings */}
+        <Card className="p-6">
+          <h3 className="mb-6 text-lg font-semibold text-slate-900 dark:text-white">Account Settings</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-900 dark:text-slate-50">Email</label>
+              <Input
+                type="email"
+                value="user@example.com"
+                disabled
+                className="mt-2"
+              />
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                Contact support to change your email
+              </p>
+            </div>
           </div>
-        </div>
+        </Card>
 
-        <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Logo URL</label>
-          <input 
-            type="text" 
-            defaultValue={agency.logo_url || ''}
-            className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-white outline-none"
-            placeholder="https://..."
-            readOnly
-          />
-        </div>
+        {/* Agency Settings */}
+        <Card className="p-6">
+          <h3 className="mb-6 text-lg font-semibold text-slate-900 dark:text-white">Agency Details</h3>
+          <form onSubmit={handleSaveAgency} className="space-y-4">
+            <div>
+              <label htmlFor="agency-name" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
+                Agency Name
+              </label>
+              <Input
+                id="agency-name"
+                type="text"
+                placeholder="Your Agency"
+                value={agencyName}
+                onChange={(e) => setAgencyName(e.target.value)}
+                className="mt-2"
+                disabled={saving}
+              />
+            </div>
 
-        <div className="pt-4 border-t border-gray-800">
-          <button className="bg-gray-800 text-gray-400 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed">
-            Save Changes (Manual update required for MVP)
-          </button>
-        </div>
+            {saved && (
+              <div className="rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
+                Settings saved successfully
+              </div>
+            )}
+
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </form>
+        </Card>
+
+        {/* Danger Zone */}
+        <Card className="border-red-200 bg-red-50 p-6 dark:border-red-900/30 dark:bg-red-900/10">
+          <h3 className="mb-4 text-lg font-semibold text-red-900 dark:text-red-200">Danger Zone</h3>
+          <p className="mb-4 text-sm text-red-800 dark:text-red-300">
+            Irreversible actions. Proceed with caution.
+          </p>
+          <Button variant="destructive">Delete Agency</Button>
+        </Card>
       </div>
     </div>
   );

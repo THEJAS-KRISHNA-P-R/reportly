@@ -20,6 +20,26 @@ export async function getAgencyById(agencyId: string): Promise<Agency | null> {
   return data as Agency | null;
 }
 
+export async function getAgencyUserByEmail(email: string) {
+  const db = createSupabaseServiceClient();
+  const { data, error } = await db
+    .from('agency_users')
+    .select(`
+      *,
+      agencies (
+        id,
+        name,
+        brand_color,
+        plan
+      )
+    `)
+    .eq('email', email)
+    .is('is_active', true)
+    .maybeSingle();
+  if (error) handleDbError(error, 'getAgencyUserByEmail');
+  return data;
+}
+
 export async function updateAgency(
   agencyId: string,
   updates: Partial<Pick<Agency, 'name' | 'logo_url' | 'brand_color'>>

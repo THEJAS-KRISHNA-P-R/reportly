@@ -1,90 +1,58 @@
-import { MetricCard }   from '@/components/ui/MetricCard';
-import { Badge }         from '@/components/ui/badge';
-import { Button }        from '@/components/ui/button';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { EmptyState }    from '@/components/ui/EmptyState';
-import { FileText, Plus, RefreshCw, Users } from 'lucide-react';
+import { StatsCards } from '@/components/dashboard/stats-cards';
+import { RecentReports } from '@/components/dashboard/recent-reports';
+import { ClientsList } from '@/components/clients/clients-list';
+import { Button } from '@/components/ui/button';
 
-export default async function DashboardPage() {
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+export default function DashboardPage() {
+  // TODO: Fetch from API
+  const stats = undefined;
+  const recentReports: any[] = [];
+  const topClients: any[] = [];
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-[32px] font-semibold text-[var(--text-primary)] tracking-[-0.02em]">
-            {greeting} 👋
-          </h1>
-          <p className="text-[14px] text-[var(--text-muted)] mt-1">
-            Here&apos;s what&apos;s happening with your agency today.
-          </p>
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
+        <p className="mt-2 text-slate-600 dark:text-slate-400">
+          Welcome back! Here's what's happening with your clients.
+        </p>
+      </div>
+
+      {/* Quick Stats */}
+      <StatsCards stats={stats} loading={false} />
+
+      {/* Main Content Grid */}
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Recent Reports */}
+        <div className="lg:col-span-2">
+          <RecentReports reports={recentReports} loading={false} />
         </div>
-        <Button size="default" className="gap-2" id="generate-report-btn">
-          <Plus size={16} strokeWidth={2} /> Generate Report
-        </Button>
-      </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Active Clients"      value="—" source="Reportly" />
-        <MetricCard label="Reports This Month"  value="—" source="Reportly" />
-        <MetricCard label="Pending Approval"    value="—" source="Reportly" confidence="partial" />
-        <MetricCard label="Avg Generation Time" value="—" source="Reportly" />
-      </div>
-
-      {/* Two column layout */}
-      <div className="grid lg:grid-cols-[1fr_340px] gap-6">
-        {/* Recent reports */}
-        <Card className="p-0 overflow-hidden border-border bg-surface">
-          <CardHeader className="px-6 pt-5 pb-4 border-b border-[var(--border)] flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Recent Reports</CardTitle>
-            <Button variant="ghost" size="sm" className="gap-2" id="refresh-reports-btn">
-              <RefreshCw size={14} /> Refresh
-            </Button>
-          </CardHeader>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[var(--border)] bg-[var(--bg-surface)]">
-                  {['Client', 'Period', 'Status', 'Generated', ''].map(h => (
-                    <th
-                      key={h}
-                      className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--text-muted)]"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td colSpan={5}>
-                    <EmptyState
-                      icon={<FileText size={20} strokeWidth={1.5} />}
-                      title="No reports yet"
-                      body="Add a client and connect their Google Analytics to generate your first report."
-                      action={{ label: 'Add your first client', href: '/dashboard/clients/new' }}
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        {/* Quick Actions */}
+        <div className="space-y-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-900/50">
+            <h3 className="font-semibold text-slate-900 dark:text-white">Quick Actions</h3>
+            <div className="mt-4 space-y-3">
+              <Button asChild className="w-full" variant="primary">
+                <a href="/clients/new">Add New Client</a>
+              </Button>
+              <Button asChild className="w-full" variant="secondary">
+                <a href="/reports">Generate Report</a>
+              </Button>
+            </div>
           </div>
-        </Card>
+        </div>
+      </div>
 
-        {/* Data sources */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Data Sources</CardTitle>
-          </CardHeader>
-          <EmptyState
-            icon={<Users size={18} strokeWidth={1.5} />}
-            title="No clients yet"
-            body="Add clients to see their connection status here."
-          />
-        </Card>
+      {/* Top Clients */}
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Your Clients</h2>
+          <Button asChild variant="outline">
+            <a href="/clients">View All</a>
+          </Button>
+        </div>
+        <ClientsList clients={topClients} loading={false} />
       </div>
     </div>
   );

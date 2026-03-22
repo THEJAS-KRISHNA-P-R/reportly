@@ -24,6 +24,7 @@ export type AuditEventType =
   | 'approval'
   | 'pdf_generated'
   | 'pdf_failed'
+  | 'pipeline_completed'
   | 'email_sent'
   | 'email_failed'
   | 'job_dlq'
@@ -113,6 +114,7 @@ export interface ApiConnection {
 export interface Report {
   id: string;
   client_id: string;
+  agency_id: string;
   period_start: string;
   period_end: string;
   prompt_version: string;

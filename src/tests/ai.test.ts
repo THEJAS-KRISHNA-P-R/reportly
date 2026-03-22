@@ -1,4 +1,4 @@
-import { generateReportNarrative } from '@/lib/modules/ai';
+import { generateNarrative } from '@/lib/modules/ai';
 import { generateNarrativeClaude } from '@/lib/modules/ai/claude';
 import { generateNarrativeGemini } from '@/lib/modules/ai/gemini';
 import { validateMetrics } from '@/lib/validators/metricValidator';
@@ -22,7 +22,7 @@ describe('AI Orchestrator', () => {
   it('completes via Claude if successful and valid', async () => {
     (generateNarrativeClaude as jest.Mock).mockResolvedValue('Claude analysis text');
     const validated = validateMetrics(mockGA4Response, null);
-    const result = await generateReportNarrative(validated);
+    const result = await generateNarrative(validated);
     
     expect(result.source).toBe('claude');
     expect(result.content).toBe('Claude analysis text');
@@ -34,7 +34,7 @@ describe('AI Orchestrator', () => {
     (generateNarrativeClaude as jest.Mock).mockRejectedValue(new Error('Claude down'));
     (generateNarrativeGemini as jest.Mock).mockResolvedValue('Gemini analysis text');
     const validated = validateMetrics(mockGA4Response, null);
-    const result = await generateReportNarrative(validated);
+    const result = await generateNarrative(validated);
     
     expect(result.source).toBe('gemini');
     expect(result.content).toBe('Gemini analysis text');
@@ -45,7 +45,7 @@ describe('AI Orchestrator', () => {
     (generateNarrativeClaude as jest.Mock).mockResolvedValue('It is probably because of data.'); // "probably" is flagged
     (generateNarrativeGemini as jest.Mock).mockResolvedValue('Gemini clean output');
     const validated = validateMetrics(mockGA4Response, null);
-    const result = await generateReportNarrative(validated);
+    const result = await generateNarrative(validated);
     
     expect(result.source).toBe('gemini');
     expect(result.content).toBe('Gemini clean output');
@@ -55,7 +55,7 @@ describe('AI Orchestrator', () => {
     (generateNarrativeClaude as jest.Mock).mockRejectedValue(new Error('Claude down'));
     (generateNarrativeGemini as jest.Mock).mockRejectedValue(new Error('Gemini down'));
     const validated = validateMetrics(mockGA4Response, null);
-    const result = await generateReportNarrative(validated);
+    const result = await generateNarrative(validated);
     
     expect(result.source).toBe('rule_based');
     expect(result.content).toContain('Overall performance');

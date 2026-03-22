@@ -7,7 +7,7 @@ import { handleDbError } from './_base';
  * Always scopes by agency_id first, then filters soft-deleted records.
  */
 export async function getClientsByAgency(agencyId: string): Promise<Client[]> {
-  const db = await createSupabaseServerClient();
+  const db = createSupabaseServiceClient();
   const { data, error } = await db
     .from('clients')
     .select('*')
@@ -23,7 +23,7 @@ export async function getClientsByAgency(agencyId: string): Promise<Client[]> {
  * Returns null for both "not found" and "wrong agency" — prevents enumeration.
  */
 export async function getClientById(clientId: string, agencyId: string): Promise<Client | null> {
-  const db = await createSupabaseServerClient();
+  const db = createSupabaseServiceClient();
   const { data, error } = await db
     .from('clients')
     .select('*')
@@ -36,7 +36,7 @@ export async function getClientById(clientId: string, agencyId: string): Promise
 }
 
 export async function createClient(agencyId: string, input: CreateClientInput): Promise<Client> {
-  const db = await createSupabaseServerClient();
+  const db = createSupabaseServiceClient();
   const { data, error } = await db
     .from('clients')
     .insert({ ...input, agency_id: agencyId }) // agency_id from session, not user input
@@ -51,7 +51,7 @@ export async function updateClient(
   agencyId: string,
   input: UpdateClientInput
 ): Promise<Client> {
-  const db = await createSupabaseServerClient();
+  const db = createSupabaseServiceClient();
   const { data, error } = await db
     .from('clients')
     .update(input)
@@ -64,7 +64,7 @@ export async function updateClient(
 }
 
 export async function softDeleteClient(clientId: string, agencyId: string): Promise<void> {
-  const db = await createSupabaseServerClient();
+  const db = createSupabaseServiceClient();
   const { error } = await db
     .from('clients')
     .update({ deleted_at: new Date().toISOString(), is_active: false })

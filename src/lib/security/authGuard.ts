@@ -1,13 +1,15 @@
-import { createSupabaseServiceClient } from '@/lib/db/client';
 import type { Agency, AgencyUser } from '@/types/report';
 import { ReportlyError } from '@/types/errors';
 import { logger } from '@/lib/utils/logger';
+import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/db/client';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface AuthenticatedContext {
   userId: string;
   agencyId: string;
   agency: Agency;
   role: 'admin' | 'member';
+  user: any;
 }
 
 /**
@@ -21,15 +23,21 @@ export interface AuthenticatedContext {
  * @throws ReportlyError 'FORBIDDEN' if user has no agency or role
  */
 export async function getAuthenticatedAgency(
-  serverClient: Awaited<ReturnType<typeof import('@/lib/db/client').createSupabaseServerClient>>
+  input?: Request | SupabaseClient
 ): Promise<AuthenticatedContext> {
-  // Validate the Supabase session cookie
-  const {
-    data: { user },
-    error: authError,
-  } = await serverClient.auth.getUser(); // never use getSession() — not validated
+  // 1. Resolve Supabase Client
+  let serverClient: SupabaseClient;
+  if (!input || input instanceof Request || 'nextUrl' in (input as any)) {
+    serverClient = await createSupabaseServerClient();
+  } else {
+    serverClient = input as SupabaseClient;
+  }
+
+  // 2. Validate session
+  const { data: { user }, error: authError } = await serverClient.auth.getUser();
 
   if (authError || !user) {
+    logger.error({ authError }, '[authGuard] Unauthorized access attempt');
     throw new ReportlyError(
       'UNAUTHORIZED',
       'No valid session',
@@ -39,49 +47,51 @@ export async function getAuthenticatedAgency(
   }
 
   const userId = user.id;
+  logger.info({ userId }, '[authGuard] Authenticated user found');
 
-  // Look up the agency_user using service client (bypasses RLS)
+  // 3. Look up the agency_user using service client (bypasses RLS)
   const db = createSupabaseServiceClient();
-  const { data } = await db
+  const { data: agencyUserData, error: dbError } = await db
     .from('agency_users')
-    .select('agency_id, role')
+    .select('agency_id, "role"')
     .eq('id', userId)
-    .limit(1)
     .maybeSingle();
 
-  if (!data || !data.agency_id) {
-    logger.warn({ userId }, 'User has no associated agency');
+  if (dbError || !agencyUserData || !agencyUserData.agency_id) {
+    logger.warn({ userId, dbError }, '[authGuard] User has no associated agency');
     throw new ReportlyError(
       'FORBIDDEN',
-      `No agency found for user ${user.id}`,
+      `No agency found for user ${userId}`,
       'Your account is not associated with an agency.',
       403
     );
   }
 
-  const agencyUser = data;
-
-  // Look up the full agency record
+  // 4. Look up the full agency record
   const { data: agency } = await db
     .from('agencies')
     .select('*')
-    .eq('id', agencyUser.agency_id)
+    .eq('id', agencyUserData.agency_id)
     .is('deleted_at', null)
     .maybeSingle();
 
   if (!agency) {
+    logger.warn({ agencyId: agencyUserData.agency_id }, '[authGuard] Agency record missing or deleted');
     throw new ReportlyError(
       'FORBIDDEN',
-      `Agency ${agencyUser.agency_id} not found or inactive`,
+      `Agency ${agencyUserData.agency_id} not found or inactive`,
       'Your agency account is not active.',
       403
     );
   }
 
+  logger.info({ userId, agencyId: agency.id }, '[authGuard] Identity verified');
+
   return {
-    userId: user.id,
-    agencyId: agencyUser.agency_id as string,
+    userId,
+    agencyId: agency.id as string,
     agency: agency as Agency,
-    role: (agencyUser as AgencyUser).role,
+    role: agencyUserData.role as 'admin' | 'member',
+    user,
   };
 }

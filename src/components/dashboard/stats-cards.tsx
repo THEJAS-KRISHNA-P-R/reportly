@@ -1,6 +1,7 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
+import { Users, FileText, Send, Clock } from 'lucide-react';
 
 export interface DashboardStats {
   total_clients: number;
@@ -28,22 +29,22 @@ export function StatsCards({ stats, loading = false }: StatsCardsProps) {
     {
       label: 'Total Clients',
       value: data.total_clients,
-      icon: '👥',
+      icon: <Users size={20} className="text-slate-500" />,
     },
     {
       label: 'Reports Generated',
       value: data.reports_generated,
-      icon: '📄',
+      icon: <FileText size={20} className="text-slate-500" />,
     },
     {
       label: 'Sent This Month',
       value: data.reports_sent_month,
-      icon: '📧',
+      icon: <Send size={20} className="text-slate-500" />,
     },
     {
       label: 'Pending Review',
       value: data.pending_reviews,
-      icon: '⏳',
+      icon: <Clock size={20} className="text-slate-500" />,
     },
   ];
 
@@ -62,7 +63,9 @@ export function StatsCards({ stats, loading = false }: StatsCardsProps) {
                 )}
               </p>
             </div>
-            <span className="text-2xl">{item.icon}</span>
+            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
+              {item.icon}
+            </div>
           </div>
         </Card>
       ))}

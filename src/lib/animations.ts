@@ -1,71 +1,54 @@
-import { Variants } from 'framer-motion';
-
-// Premium & Human Animation Tokens
-// Duration: 120-180ms for micro-interactions
-// Easing: Refined cubic-beziers
+import type { Variants } from 'framer-motion';
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 15 },
-  visible: { 
-    opacity: 1, 
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { 
-      duration: 0.4, 
-      ease: [0.215, 0.61, 0.355, 1] // Quad-out for natural feel
-    } 
-  }
+    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
+};
+
+export const stagger: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.10 } },
+};
+
+export const staggerFast: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.05 } },
 };
 
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1,
-    transition: { duration: 0.3, ease: 'easeOut' }
-  }
+  visible: { opacity: 1, transition: { duration: 0.35 } },
 };
 
-export const staggerContainer: Variants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2
-    }
-  }
+export const slideLeft: Variants = {
+  hidden: { opacity: 0, x: -32 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
 
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    scale: 1,
-    transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] } // Subtle spring
-  }
-};
-
-export const slideInRight: Variants = {
-  hidden: { opacity: 0, x: 20 },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    transition: { duration: 0.4, ease: 'easeOut' } 
-  }
-};
-
-export const slideInLeft: Variants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    transition: { duration: 0.4, ease: 'easeOut' } 
-  }
+export const slideRight: Variants = {
+  hidden: { opacity: 0, x: 32 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
 
 export const pageEnter: Variants = {
-  hidden: { opacity: 0, y: 5 },
-  visible: { 
-    opacity: 1, 
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+};
+
+export const blurFadeWord: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 16,
+    filter: 'blur(10px)',
+  },
+  visible: {
+    opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' } 
-  }
+    filter: 'blur(0px)',
+    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
 };

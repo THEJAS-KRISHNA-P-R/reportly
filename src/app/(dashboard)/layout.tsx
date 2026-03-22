@@ -1,26 +1,18 @@
-'use client';
-
-import { Sidebar } from '@/components/dashboard/sidebar';
-import { Topbar } from '@/components/dashboard/topbar';
+import { Sidebar } from '@/components/layout/sidebar';
+import { Topbar } from '@/components/layout/topbar';
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-white dark:bg-slate-950">
-      {/* Sidebar */}
+    <div className="dashboard-layout">
       <Sidebar />
-
-      {/* Main Content */}
-      <div className="flex flex-1 flex-col pl-64">
-        {/* Top Bar */}
+      <div className="dashboard-main">
         <Topbar />
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto pt-16">
-          <div className="container mx-auto p-6">
+        <main className="dashboard-content">
+          <div className="container" style={{ maxWidth: '1000px', padding: 0 }}>
             {children}
           </div>
         </main>

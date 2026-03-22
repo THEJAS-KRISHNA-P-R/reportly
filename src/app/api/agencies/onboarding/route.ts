@@ -1,37 +1,31 @@
-import { NextResponse } from 'next/server';
-import { createSupabaseServiceClient, createSupabaseServerClient } from '@/lib/db/client';
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
-import { validateInput, onboardingSchema } from '@/lib/validators/inputValidator';
 
-export async function PATCH(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const { agencyId } = await getAuthenticatedAgency(request);
     const supabase = await createSupabaseServerClient();
-    const { agencyId } = await getAuthenticatedAgency(supabase);
+
     const body = await request.json();
-    const input = validateInput(onboardingSchema, body);
-    
-    const db = createSupabaseServiceClient();
-    const { error } = await db
+    if (!body.name) {
+      return NextResponse.json({ error: 'Agency name is required' }, { status: 400 });
+    }
+
+    // Update agency name
+    const { error } = await supabase
       .from('agencies')
-      .update({
-        name: input.name,
-        brand_color: input.brand_color ?? '#1E3A5F',
-        logo_url: input.logo_url ?? null,
+      .update({ 
+        name: body.name,
+        updated_at: new Date().toISOString()
       })
       .eq('id', agencyId);
-    
-    if (error) {
-      return NextResponse.json(
-        { error: 'Failed to update agency profile' }, 
-        { status: 500 }
-      );
-    }
-    
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
-      { status: error.statusCode || 500 }
-    );
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, message: 'Onboarding completed' });
+  } catch (err: any) {
+    console.error('[Onboarding POST] Error:', err);
+    return NextResponse.json({ error: err.message || 'Failed to complete onboarding' }, { status: 500 });
   }
 }

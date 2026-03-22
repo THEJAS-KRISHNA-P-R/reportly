@@ -3,6 +3,7 @@ import { getReportHtml } from '@/lib/modules/pdf/template';
 import { generatePdfFromHtml } from '@/lib/modules/pdf/generator';
 import { updateReportPdf, getReportById } from '@/lib/db/repositories/reportRepo';
 import { getAgencyById } from '@/lib/db/repositories/agencyRepo';
+import { createSupabaseServiceClient } from '@/lib/db/client';
 import { logger } from '@/lib/utils/logger';
 
 export async function generatePDFStep(context: PipelineContext): Promise<void> {
@@ -24,19 +25,56 @@ export async function generatePDFStep(context: PipelineContext): Promise<void> {
       context.narrativeResult.content
     );
 
-    // In a real staging/prod env, we'd upload this to Supabase Storage (MFR-008)
-    // For the MVP logic, we'll store the "simulated" URL or base64 if needed, 
-    // but the task says "Generate PDF". We'll generate it and log success.
-    const pdfBuffer = await generatePdfFromHtml(html);
+    let pdfBuffer: Buffer;
+
+    // Use Railway Worker if URL is present (Section 9 of context)
+    if (process.env.RAILWAY_WORKER_URL) {
+      logger.info({ reportId: context.reportId }, 'Using Railway worker for PDF generation');
+      const response = await fetch(process.env.RAILWAY_WORKER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-worker-secret': process.env.RAILWAY_WORKER_SECRET || '',
+        },
+        body: JSON.stringify({ html, reportId: context.reportId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Railway Worker Failed: ${response.statusText}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      pdfBuffer = Buffer.from(arrayBuffer);
+    } else {
+      // Local fallback via Puppeteer
+      logger.info({ reportId: context.reportId }, 'Using local Puppeteer fallback for PDF generation');
+      pdfBuffer = await generatePdfFromHtml(html);
+    }
     
-    // Simulate upload and get URL
-    const simulatedUrl = `https://storage.reportly.app/reports/${context.reportId}.pdf`;
+    // Real upload to Supabase Storage (report_pdfs bucket)
+    const supabase = createSupabaseServiceClient();
+    const filePath = `${context.agencyId}/${context.clientId}/${context.reportId}.pdf`;
     
-    await updateReportPdf(context.reportId, simulatedUrl);
+    const { error: uploadError } = await supabase.storage
+      .from('report_pdfs')
+      .upload(filePath, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw new Error(`Supabase Storage Upload Failed: ${uploadError.message}`);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('report_pdfs')
+      .getPublicUrl(filePath);
+
+    await updateReportPdf(context.reportId, publicUrl);
     
-    logger.info({ reportId: context.reportId }, 'PDF Generated Successfully');
+    logger.info({ reportId: context.reportId }, 'PDF Generated and Uploaded Successfully');
   } catch (error: any) {
     logger.error({ err: error.message, reportId: context.reportId }, 'PDF Generation Step Failed');
-    // Non-critical path: do not throw, so the pipeline continues (to audit/draft state)
+    // Non-critical path
   }
 }

@@ -1,5 +1,5 @@
 import { PipelineContext } from '../pipeline';
-import { generateReportNarrative } from '@/lib/modules/ai';
+import { generateNarrative } from '@/lib/modules/ai';
 import { createAuditLog } from '@/lib/db/repositories/auditRepo';
 import { updateReportNarrative } from '@/lib/db/repositories/reportRepo';
 
@@ -8,7 +8,7 @@ export async function generateNarrativeStep(context: PipelineContext): Promise<v
     throw new Error('validationResult missing in pipeline context');
   }
 
-  const result = await generateReportNarrative(context.validationResult);
+  const result = await generateNarrative(context.validationResult);
   context.narrativeResult = result;
 
   if (context.reportId) {

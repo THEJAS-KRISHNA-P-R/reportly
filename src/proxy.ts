@@ -1,133 +1,130 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { securityHeaders } from '@/lib/security/headers';
-import { rateLimiters, checkRateLimit } from '@/lib/security/rateLimit';
-import { isOnboardingComplete } from '@/lib/security/onboardingGuard';
+import { cookies } from 'next/headers';
 
-/**
- * Next.js 16 Proxy (formerly middleware).
- * - File must be named proxy.ts (not middleware.ts)
- * - Exported function MUST be named 'proxy'
- * - Runs on Node.js runtime
- *
- * Responsibilities:
- * 1. Apply security headers to every response
- * 2. Rate limit per route
- * 3. Enforce IP allowlist for /api/admin
- * 4. Auth guard — redirect unauthenticated users to /login
- */
+const PUBLIC_PATHS = [
+  '/',
+  '/pricing',
+  '/about',
+  '/login',
+  '/register',
+  '/auth',
+  '/api/auth',
+  '/api/webhooks',
+  '/api/payments/verify',
+  '/api/oauth/ga4',      // Added
+  '/api/oauth/ga4/callback', // Added
+  '/_next',
+  '/favicon.ico',
+  '/robots.txt',
+  '/sitemap.xml',
+];
+
+const ADMIN_PATHS = ['/admin', '/api/admin'];
+const CRON_PATHS  = ['/api/cron'];
+
+function applySecurityHeaders(res: NextResponse): NextResponse {
+  res.headers.set('X-Frame-Options', 'DENY');
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  return res;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Apply security headers to the response
-  const response = NextResponse.next();
-  Object.entries(securityHeaders).forEach(([key, value]) => {
-    response.headers.set(key, value);
+  // Cron routes — verify Vercel cron secret
+  if (CRON_PATHS.some(p => pathname.startsWith(p))) {
+    const auth = request.headers.get('authorization');
+    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+    return NextResponse.next();
+  }
+
+  // Static assets — pass through immediately
+  if (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/favicon') ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml'
+  ) {
+    return NextResponse.next();
+  }
+
+  // Initialize Supabase to grab the current user state
+  let response = NextResponse.next({
+    request: { headers: request.headers },
   });
 
-  // 2. Bypass auth for public routes
-  const publicPaths = [
-    '/',
-    '/login',
-    '/register',
-    '/auth/callback',
-    '/api/auth',
-    '/api/oauth',
-    '/api/webhooks',
-    '/_next',
-    '/favicon.ico',
-  ];
-  const isPublic = publicPaths.some(
-    (p) => pathname === p || pathname.startsWith(p + '/')
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (toSet) => {
+          toSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
   );
 
-  // 3. IP allowlist for admin routes
-  if (pathname.startsWith('/api/admin') || pathname.startsWith('/admin')) {
-    const allowlist = (process.env.ADMIN_IP_ALLOWLIST ?? '127.0.0.1').split(',').map((s) => s.trim());
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
-    if (!allowlist.includes(ip)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    // Rate limit admin
-    const { allowed } = await checkRateLimit(rateLimiters.admin, ip);
-    if (!allowed) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-    }
-  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // 4. Rate limiting by route type
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
-  if (pathname.startsWith('/api/oauth')) {
-    const { allowed } = await checkRateLimit(rateLimiters.oauth, ip);
-    if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-  } else if (pathname === '/login' || pathname.startsWith('/api/auth/login')) {
-    const { allowed } = await checkRateLimit(rateLimiters.login, ip);
-    if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-  } else if (pathname === '/register' || pathname.startsWith('/api/auth/register')) {
-    const { allowed } = await checkRateLimit(rateLimiters.register, ip);
-    if (!allowed) return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-  }
-
-  // 5. Skip auth check for public paths
-  if (isPublic) return response;
-
-  // 6. Auth check — validate session using getUser() (not getSession())
-  let isAuthenticated = false;
-  let userMetadata: any = null;
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return request.cookies.get(name)?.value; },
-          set(name: string, value: string, options: Record<string, unknown>) {
-            response.cookies.set({ name, value, ...options });
-          },
-          remove(name: string, options: Record<string, unknown>) {
-            response.cookies.set({ name, value: '', ...options });
-          },
-        },
-      }
-    );
-    const { data: { user } } = await supabase.auth.getUser();
-    isAuthenticated = !!user;
-    userMetadata = user?.user_metadata;
-  } catch {
-    isAuthenticated = false;
-  }
-
-  if (!isAuthenticated) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirectTo', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // 7. Onboarding check — ensure user has an agency_id AND complete profile
-  const agencyId = userMetadata?.agency_id;
+  const isPublic = PUBLIC_PATHS.some(p =>
+    pathname === p || pathname.startsWith(p + '/')
+  );
   
-  if (agencyId && pathname.startsWith('/dashboard')) {
-    const complete = await isOnboardingComplete(agencyId);
-    if (!complete) {
-      return NextResponse.redirect(new URL('/onboarding', request.url));
+  const isAdminPath = ADMIN_PATHS.some(p => pathname.startsWith(p));
+
+  // --- 1. SUPER ADMIN ROUTING ---
+  if (user && user.email === process.env.SUPER_ADMIN_EMAIL) {
+    if (!isAdminPath && !pathname.startsWith('/api/')) {
+      // Force Super Admin to /admin if they try to access /, /dashboard, /login, etc.
+      return applySecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
     }
+    // Protect production admin paths by IP allowlist
+    if (isAdminPath && process.env.NODE_ENV === 'production') {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '127.0.0.1';
+      const allowed = (process.env.ADMIN_IP_ALLOWLIST ?? '').split(',');
+      if (!allowed.includes(ip)) {
+        return new NextResponse('Forbidden', { status: 403 });
+      }
+    }
+    return applySecurityHeaders(response);
   }
 
-  // Prevent going back to onboarding if already complete
-  if (agencyId && pathname === '/onboarding') {
-    const complete = await isOnboardingComplete(agencyId);
-    if (complete) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+  // --- 2. NORMAL USER ROUTING ---
+  if (user) {
+    if (isAdminPath) {
+      return new NextResponse('Forbidden', { status: 403 }); // Normal users cannot access admin
     }
+    // Authenticated users trying to access auth or home pages get pushed to their dashboard
+    if (pathname === '/login' || pathname === '/register' || pathname === '/') {
+      return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
+    }
+    return applySecurityHeaders(response);
   }
 
-  return response;
+  // --- 3. UNAUTHENTICATED ROUTING ---
+  if (!user) {
+    if (isPublic) {
+      return applySecurityHeaders(response); // Guests can view landing page and auth pages
+    }
+    // Guests on protected routes get pushed to login
+    const url = new URL('/login', request.url);
+    url.searchParams.set('redirect', pathname);
+    return applySecurityHeaders(NextResponse.redirect(url));
+  }
 }
 
 export const config = {
   matcher: [
-    // Match everything except Next.js internals and static files
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt).*)',
   ],
 };

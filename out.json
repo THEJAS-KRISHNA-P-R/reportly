@@ -1,0 +1,24 @@
+{
+  "reports": [
+    {
+      "id": "7828ac07-bff7-4ddd-93ca-f8d733a55e49",
+      "status": "failed",
+      "narrative_source": null,
+      "ai_narrative_raw": null
+    }
+  ],
+  "audit": [],
+  "api": [
+    {
+      "platform": "ga4",
+      "status": "connected",
+      "last_error": null
+    },
+    {
+      "platform": "ga4",
+      "status": "error",
+      "last_error": "Refresh failed: Cannot read properties of undefined (reading 'access_token')"
+    }
+  ],
+  "jobs": []
+}

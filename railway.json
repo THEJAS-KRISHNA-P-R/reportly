@@ -1,0 +1,11 @@
+{
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "pnpm install && pnpm build:worker"
+  },
+  "deploy": {
+    "startCommand": "node dist/workers/report-worker.js",
+    "restartPolicyType": "on-failure",
+    "restartPolicyMaxRetries": 3
+  }
+}

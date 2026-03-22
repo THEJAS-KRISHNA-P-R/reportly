@@ -22,21 +22,24 @@ export async function getAgencyById(agencyId: string): Promise<Agency | null> {
 
 export async function getAgencyUserByEmail(email: string) {
   const db = createSupabaseServiceClient();
-  const { data, error } = await db
-    .from('agency_users')
-    .select(`
-      *,
-      agencies (
+    const { data, error } = await db
+      .from('agency_users')
+      .select(`
         id,
-        name,
-        brand_color,
-        plan
-      )
-    `)
-    .eq('email', email)
-    .is('is_active', true)
-    .maybeSingle();
-  if (error) handleDbError(error, 'getAgencyUserByEmail');
+        agency_id,
+        email,
+        "role",
+        is_active,
+        agencies (
+          id,
+          name,
+          brand_color,
+          plan
+        )
+      `)
+      .eq('email', email)
+      .is('is_active', true)
+      .maybeSingle();
   return data;
 }
 

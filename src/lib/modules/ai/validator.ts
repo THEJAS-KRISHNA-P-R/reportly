@@ -8,14 +8,11 @@ export function validateAiOutput(narrative: string): { isValid: boolean; flagged
   const SPECULATIVE_PATTERNS = [
     /likely due to/i,
     /possibly because/i,
-    /possible/i,
     /might be/i,
     /could indicate/i,
     /perhaps/i,
-    /we suspect/i,
     /probably/i,
-    /we believe/i,
-    /assumption/i
+    /we suspect/i
   ];
 
   const flaggedPhrases: string[] = [];

@@ -15,6 +15,7 @@ export async function createReport(
     .from('reports')
     .insert({
       client_id: clientId,
+      agency_id: agencyId,
       period_start: periodStart.toISOString(),
       period_end: periodEnd.toISOString(),
       prompt_version: REPORT.PROMPT_VERSION,
@@ -178,4 +179,27 @@ export async function reportExistsForPeriod(
     .not('status', 'in', '(cancelled,failed)')
     .maybeSingle();
   return data !== null;
+}
+
+/** Resets a report to pending state for regeneration. */
+export async function resetReport(reportId: string): Promise<void> {
+  const db = createSupabaseServiceClient();
+  const { error } = await db
+    .from('reports')
+    .update({
+      status: 'pending' satisfies ReportStatus,
+      ai_narrative_raw: null,
+      ai_narrative_edited: null,
+      rule_based_narrative: null,
+      final_narrative: null,
+      narrative_source: 'none',
+      confidence_summary: null,
+      pdf_url: null,
+      approved_at: null,
+      approved_by: null,
+      generation_started_at: null,
+      pdf_generated_at: null,
+    })
+    .eq('id', reportId);
+  if (error) handleDbError(error, 'resetReport');
 }

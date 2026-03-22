@@ -18,7 +18,7 @@ export interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, name: string, metadata?: { agency_name: string }) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase]);
 
-  const register = useCallback(async (email: string, password: string, name: string) => {
+  const register = useCallback(async (email: string, password: string, name: string, metadata?: { agency_name: string }) => {
     setLoading(true);
     setError(null);
     try {
@@ -163,6 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         options: {
           data: {
             name,
+            ...metadata,
           },
         },
       });
@@ -196,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase.auth.signOut();
       setUser(null);
+      window.location.href = '/login';
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Logout failed';
       setError(message);

@@ -1,0 +1,13 @@
+﻿[dotenv@17.3.1] injecting env (23) from .env.local -- tip: ÔÜÖ´©Å  specify custom .env file path with { path: '/custom/path/.env' }
+--- API Connections for Test Client ---
+[
+  {
+    "id": "ae66a931-a2a3-4b5e-8591-46f22b01217f",
+    "platform": "ga4",
+    "status": "connected",
+    "account_id": null,
+    "has_access_token": true,
+    "has_refresh_token": true,
+    "created_at": "2026-03-22T12:28:44.553641+00:00"
+  }
+]

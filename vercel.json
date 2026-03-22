@@ -1,0 +1,17 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate-reports",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/reset-monthly-counts",
+      "schedule": "0 0 1 * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/reports/[id]/trigger/route.ts": { "maxDuration": 60 },
+    "src/app/api/reports/[id]/recheck/route.ts": { "maxDuration": 60 },
+    "src/app/api/cron/generate-reports/route.ts": { "maxDuration": 300 }
+  }
+}

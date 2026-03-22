@@ -1,40 +1,34 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { RegisterForm } from '@/components/auth/register-form';
 import { AuthProvider } from '@/lib/auth-context';
+import { BeamsDynamic } from '@/components/ui/beams-dynamic';
 
 export default function RegisterPage() {
   return (
     <AuthProvider>
-      <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">
-        {/* Left: Form */}
-        <div className="flex flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-sm">
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Create your account</h1>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                Get started with automated reports in minutes.
-              </p>
-            </div>
-
+      <div className="min-h-screen flex" style={{ background: '#FFFFFF' }}>
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+          <Suspense fallback={<div />}>
             <RegisterForm />
-
-            <p className="mt-6 text-center text-xs text-slate-600 dark:text-slate-400">
-              By signing up, you agree to our{' '}
-              <Link href="/terms" className="hover:text-slate-900 dark:hover:text-white">
-                Terms of Service
-              </Link>
-            </p>
-          </div>
+          </Suspense>
         </div>
-
-        {/* Right: Marketing */}
-        <div className="hidden flex-col justify-center bg-slate-50 px-4 dark:bg-slate-900/50 md:flex">
-          <div className="mx-auto max-w-sm">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Start generating reports today</h2>
-            <p className="mt-4 text-slate-600 dark:text-slate-400">
-              Connect Google Analytics, customize your branding, and send beautiful reports to clients in minutes.
+        <div className="hidden lg:flex w-1/2 relative bg-black items-center justify-center overflow-hidden">
+          <BeamsDynamic 
+            beamNumber={8} 
+            beamHeight={16} 
+            speed={1.2} 
+            lightColor="#ffffff" 
+            scale={0.12} 
+          />
+          <div className="relative z-10 max-w-md text-center">
+            <h2 className="text-3xl font-semibold tracking-tight text-white mb-4">
+              Automate your agency reporting
+            </h2>
+            <p className="text-base" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Join dozens of agencies saving 90+ hours per year on manual client reports.
             </p>
           </div>
         </div>

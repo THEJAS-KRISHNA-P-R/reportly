@@ -1,0 +1,58 @@
+﻿[dotenv@17.3.1] injecting env (23) from .env.local -- tip: ­ƒøí´©Å auth for agents: https://vestauth.com
+--- Recent Users ---
+[
+  {
+    "id": "503e963a-ba59-4f20-92cd-0c022c902efd",
+    "email": "artifitwo@gmail.com",
+    "last_sign_in": "2026-03-22T11:42:29.514197Z"
+  },
+  {
+    "id": "356e827a-2848-4c6d-b8c6-b97be305d0a3",
+    "email": "artifione@gmail.com",
+    "last_sign_in": "2026-03-22T11:31:21.609173Z"
+  },
+  {
+    "id": "7c8f198c-753b-4e34-a057-cce7c1b49f1c",
+    "email": "artifithree@gmail.com",
+    "last_sign_in": "2026-03-22T09:40:24.580636Z"
+  }
+]
+--- Agency Mappings ---
+[
+  {
+    "id": "356e827a-2848-4c6d-b8c6-b97be305d0a3",
+    "agency_id": "5db5cdf5-3d76-4460-b2d1-197ff080d3a6",
+    "email": "artifione@gmail.com",
+    "role": "admin",
+    "is_active": true,
+    "last_login_at": null,
+    "failed_attempts": 0,
+    "locked_until": null,
+    "created_at": "2026-03-21T16:13:26.211449+00:00",
+    "updated_at": "2026-03-21T16:13:26.211449+00:00"
+  },
+  {
+    "id": "503e963a-ba59-4f20-92cd-0c022c902efd",
+    "agency_id": "dca63c17-3b87-4f6f-b6ac-25c4e5e063a5",
+    "email": "artifitwo@gmail.com",
+    "role": "admin",
+    "is_active": true,
+    "last_login_at": null,
+    "failed_attempts": 0,
+    "locked_until": null,
+    "created_at": "2026-03-21T16:25:01.192699+00:00",
+    "updated_at": "2026-03-21T16:25:01.192699+00:00"
+  },
+  {
+    "id": "7c8f198c-753b-4e34-a057-cce7c1b49f1c",
+    "agency_id": "43638f7d-14ca-4591-958f-8ac87f4b4243",
+    "email": "artifithree@gmail.com",
+    "role": "admin",
+    "is_active": true,
+    "last_login_at": null,
+    "failed_attempts": 0,
+    "locked_until": null,
+    "created_at": "2026-03-21T16:26:12.705594+00:00",
+    "updated_at": "2026-03-21T16:26:12.705594+00:00"
+  }
+]

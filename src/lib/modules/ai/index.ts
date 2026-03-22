@@ -17,15 +17,15 @@ export interface NarrativeResult {
 
 /**
  * Orchestrates the AI Fallback Chain:
- * Claude Haiku -> Gemini Flash -> Rule-based Engine
+ * Claude Haiku (validated) -> Gemini Flash (validated) -> Rule-based Engine
  */
-export async function generateReportNarrative(
+export async function generateNarrative(
   metrics: ValidatedMetricSet
 ): Promise<NarrativeResult> {
   const prompt = await buildNarrativePrompt(metrics);
 
-  // 1. Try Claude Haiku
   try {
+    // 1. Try Claude Haiku
     const claudeOutput = await generateNarrativeClaude(prompt);
     const { isValid, flaggedPhrases } = validateAiOutput(claudeOutput);
 
@@ -33,26 +33,30 @@ export async function generateReportNarrative(
       return { content: claudeOutput, source: 'claude', rawAiOutput: claudeOutput };
     }
 
-    logger.warn({ flaggedPhrases }, 'Claude output failed validation, falling back to Gemini');
-  } catch (error: any) {
-    logger.error({ error: error.message }, 'Claude AI failed, falling back to Gemini');
-  }
-
-  // 2. Try Gemini Flash
-  try {
+    // Claude output failed validation — try Gemini
+    logger.warn({ flaggedPhrases }, 'Claude output failed validation, trying Gemini fallback');
     const geminiOutput = await generateNarrativeGemini(prompt);
-    const { isValid, flaggedPhrases } = validateAiOutput(geminiOutput);
+    const { isValid: geminiValid } = validateAiOutput(geminiOutput);
 
-    if (isValid) {
+    if (geminiValid) {
       return { content: geminiOutput, source: 'gemini', rawAiOutput: geminiOutput };
     }
-
-    logger.warn({ flaggedPhrases }, 'Gemini output failed validation, falling back to Rule-based');
   } catch (error: any) {
-    logger.error({ error: error.message }, 'Gemini AI failed, falling back to Rule-based');
+    // Claude failed — try Gemini
+    logger.error({ error: error.message }, 'Claude AI failed, trying Gemini fallback');
+    try {
+      const geminiOutput = await generateNarrativeGemini(prompt);
+      const { isValid: geminiValid } = validateAiOutput(geminiOutput);
+
+      if (geminiValid) {
+        return { content: geminiOutput, source: 'gemini', rawAiOutput: geminiOutput };
+      }
+    } catch (geminiError: any) {
+      logger.error({ error: geminiError.message }, 'Gemini fallback failed as well');
+    }
   }
 
-  // 3. Final Fallback: Rule-based Engine
+  // Final Fallback: Rule-based Engine (Never throws)
   logger.info('Activating final rule-based fallback');
   const fallbackOutput = await generateFallbackNarrative(metrics);
   

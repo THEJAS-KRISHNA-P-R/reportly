@@ -1,9 +1,0 @@
-﻿[dotenv@17.3.1] injecting env (23) from .env.local -- tip: ÔÜÖ´©Å  override existing env vars with { override: true }
-Columns in clients table: [
-  'id',            'agency_id',
-  'name',          'contact_email',
-  'report_emails', 'schedule_day',
-  'timezone',      'is_active',
-  'deleted_at',    'created_at',
-  'updated_at'
-]

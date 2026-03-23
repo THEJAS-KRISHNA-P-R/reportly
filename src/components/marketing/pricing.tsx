@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
+import { ShimmerButton } from '@/components/ui/shimmer-button';
 
 const plans = [
   {
@@ -70,105 +72,123 @@ function formatPrice(amount: number) {
 
 export function Pricing() {
   const [annual, setAnnual] = useState(false);
+  const router = useRouter();
 
   return (
-    <section id="pricing" className="marketing-section" style={{ background: '#F8F8F8' }}>
-      <div className="container">
+    <section id="pricing" className="marketing-section py-16" style={{ background: '#FFFFFF' }}>
+      <div className="marketing-content-shell">
         {/* Header */}
-        <div className="text-center mb-12" style={{ maxWidth: 560, margin: '0 auto 3rem' }}>
-          <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#777777' }}>
-            Pricing
+        <div className="text-center mb-10" style={{ maxWidth: 640, margin: '0 auto 2.5rem' }}>
+          <p className="text-xs font-bold tracking-[0.25em] uppercase mb-3" style={{ color: '#94A3B8' }}>
+            Investment
           </p>
-          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5" style={{ color: '#000000' }}>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4" style={{ color: '#000000' }}>
             Simple, transparent pricing
           </h2>
 
           {/* Toggle */}
-          <div className="flex items-center justify-center gap-3 mt-6">
-            <span className="text-sm" style={{ color: annual ? '#AAAAAA' : '#000000' }}>Monthly</span>
+          <div className="flex items-center justify-center gap-5 mt-8 w-full">
+            <span className="text-sm font-semibold tracking-tight" style={{ color: '#0F172A' }}>Monthly Billing</span>
             <button
               onClick={() => setAnnual((v) => !v)}
-              className="relative w-11 h-6 rounded-full transition-colors"
-              style={{ background: annual ? '#000000' : '#CCCCCC' }}
+              className="relative w-12 h-7 rounded-full transition-all duration-300 hover:scale-105 shadow-lg shadow-black/5"
+              style={{ background: annual ? '#000000' : '#EAEAEA' }}
               aria-label="Toggle annual billing"
             >
               <span
-                className="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform"
+                className="absolute top-1 w-5 h-5 rounded-full bg-white transition-all duration-300 shadow-md"
                 style={{ left: 4, transform: annual ? 'translateX(20px)' : 'translateX(0)' }}
               />
             </button>
-            <span className="text-sm flex items-center gap-1.5" style={{ color: annual ? '#000000' : '#AAAAAA' }}>
-              Annual
-              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#000000', color: '#FFFFFF' }}>
-                20% off
+            <span className="text-sm font-semibold tracking-tight flex items-center gap-3" style={{ color: annual ? '#0F172A' : '#94A3B8' }}>
+              Annual Billing
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm" style={{ background: '#0F172A', color: '#FFFFFF' }}>
+                -20%
               </span>
             </span>
           </div>
         </div>
 
         {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-4 items-start max-w-5xl mx-auto">
           {plans.map((plan) => {
             const price = annual ? plan.price.annual : plan.price.monthly;
             return (
               <div
                 key={plan.id}
-                className="rounded-2xl p-8 flex flex-col gap-6"
+                className={`rounded-2xl p-5 md:p-6 flex flex-col gap-5 transition-all duration-500 hover:-translate-y-1 ${
+                  plan.highlight ? 'shadow-[0_20px_40px_rgba(0,0,0,0.1)] z-10 border border-slate-800' : 'shadow-none border border-black/5'
+                }`}
                 style={{
-                  background:   plan.highlight ? '#000000' : '#FFFFFF',
-                  border:       plan.highlight ? 'none' : '1px solid #E5E5E5',
+                  background:   plan.highlight ? '#000000' : '#FDFDFD',
                 }}
               >
-                <div>
+                <div className="flex flex-col gap-2.5">
                   <p
-                    className="text-xs font-semibold tracking-widest uppercase mb-3"
-                    style={{ color: plan.highlight ? 'rgba(255,255,255,0.45)' : '#777777' }}
+                    className="text-xs font-bold tracking-[0.16em] uppercase opacity-60 shrink-0"
+                    style={{ color: plan.highlight ? 'rgba(255,255,255,0.4)' : '#000000' }}
                   >
                     {plan.name}
                   </p>
-                  <div className="flex items-baseline gap-1.5 mb-2">
+                  <div className="flex items-baseline gap-2">
                     <span
-                      className="text-4xl font-bold tracking-tight"
+                      className="text-3xl md:text-[2.3rem] font-black tracking-tight"
                       style={{ color: plan.highlight ? '#FFFFFF' : '#000000' }}
                     >
                       {formatPrice(price)}
                     </span>
                     {price > 0 && (
                       <span
-                        className="text-sm"
-                        style={{ color: plan.highlight ? 'rgba(255,255,255,0.45)' : '#999999' }}
+                        className="text-xs font-semibold opacity-50 uppercase tracking-wider"
+                        style={{ color: plan.highlight ? '#FFFFFF' : '#000000' }}
                       >
                         /mo
                       </span>
                     )}
                   </div>
                   <p
-                    className="text-sm"
-                    style={{ color: plan.highlight ? 'rgba(255,255,255,0.55)' : '#666666' }}
+                    className="text-sm font-medium leading-relaxed"
+                    style={{ color: plan.highlight ? 'rgba(255,255,255,0.5)' : '#666666' }}
                   >
                     {plan.description}
                   </p>
                 </div>
 
-                <Link
-                  href={plan.href}
-                  className="block text-center text-sm font-medium py-2.5 rounded-xl transition-opacity hover:opacity-80"
-                  style={{
-                    background: plan.highlight ? '#FFFFFF' : '#000000',
-                    color:      plan.highlight ? '#000000' : '#FFFFFF',
-                  }}
-                >
-                  {plan.cta}
-                </Link>
+                {plan.highlight ? (
+                  <ShimmerButton
+                    onClick={() => router.push(plan.href)}
+                    className="w-full text-center text-sm font-bold py-3.5 shadow-xl"
+                    background="rgba(255,255,255,0.15)"
+                    shimmerColor="#ffffff"
+                    textColor="#ffffff"
+                  >
+                    {plan.cta}
+                  </ShimmerButton>
+                ) : (
+                  <Link
+                    href={plan.href}
+                    className="block text-center text-sm font-bold py-3.5 rounded-full transition-all hover:scale-[1.01] active:scale-[0.98] shadow-xl"
+                    style={{
+                      background: '#000000',
+                      color: '#FFFFFF',
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    {plan.cta}
+                  </Link>
+                )}
 
-                <ul className="space-y-3">
+                <ul className="space-y-4 flex-1">
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm">
-                      <Check
-                        size={14}
-                        style={{ color: plan.highlight ? '#FFFFFF' : '#000000', flexShrink: 0 }}
-                      />
-                      <span style={{ color: plan.highlight ? 'rgba(255,255,255,0.70)' : '#444444' }}>
+                    <li key={f} className="flex items-center gap-3 text-sm font-semibold">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center ${plan.highlight ? 'bg-white/10' : 'bg-black/5'}`}>
+                        <Check
+                          size={12}
+                          strokeWidth={3}
+                          style={{ color: plan.highlight ? '#FFFFFF' : '#000000' }}
+                        />
+                      </div>
+                      <span style={{ color: plan.highlight ? 'rgba(255,255,255,0.8)' : '#000000' }}>
                         {f}
                       </span>
                     </li>

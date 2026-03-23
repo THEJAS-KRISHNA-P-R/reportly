@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { BeamsDynamic } from '@/components/ui/beams-dynamic';
+import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { stagger, blurFadeWord } from '@/lib/animations';
 
-const headline = 'Your clients deserve reports that look as good as the results.';
+const headline = 'Client reports that are clear, fast, and client-ready.';
 const words = headline.split(' ');
 
 const stats = [
@@ -16,61 +18,39 @@ const stats = [
 ];
 
 export function Hero() {
+  const router = useRouter();
+
   return (
     <section
-      className="relative flex flex-col items-center justify-center text-center overflow-hidden"
+      className="relative flex min-h-[100dvh] flex-col items-center justify-start overflow-hidden text-center pt-28 pb-12 md:min-h-[100svh] md:justify-center md:pt-24 md:pb-14"
       style={{
         background: '#000000',
-        minHeight: '100dvh',
-        paddingTop: 100,
-        paddingBottom: 80,
       }}
     >
       {/* Beams background */}
-      <BeamsDynamic
-        beamNumber={14}
-        beamWidth={2}
-        beamHeight={18}
-        lightColor="#ffffff"
-        speed={1.5}
-        noiseIntensity={1.6}
-        scale={0.16}
-        rotation={20}
-      />
-
-      {/* Radial vignette */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% 50%, transparent 30%, rgba(0,0,0,0.85) 100%)',
-        }}
-        aria-hidden="true"
-      />
-
-      {/* Bottom gradient fade */}
-      <div
-        className="absolute bottom-0 inset-x-0 pointer-events-none"
-        style={{
-          height: '30%',
-          background: 'linear-gradient(to bottom, transparent, #000000)',
-        }}
-        aria-hidden="true"
-      />
-
+      <div className="absolute inset-0 z-0">
+        <BeamsDynamic
+          beamWidth={2}
+          beamHeight={16}
+          beamNumber={13}
+          lightColor="#ffffff"
+          speed={1.9}
+          scale={0.26}
+          rotation={25}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.2),rgba(0,0,0,0.78))]" />
+      </div>
+      
       {/* Content */}
-      <div className="relative container flex flex-col items-center gap-8 max-w-4xl">
+      <div className="relative z-10 container flex w-full max-w-4xl flex-col items-center gap-4 px-5 md:px-6">
         {/* Badge */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="text-xs font-medium tracking-widest uppercase px-4 py-1.5 rounded-full"
-          style={{
-            border: '1px solid rgba(255,255,255,0.15)',
-            background: 'rgba(255,255,255,0.06)',
-            color: 'rgba(255,255,255,0.6)',
-          }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-[8px] font-black tracking-[0.3em] uppercase px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-xl"
+          style={{ color: 'rgba(255,255,255,0.4)' }}
         >
           Automated Marketing Reports for Agencies
         </motion.div>
@@ -80,14 +60,14 @@ export function Hero() {
           variants={stagger}
           initial="hidden"
           animate="visible"
-          className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-tight"
+          className="max-w-3xl text-4xl font-black leading-[1.08] tracking-tight text-balance md:text-5xl lg:text-[3.6rem]"
           style={{ color: '#FFFFFF' }}
         >
           {words.map((word, i) => (
             <motion.span
               key={i}
               variants={blurFadeWord}
-              className="inline-block mr-[0.25em]"
+              className="inline-block mr-[0.2em]"
             >
               {word}
             </motion.span>
@@ -98,9 +78,9 @@ export function Hero() {
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.0 }}
-          className="text-lg md:text-xl max-w-2xl"
-          style={{ color: 'rgba(255,255,255,0.55)' }}
+          transition={{ duration: 0.6, delay: 1.0 }}
+          className="max-w-2xl px-2 text-base font-medium leading-relaxed opacity-75 md:px-0"
+          style={{ color: '#FFFFFF' }}
         >
           Pull GA4 data, generate AI-written narratives, and send
           white-labeled PDF reports to your clients — automatically,
@@ -111,23 +91,28 @@ export function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.15 }}
-          className="flex flex-col sm:flex-row items-center gap-3"
+          transition={{ duration: 0.6, delay: 1.15 }}
+          className="flex flex-col sm:flex-row items-center gap-4 mt-4"
         >
-          <Link
-            href="/register"
-            className="flex items-center gap-2 font-medium px-6 py-3 rounded-xl text-sm transition-opacity hover:opacity-85"
-            style={{ background: '#FFFFFF', color: '#000000' }}
+          <ShimmerButton
+            onClick={() => {
+              router.push('/register');
+            }}
+            className="px-8 py-4 text-base font-bold shadow-[0_10px_30px_rgba(59,130,246,0.22)]"
+            background="rgba(3,8,20,0.96)"
+            shimmerColor="#93c5fd"
+            shimmerDuration="2.2s"
+            textColor="#ffffff"
           >
-            Start free — no credit card
-            <ArrowRight size={15} />
-          </Link>
+            Start free
+            <ArrowRight size={18} strokeWidth={3} />
+          </ShimmerButton>
           <Link
-            href="/#how-it-works"
-            className="text-sm px-6 py-3 rounded-xl transition-opacity hover:opacity-70"
+            href="/how-it-works"
+            className="text-base font-bold px-8 py-4 rounded-full transition-all hover:bg-white/10 active:scale-[0.97]"
             style={{
-              border: '1px solid rgba(255,255,255,0.18)',
-              color: 'rgba(255,255,255,0.75)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#FFFFFF',
             }}
           >
             See how it works
@@ -162,28 +147,6 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 1.6 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-        style={{ color: 'rgba(255,255,255,0.25)' }}
-        aria-hidden="true"
-      >
-        <div
-          className="w-5 h-8 rounded-full border flex items-start justify-center pt-1.5"
-          style={{ borderColor: 'rgba(255,255,255,0.15)' }}
-        >
-          <motion.div
-            animate={{ y: [0, 8, 0] }}
-            transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-1 h-1.5 rounded-full"
-            style={{ background: 'rgba(255,255,255,0.35)' }}
-          />
-        </div>
-        <span className="text-xs tracking-widest uppercase">scroll</span>
-      </motion.div>
     </section>
   );
 }

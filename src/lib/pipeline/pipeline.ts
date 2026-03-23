@@ -1,52 +1,154 @@
 import { ReportPeriod, FetchResult } from '@/types/adapters';
 import { ValidatedMetricSet } from '@/types/metrics';
 import { NarrativeResult } from '@/lib/modules/ai';
+import { logger } from '@/lib/utils/logger';
 
 export interface PipelineContext {
   clientId: string;
   agencyId: string;
   period: ReportPeriod;
+  idempotencyKey?: string;
+  runKey?: string;
+  jobId?: string;
+  attempt?: number;
   // Intermediate data
   fetchResult?: FetchResult;
   validationResult?: ValidatedMetricSet;
   narrativeResult?: NarrativeResult;
   reportId?: string;
+  mock?: boolean;
 }
 
 export type PipelineStep = (context: PipelineContext) => Promise<void>;
 
-export class Pipeline {
-  private steps: { name: string; step: PipelineStep; critical: boolean }[] = [];
+interface PipelineStepDefinition {
+  name: string;
+  step: PipelineStep;
+  critical: boolean;
+  timeoutMs: number;
+}
 
-  addStep(name: string, step: PipelineStep, critical: boolean = true): this {
-    this.steps.push({ name, step, critical });
+export class Pipeline {
+  private steps: PipelineStepDefinition[] = [];
+  private static readonly inFlightByIdempotencyKey = new Map<string, Promise<void>>();
+
+  constructor(private readonly defaultStepTimeoutMs: number = 120_000) {}
+
+  addStep(name: string, step: PipelineStep, critical: boolean = true, timeoutMs?: number): this {
+    this.steps.push({
+      name,
+      step,
+      critical,
+      timeoutMs: timeoutMs ?? this.defaultStepTimeoutMs,
+    });
     return this;
   }
 
-  async run(context: PipelineContext): Promise<void> {
-    console.error(`[Pipeline] Starting report ${context.reportId}`);
-    let finalStatus = 'success';
+  private async runWithTimeout(step: PipelineStep, context: PipelineContext, timeoutMs: number): Promise<void> {
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
     try {
-      for (const { name, step, critical } of this.steps) {
-        console.error(`[Pipeline] Running step: ${name}`);
+      await Promise.race([
+        step(context),
+        new Promise<never>((_, reject) => {
+          timeoutHandle = setTimeout(() => {
+            reject(new Error(`Pipeline step timed out after ${timeoutMs}ms`));
+          }, timeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+    }
+  }
+
+  private async runSteps(context: PipelineContext): Promise<void> {
+    logger.info(
+      {
+        reportId: context.reportId,
+        jobId: context.jobId,
+        idempotencyKey: context.idempotencyKey,
+        runKey: context.runKey,
+        stepCount: this.steps.length,
+      },
+      'Pipeline started'
+    );
+
+    try {
+      for (const { name, step, critical, timeoutMs } of this.steps) {
+        const startedAt = Date.now();
+
         try {
-          await step(context);
-          console.error(`[Pipeline] Step completed: ${name}`);
-        } catch (error: any) {
-          console.error(`[Pipeline] Step FAILED: ${name}`, error);
+          await this.runWithTimeout(step, context, timeoutMs);
+
+          logger.info(
+            {
+              reportId: context.reportId,
+              step: name,
+              durationMs: Date.now() - startedAt,
+            },
+            'Pipeline step completed'
+          );
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          const stack = error instanceof Error ? error.stack : undefined;
+
           if (critical) {
-            finalStatus = 'failed';
-            throw error; // Stop pipeline for critical failures
+            logger.error(
+              {
+                reportId: context.reportId,
+                step: name,
+                durationMs: Date.now() - startedAt,
+                err: message,
+                stack,
+              },
+              'Critical pipeline step failed'
+            );
+            throw error;
           }
-          // Non-critical: log and proceed
-          console.warn(`Non-critical pipeline step [${name}] failed: ${error.message}`);
+
+          logger.warn(
+            {
+              reportId: context.reportId,
+              step: name,
+              durationMs: Date.now() - startedAt,
+              err: message,
+            },
+            'Non-critical pipeline step failed; continuing'
+          );
         }
       }
-    } catch (err: any) {
-      finalStatus = 'failed';
-      throw err;
-    } finally {
-      console.error(`[Pipeline] Complete. Status: ${finalStatus}`);
+
+      logger.info({ reportId: context.reportId, idempotencyKey: context.idempotencyKey }, 'Pipeline completed successfully');
+    } catch (error) {
+      logger.error({ reportId: context.reportId, idempotencyKey: context.idempotencyKey }, 'Pipeline failed');
+      throw error;
     }
+  }
+
+  async run(context: PipelineContext): Promise<void> {
+    const key = context.idempotencyKey;
+    if (!key) {
+      await this.runSteps(context);
+      return;
+    }
+
+    const existingRun = Pipeline.inFlightByIdempotencyKey.get(key);
+    if (existingRun) {
+      logger.warn(
+        { reportId: context.reportId, jobId: context.jobId, idempotencyKey: key },
+        'Pipeline dedupe hit: waiting for in-flight run with the same idempotency key'
+      );
+      await existingRun;
+      return;
+    }
+
+    const runPromise = this.runSteps(context).finally(() => {
+      Pipeline.inFlightByIdempotencyKey.delete(key);
+    });
+
+    Pipeline.inFlightByIdempotencyKey.set(key, runPromise);
+    await runPromise;
   }
 }

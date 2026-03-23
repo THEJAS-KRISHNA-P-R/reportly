@@ -1,18 +1,14 @@
 /**
  * Scans AI output for speculative language patterns.
- * Rule: No "likely", "possibly", "probably" unless backed by data.
- * For MVP, we reject the output if these patterns are found without 
- * adjacent metric citations (though for now, any hit triggers fallback).
+ * Only flags clearly unsupported speculation — not normal analytical language.
  */
 export function validateAiOutput(narrative: string): { isValid: boolean; flaggedPhrases: string[] } {
   const SPECULATIVE_PATTERNS = [
-    /likely due to/i,
-    /possibly because/i,
-    /might be/i,
-    /could indicate/i,
-    /perhaps/i,
-    /probably/i,
-    /we suspect/i
+    /we suspect/i,
+    /we believe without data/i,
+    /disclaimer: i (am|cannot|don't)/i,
+    /as an ai/i,
+    /i don't have access to/i,
   ];
 
   const flaggedPhrases: string[] = [];

@@ -4,6 +4,7 @@ export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed' | 'dlq'
 
 export interface Job {
   id: string;
+  // Used as ephemeral lease owner token while a worker holds the job lock.
   bull_job_id: string | null;
   job_type: JobType;
   agency_id: string;
@@ -28,6 +29,14 @@ export interface CreateJobInput {
   report_id?: string;
   payload?: Record<string, unknown>;
   scheduled_for?: Date;
+  run_key?: string;
+}
+
+export interface ReportJobIdentity {
+  clientId: string;
+  periodStartIso: string;
+  periodEndIso: string;
+  runKey: string;
 }
 
 export interface DLQEntry {

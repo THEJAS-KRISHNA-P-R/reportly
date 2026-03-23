@@ -15,7 +15,7 @@ export async function generateFallbackNarrative(metrics: ValidatedMetricSet): Pr
   
   const bounce = metrics.validated.bounceRate?.value;
   if (bounce !== undefined && bounce !== null) {
-    narrative += `The bounce rate was ${(bounce * 100).toFixed(1)}%. `;
+    narrative += `The bounce rate was ${bounce.toFixed(1)}%. `;
   }
 
   const users = metrics.validated.users?.value;

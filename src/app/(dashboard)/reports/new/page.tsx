@@ -74,11 +74,15 @@ function NewReportForm() {
   };
 
   if (!client) {
-    return <div className="p-8"><Loader2 className="animate-spin" /></div>;
+    return (
+      <div className="flex min-h-[280px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
+        <Loader2 className="animate-spin text-slate-500" />
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-12">
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
       <Link 
         href={`/clients/${clientId}`}
         className="text-sm font-medium flex items-center gap-2 mb-6 hover:underline"
@@ -87,7 +91,7 @@ function NewReportForm() {
         <ArrowLeft size={16} /> Back to {client.name}
       </Link>
 
-      <div className="bg-white border rounded-2xl p-8 shadow-sm" style={{ borderColor: '#E5E5E5' }}>
+      <div className="rounded-2xl border bg-white p-5 shadow-sm sm:p-7" style={{ borderColor: '#E5E5E5' }}>
         <h1 className="text-2xl font-bold mb-2">Generate New Report</h1>
         <p className="text-sm text-gray-500 mb-8">
           Pick a reporting period for <strong>{client.name}</strong>. Reportly will fetch GA4 data and generate an AI-driven narrative.

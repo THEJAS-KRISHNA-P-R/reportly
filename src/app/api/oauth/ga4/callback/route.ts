@@ -77,15 +77,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 5. Get GA4 property ID
-    const propRes = await fetch(
-      'https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/-',
-      {
-        headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      }
-    );
-    const propData = await propRes.json();
-    const propertyId = propData.properties?.[0]?.name ?? null;
+    // 5. Get GA4 property ID (using robust discovery)
+    const { listGA4Properties } = await import('@/lib/modules/analytics/ga4/fetcher');
+    const properties = await listGA4Properties(tokenData.access_token);
+    const propertyId = properties?.[0]?.name ?? null;
     // propertyId format: "properties/123456789"
 
     // 6. Encrypt tokens

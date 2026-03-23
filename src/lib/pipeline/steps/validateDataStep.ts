@@ -8,9 +8,11 @@ export async function validateDataStep(context: PipelineContext): Promise<void> 
     throw new Error('fetchResult missing in pipeline context');
   }
 
-  // Find prior metrics if available (future: fetch prior period from DB)
-  // For now, pass null for prior to calculate basic status
-  const validationResult = validateMetrics(context.fetchResult.metrics, null);
+  // Use prior metrics if available from fetch (PoP)
+  const validationResult = validateMetrics(
+    context.fetchResult.metrics, 
+    context.fetchResult.priorMetrics || null
+  );
   context.validationResult = validationResult;
 
   if (context.reportId) {

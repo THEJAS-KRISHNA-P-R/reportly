@@ -2,60 +2,57 @@ import Link from 'next/link';
 
 const links = {
   Product: [
-    { label: 'Features',    href: '/#features' },
-    { label: 'How it works', href: '/#how-it-works' },
+    { label: 'Problem',     href: '/problem' },
+    { label: 'How it works', href: '/how-it-works' },
+    { label: 'Features',    href: '/features' },
     { label: 'Pricing',     href: '/pricing' },
-    { label: 'Changelog',   href: '#' },
   ],
   Company: [
     { label: 'About',   href: '/about' },
-    { label: 'Blog',    href: '#' },
-    { label: 'Careers', href: '#' },
   ],
   Legal: [
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Use',   href: '#' },
-    { label: 'Security',       href: '#' },
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Use',   href: '/terms' },
   ],
 };
 
 export function Footer() {
   return (
-    <footer style={{ background: '#000000', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-      <div className="container py-16">
-        <div className="grid md:grid-cols-5 gap-12">
+    <footer className="py-16" style={{ background: '#000000' }}>
+      <div className="container px-6">
+        <div className="grid md:grid-cols-5 gap-12 md:gap-16">
           {/* Brand */}
           <div className="md:col-span-2 flex flex-col gap-4">
-            <Link href="/" className="text-base font-semibold" style={{ color: '#FFFFFF' }}>
+            <Link href="/" className="text-xl font-black tracking-tighter" style={{ color: '#FFFFFF' }}>
               Reportly
             </Link>
-            <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.40)', maxWidth: 280 }}>
+            <p className="text-sm font-medium leading-relaxed opacity-40" style={{ color: '#FFFFFF', maxWidth: 280 }}>
               Automated marketing reports for agencies that take their work seriously.
             </p>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-3 mt-4 px-4 py-2 rounded-full w-fit bg-white/5 backdrop-blur-sm">
               <span
-                className="w-2 h-2 rounded-full animate-pulse-dot"
+                className="w-2 h-2 rounded-full shadow-[0_0_10px_#1A7A3A]"
                 style={{ background: '#1A7A3A' }}
               />
-              <span className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                All systems operational
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                Systems Operational
               </span>
             </div>
           </div>
 
           {/* Links */}
           {Object.entries(links).map(([group, items]) => (
-            <div key={group} className="flex flex-col gap-4">
-              <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            <div key={group} className="flex flex-col gap-6 items-start">
+              <p className="text-[10px] font-black tracking-[0.3em] uppercase opacity-30" style={{ color: '#FFFFFF' }}>
                 {group}
               </p>
-              <ul className="space-y-3">
+              <ul className="space-y-4 items-start w-full">
                 {items.map((item) => (
-                  <li key={item.label}>
+                  <li key={item.label} className="w-full">
                     <Link
                       href={item.href}
-                      className="text-sm transition-opacity hover:opacity-100"
-                      style={{ color: 'rgba(255,255,255,0.50)' }}
+                      className="text-sm font-semibold transition-all hover:opacity-100 opacity-40 hover:translate-x-1 inline-block text-left w-full"
+                      style={{ color: '#FFFFFF' }}
                     >
                       {item.label}
                     </Link>
@@ -67,16 +64,19 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div
-          className="mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
-        >
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
-            {new Date().getFullYear()} Reportly. All rights reserved.
+        <div className="mt-24 pt-10 flex flex-col md:flex-row justify-between items-center gap-8 border-t border-white/5">
+          <p className="text-[10px] font-bold tracking-widest uppercase opacity-20" style={{ color: '#FFFFFF' }}>
+            &copy; {new Date().getFullYear()} Reportly — Intelligently Automated.
           </p>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>
-            Built for agencies. Made in India.
-          </p>
+          <div className="flex items-center gap-6 opacity-20">
+             <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#FFFFFF' }}>
+               Built for agencies.
+             </p>
+             <div className="w-1 h-1 rounded-full bg-white/30" />
+             <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color: '#FFFFFF' }}>
+               Made in India.
+             </p>
+          </div>
         </div>
       </div>
     </footer>

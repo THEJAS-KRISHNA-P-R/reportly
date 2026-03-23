@@ -1,26 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { getPolicyDecision, getRouteGroup, resolveUserRole } from '@/lib/security/routePolicy';
 
-const PUBLIC_PATHS = [
-  '/',
-  '/pricing',
-  '/about',
-  '/login',
-  '/register',
-  '/auth',
-  '/api/auth',
-  '/api/webhooks',
-  '/api/payments/verify',
-  '/api/oauth/ga4',      // Added
-  '/api/oauth/ga4/callback', // Added
-  '/_next',
-  '/favicon.ico',
-  '/robots.txt',
-  '/sitemap.xml',
-];
-
-const ADMIN_PATHS = ['/admin', '/api/admin'];
 const CRON_PATHS  = ['/api/cron'];
 
 function applySecurityHeaders(res: NextResponse): NextResponse {
@@ -31,6 +13,7 @@ function applySecurityHeaders(res: NextResponse): NextResponse {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const routeGroup = getRouteGroup(pathname);
 
   // Cron routes — verify Vercel cron secret
   if (CRON_PATHS.some(p => pathname.startsWith(p))) {
@@ -48,11 +31,16 @@ export async function proxy(request: NextRequest) {
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml'
   ) {
-    return NextResponse.next();
+    return applySecurityHeaders(NextResponse.next());
+  }
+
+  // Public APIs are always allowed and should not incur auth lookup latency.
+  if (routeGroup === 'public-api') {
+    return applySecurityHeaders(NextResponse.next());
   }
 
   // Initialize Supabase to grab the current user state
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: { headers: request.headers },
   });
 
@@ -72,55 +60,50 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isPublic = PUBLIC_PATHS.some(p =>
-    pathname === p || pathname.startsWith(p + '/')
-  );
-  
-  const isAdminPath = ADMIN_PATHS.some(p => pathname.startsWith(p));
-
-  // --- 1. SUPER ADMIN ROUTING ---
-  if (user && user.email === process.env.SUPER_ADMIN_EMAIL) {
-    if (!isAdminPath && !pathname.startsWith('/api/')) {
-      // Force Super Admin to /admin if they try to access /, /dashboard, /login, etc.
-      return applySecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
+  let userEmail: string | null = null;
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    userEmail = user?.email ?? null;
+  } catch {
+    // Fail-safe behavior: allow public/auth pages, protect everything else.
+    if (routeGroup === 'public-page' || routeGroup === 'auth-page') {
+      return applySecurityHeaders(response);
     }
-    // Protect production admin paths by IP allowlist
-    if (isAdminPath && process.env.NODE_ENV === 'production') {
+    const url = new URL('/login', request.url);
+    url.searchParams.set('redirect', pathname);
+    return applySecurityHeaders(NextResponse.redirect(url));
+  }
+
+  const role = resolveUserRole(userEmail, process.env.SUPER_ADMIN_EMAIL);
+
+  // Super-admin production IP allowlist for admin surface.
+  if (role === 'super_admin' && process.env.NODE_ENV === 'production') {
+    if (routeGroup === 'admin-page' || routeGroup === 'admin-api') {
       const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? '127.0.0.1';
       const allowed = (process.env.ADMIN_IP_ALLOWLIST ?? '').split(',');
       if (!allowed.includes(ip)) {
         return new NextResponse('Forbidden', { status: 403 });
       }
     }
+  }
+
+  const decision = getPolicyDecision(pathname, role);
+
+  if (decision.action === 'allow') {
     return applySecurityHeaders(response);
   }
 
-  // --- 2. NORMAL USER ROUTING ---
-  if (user) {
-    if (isAdminPath) {
-      return new NextResponse('Forbidden', { status: 403 }); // Normal users cannot access admin
-    }
-    // Authenticated users trying to access auth or home pages get pushed to their dashboard
-    if (pathname === '/login' || pathname === '/register' || pathname === '/') {
-      return applySecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
-    }
-    return applySecurityHeaders(response);
+  if (decision.action === 'forbidden') {
+    return new NextResponse('Forbidden', { status: 403 });
   }
 
-  // --- 3. UNAUTHENTICATED ROUTING ---
-  if (!user) {
-    if (isPublic) {
-      return applySecurityHeaders(response); // Guests can view landing page and auth pages
-    }
-    // Guests on protected routes get pushed to login
-    const url = new URL('/login', request.url);
+  const url = new URL(decision.redirectTo ?? '/login', request.url);
+  if (decision.includeRedirectParam) {
     url.searchParams.set('redirect', pathname);
-    return applySecurityHeaders(NextResponse.redirect(url));
   }
+  return applySecurityHeaders(NextResponse.redirect(url));
 }
 
 export const config = {

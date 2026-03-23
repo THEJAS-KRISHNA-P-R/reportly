@@ -16,8 +16,9 @@ export async function generateNarrativeClaude(prompt: string): Promise<string> {
   return await CircuitBreaker.execute('ai', async () => {
     return await withRetry(async () => {
       try {
+        console.error('[AI] Calling Claude with model: claude-3-haiku-20240307');
         const response = await anthropic.messages.create({
-          model: 'claude-haiku-4-5-20251001', 
+          model: 'claude-3-haiku-20240307', 
           max_tokens: 1000,
           system: "You are a professional marketing data analyst. Analyze the data objectively.",
           messages: [{ role: 'user', content: prompt }],
@@ -30,6 +31,7 @@ export async function generateNarrativeClaude(prompt: string): Promise<string> {
            throw new Error('Unexpected non-text response from Claude');
         }
 
+        console.error('[AI] Claude response received successfully');
         return content.text;
       } catch (error: any) {
         if (error.status === 401 || error.status === 403) {

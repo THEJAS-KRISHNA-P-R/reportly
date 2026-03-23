@@ -69,105 +69,98 @@ export function Topbar() {
   const clientsAtLimit = clientsUsed >= clientsLimit;
 
   return (
-    <header className="dashboard-topbar flex items-center justify-between px-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold tracking-tight" style={{ color: '#000000' }}>
+    <header className="h-[var(--topbar-height)] flex items-center justify-between px-10 bg-white border-b border-slate-200 sticky top-0 z-40">
+      <div className="flex items-center gap-6">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">
           {title}
         </h1>
         {planId !== 'free' && (
           <span
-            className="hidden sm:inline-block text-xs font-semibold tracking-widest uppercase px-2 py-0.5 rounded-md"
-            style={{ background: '#000000', color: '#FFFFFF' }}
+            className="hidden sm:inline-block text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100"
           >
-            {planId}
+            {planId} Node
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         {/* Usage Pills */}
-        <div className="hidden md:flex items-center gap-2 mr-2">
+        <div className="hidden lg:flex items-center gap-4">
           {planId !== 'agency' && planId !== 'pro' && (
             <div
-              className="text-xs font-medium px-2.5 py-1 rounded-full border"
-              style={{
-                background: reportsAtLimit ? '#FFF4F4' : '#F8F8F8',
-                borderColor: reportsAtLimit ? 'rgba(139,26,42,0.2)' : '#E5E5E5',
-                color: reportsAtLimit ? '#8B1A2A' : '#666666',
-              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+                reportsAtLimit ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+              }`}
             >
-              Reports: {reportsUsed}/{reportsLimit}
+              <span className="text-[11px] font-bold uppercase tracking-wider">Reports</span>
+              <span className="text-sm font-bold">{reportsUsed}/{reportsLimit}</span>
             </div>
           )}
           {planId !== 'agency' && (
             <div
-              className="text-xs font-medium px-2.5 py-1 rounded-full border"
-              style={{
-                background: clientsAtLimit ? '#FFF4F4' : '#F8F8F8',
-                borderColor: clientsAtLimit ? 'rgba(139,26,42,0.2)' : '#E5E5E5',
-                color: clientsAtLimit ? '#8B1A2A' : '#666666',
-              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+                clientsAtLimit ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+              }`}
             >
-              Clients: {clientsUsed}/{clientsLimit}
+              <span className="text-[11px] font-bold uppercase tracking-wider">Clients</span>
+              <span className="text-sm font-bold">{clientsUsed}/{clientsLimit}</span>
             </div>
           )}
         </div>
 
-        <button className="relative p-2 rounded-full transition-colors hover:bg-gray-100" aria-label="Notifications">
-          <Bell size={18} style={{ color: '#333333' }} />
-          {/* Unread badge placeholder */}
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: '#8B1A2A' }} />
+        <div className="h-8 w-px bg-slate-200 hidden md:block" />
+
+        <button className="relative w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all">
+          <Bell size={18} />
+          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
         </button>
 
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full transition-colors hover:bg-gray-100"
-            style={{ border: '1px solid #E5E5E5' }}
+            className="flex items-center gap-3 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 transition-all group"
           >
-            <div className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs" style={{ background: '#000000', color: '#FFFFFF' }}>
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <ChevronDown size={14} style={{ color: '#666666' }} />
+            <div className="hidden sm:flex flex-col items-start pr-1">
+              <span className="text-[13px] font-bold text-slate-700 leading-none mb-0.5">{user?.name}</span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</span>
+            </div>
+            <ChevronDown size={14} className={`text-slate-400 group-hover:text-slate-600 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {dropdownOpen && (
-            <div
-              className="absolute right-0 mt-2 w-48 rounded-xl shadow-lg border overflow-hidden z-50 origin-top-right transform transition-all"
-              style={{ background: '#FFFFFF', borderColor: '#E5E5E5' }}
-            >
-              <div className="px-4 py-3 border-b" style={{ borderColor: '#F2F2F2' }}>
-                <p className="text-sm font-medium truncate" style={{ color: '#000000' }}>{user?.name}</p>
-                <p className="text-xs truncate" style={{ color: '#666666' }}>{user?.email}</p>
+            <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="px-5 py-4 border-b border-slate-100 mb-1">
+                <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
+                <p className="text-xs font-medium text-slate-400 truncate mt-0.5">{user?.email}</p>
               </div>
-              <div className="py-1">
+              <div className="space-y-0.5">
                 <Link
                   href="/settings"
-                  className="block px-4 py-2 text-sm transition-colors hover:bg-gray-50"
-                  style={{ color: '#333333' }}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-all"
                   onClick={() => setDropdownOpen(false)}
                 >
                   Settings
                 </Link>
                 <Link
                   href="/billing"
-                  className="block px-4 py-2 text-sm transition-colors hover:bg-gray-50"
-                  style={{ color: '#333333' }}
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-all"
                   onClick={() => setDropdownOpen(false)}
                 >
                   Billing
                 </Link>
               </div>
-              <div className="py-1 border-t" style={{ borderColor: '#F2F2F2' }}>
+              <div className="mt-1 pt-1 border-t border-slate-100">
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
                     logout();
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm transition-colors hover:bg-red-50"
-                  style={{ color: '#8B1A2A' }}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-[13px] font-bold text-red-600 hover:bg-red-50 transition-all"
                 >
-                  Sign out
+                   Sign out
                 </button>
               </div>
             </div>

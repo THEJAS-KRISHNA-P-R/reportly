@@ -68,27 +68,26 @@ export default function CustomizePage() {
   if (loading) return <div className="p-8 text-sm text-gray-500">Loading settings...</div>;
 
   return (
-    <div className="flex flex-col min-h-screen -mt-6 -mx-6 bg-white xl:flex-row">
-      <div className="flex-1 p-8 overflow-y-auto">
+    <div className="flex flex-col min-h-full xl:flex-row gap-8">
+      <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight" style={{ color: '#000000' }}>Customization</h1>
-              <p className="text-sm mt-1" style={{ color: '#666666' }}>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Customization</h1>
+              <p className="text-[14px] font-medium text-slate-500 mt-1">
                 White-label your reports, configure default sections, and manage delivery templates.
               </p>
             </div>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="h-10 px-6 rounded-lg text-sm font-medium flex items-center gap-2 transition-opacity hover:opacity-85 disabled:opacity-50"
-              style={{ background: '#000000', color: '#FFFFFF' }}
+              className="h-10 px-6 rounded-lg text-[13px] font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all disabled:opacity-50 shadow-sm"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
 
-          <div className="border-b flex gap-6 mb-8 overflow-x-auto" style={{ borderColor: '#E5E5E5' }}>
+          <div className="border-b border-slate-200 flex gap-6 mb-8 overflow-x-auto">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -96,13 +95,11 @@ export default function CustomizePage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className="flex items-center gap-2 pb-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
-                  style={{
-                    color: isActive ? '#000000' : '#666666',
-                    borderBottomColor: isActive ? '#000000' : 'transparent',
-                  }}
+                  className={`flex items-center gap-2 pb-3 text-[13px] font-bold border-b-2 transition-colors whitespace-nowrap ${
+                    isActive ? 'text-slate-900 border-indigo-600' : 'text-slate-400 border-transparent hover:text-slate-600'
+                  }`}
                 >
-                  <Icon size={16} />
+                  <Icon size={15} />
                   {tab.label}
                 </button>
               );
@@ -247,11 +244,11 @@ export default function CustomizePage() {
         </div>
       </div>
 
-      {/* RIGHT PANEL: Live Preview (340px) */}
-      <div className="hidden xl:flex flex-col w-[360px] border-l" style={{ borderColor: '#E5E5E5', background: '#F8F8F8' }}>
-        <div className="p-4 border-b bg-white" style={{ borderColor: '#E5E5E5' }}>
-          <h3 className="font-semibold text-sm" style={{ color: '#000000' }}>Live Preview</h3>
-          <p className="text-xs mt-0.5" style={{ color: '#666666' }}>Updates based on settings</p>
+      {/* RIGHT PANEL: Live Preview */}
+      <div className="hidden xl:flex flex-col w-[320px] border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 self-start sticky top-6">
+        <div className="p-4 border-b border-slate-200 bg-white">
+          <h3 className="text-[13px] font-bold text-slate-900">Live Preview</h3>
+          <p className="text-[12px] font-medium text-slate-400 mt-0.5">Updates based on settings</p>
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center">
@@ -278,14 +275,13 @@ export default function CustomizePage() {
              </div>
 
              {brand.show_powered_by && (
-               <div className="p-2 text-center text-[8px] text-gray-400 border-t border-gray-100">
+               <div className="p-2 text-center text-[10px] font-medium text-slate-400 border-t border-slate-100">
                  Powered by Reportly
                </div>
              )}
           </div>
         </div>
       </div>
-
     </div>
   );
 }

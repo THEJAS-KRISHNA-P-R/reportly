@@ -19,7 +19,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    return NextResponse.json(report);
+    // Fetch latest metrics for this client
+    const { data: metrics } = await supabase
+      .from('metric_snapshots')
+      .select('validated_metrics, freshness_status, data_retrieved_at')
+      .eq('client_id', report.client_id)
+      .order('data_retrieved_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    return NextResponse.json({
+      ...report,
+      latest_metrics: metrics
+    });
   } catch (err: any) {
     console.error('[Report Detail GET] Error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });

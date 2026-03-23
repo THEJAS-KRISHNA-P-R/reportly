@@ -61,7 +61,7 @@ export class GA4DataSourceAdapter implements DataSourceAdapter {
     }
   }
 
-  async fetch(clientId: string, period: ReportPeriod): Promise<FetchResult> {
+  async fetch(clientId: string, period: ReportPeriod, accessToken?: string): Promise<FetchResult> {
     const conn = await connectionRepo.getConnection(clientId, this.platform);
     if (!conn) {
       throw new ReportlyError('API_FETCH_FAILED', 'Connection not found', 'Please reconnect GA4.', 404);
@@ -69,7 +69,7 @@ export class GA4DataSourceAdapter implements DataSourceAdapter {
 
     // Always try refresh for safety or check expiry
     const isExpired = conn.token_expires_at && new Date(conn.token_expires_at) < new Date();
-    if (isExpired) {
+    if (isExpired && !accessToken) {
       const refreshed = await this.refresh(clientId);
       if (!refreshed) {
         throw new ReportlyError('API_FETCH_FAILED', 'Token refresh failed', 'Session expired. Please reconnect.', 401);
@@ -85,18 +85,34 @@ export class GA4DataSourceAdapter implements DataSourceAdapter {
     const startDate = period.start.toISOString().split('T')[0];
     const endDate = period.end.toISOString().split('T')[0];
 
+    // Calculate prior period (simple trailing window for MVP)
+    const durationMs = period.end.getTime() - period.start.getTime();
+    const priorStart = new Date(period.start.getTime() - durationMs - 86400000); // subtract duration + 1 day
+    const priorEnd = new Date(period.start.getTime() - 86400000);
+
+    const priorStartDate = priorStart.toISOString().split('T')[0];
+    const priorEndDate = priorEnd.toISOString().split('T')[0];
+
+    const tokenToUse = accessToken ?? freshConn.access_token;
+
     const rawData = await fetchGA4Data(
       freshConn.account_id,
-      freshConn.access_token,
-      startDate,
-      endDate
+      tokenToUse,
+      [
+        { startDate, endDate },
+        { startDate: priorStartDate, endDate: priorEndDate }
+      ]
     );
 
-    const metrics = transformGA4Response(rawData, period.start, period.end);
+    const currentMetrics = transformGA4Response(rawData, period.start, period.end);
+    
+    // For priorMetrics, we reuse the transformer but pass the prior dates
+    const priorMetrics = transformGA4Response(rawData, priorStart, priorEnd);
 
     return {
       raw: rawData as any,
-      metrics,
+      metrics: currentMetrics,
+      priorMetrics,
       retrievedAt: new Date(),
       platform: this.platform,
       periodStart: period.start,

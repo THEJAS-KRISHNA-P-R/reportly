@@ -5,10 +5,17 @@ import { validateDataStep } from '@/lib/pipeline/steps/validateDataStep';
 import { generateNarrativeStep } from '@/lib/pipeline/steps/generateNarrativeStep';
 import { generateChartsStep } from '@/lib/pipeline/steps/generateChartsStep';
 import { generatePDFStep } from '@/lib/pipeline/steps/generatePDFStep';
+import { snapshotDataStep } from '@/lib/pipeline/steps/snapshotDataStep';
+import { emailReportStep } from '@/lib/pipeline/steps/emailReportStep';
 import { auditLogStep } from '@/lib/pipeline/steps/auditLogStep';
 import { ReportPeriod } from '@/types/adapters';
 import { updateReportStatus } from '@/lib/db/repositories/reportRepo';
-import { updateJobStatus } from '@/lib/db/repositories/jobRepo';
+import {
+  buildReportIdempotencyKey,
+  buildReportJobIdentity,
+  normalizeRunKey,
+  updateJobStatus,
+} from '@/lib/db/repositories/jobRepo';
 
 /**
  * Orchestrates the full report generation pipeline:
@@ -19,73 +26,100 @@ export async function runReportGeneration(
   agencyId: string,
   period: ReportPeriod,
   reportId: string,
-  jobId: string
+  jobId: string,
+  options?: {
+    mock?: boolean;
+    attempt?: number;
+    runKey?: string;
+    idempotencyKey?: string;
+    jobLeaseOwnerToken?: string;
+  }
 ): Promise<void> {
-  console.error('[DEBUG] Pipeline starting for:', reportId);
+  const attempt = Math.max(1, options?.attempt ?? 1);
+  const runKey = normalizeRunKey(options?.runKey);
+  const idempotencyKey =
+    options?.idempotencyKey ??
+    buildReportIdempotencyKey(
+      buildReportJobIdentity({
+        clientId,
+        periodStartIso: period.start.toISOString(),
+        periodEndIso: period.end.toISOString(),
+        runKey,
+      })
+    );
+  const leaseOwnerToken = options?.jobLeaseOwnerToken;
+
+  logger.info({ reportId, jobId, clientId, attempt, runKey, idempotencyKey }, 'Report generation pipeline starting');
+
   const context: PipelineContext = {
     clientId,
     agencyId,
     period,
     reportId,
+    jobId,
+    attempt,
+    runKey,
+    idempotencyKey,
+    mock: options?.mock,
   };
 
   const pipeline = new Pipeline();
 
   // 1. Define Pipeline Steps
-  pipeline.addStep('Fetch Data', fetchDataStep, true);        // Critical
-  pipeline.addStep('Validate Data', validateDataStep, true);  // Critical
-  pipeline.addStep('Generate Narrative', generateNarrativeStep, false); // Non-critical fallback
-  pipeline.addStep('Generate Charts', generateChartsStep, false); // Non-critical fallback
-  pipeline.addStep('Generate PDF', generatePDFStep, false); // Non-critical fallback
-  pipeline.addStep('Audit Log', auditLogStep, false); // Final audit (never blocks)
+  pipeline.addStep('Fetch Data', fetchDataStep, true, 90_000); // Critical
+  pipeline.addStep('Validate Data', validateDataStep, true, 30_000); // Critical
+  pipeline.addStep('Snapshot Metrics', snapshotDataStep, false, 45_000); // Persistence
+  pipeline.addStep('Generate Narrative', generateNarrativeStep, false, 120_000); // Non-critical fallback
+  pipeline.addStep('Generate Charts', generateChartsStep, false, 60_000); // Non-critical fallback
+  pipeline.addStep('Generate PDF', generatePDFStep, false, 180_000); // Non-critical fallback
+  pipeline.addStep('Email Notification', emailReportStep, false, 45_000); // Agency notification
+  pipeline.addStep('Audit Log', auditLogStep, false, 20_000); // Final audit (never blocks)
 
   try {
-    console.error('[DEBUG] About to run: Status Update (generating)');
-    try {
-      await updateReportStatus(reportId, 'generating' as any); // pending -> generating
-      await updateJobStatus(jobId, 'processing', { 
-          started_at: new Date().toISOString(),
-          attempts: 1 
-      });
-      console.error('[DEBUG] Completed: Status Update (generating)');
-    } catch (statusErr: any) {
-      console.error('[DEBUG] FAILED: Status Update (generating)', statusErr);
-      logger.error({ reportId, err: statusErr.message }, 'Failed to transition to generating');
-      throw statusErr;
-    }
+    const generationStartedAt = new Date().toISOString();
 
-    console.error('[DEBUG] About to run: pipeline.run');
-    try {
-      await pipeline.run(context);
-      console.error('[DEBUG] Completed: pipeline.run');
-    } catch (e: any) {
-      console.error('[DEBUG] FAILED: pipeline.run', e);
-      throw e;
-    }
-    
-    console.error('[DEBUG] About to run: Status Update (draft)');
-    try {
-      await updateReportStatus(reportId, 'draft', { generation_started_at: new Date().toISOString() });
-      await updateJobStatus(jobId, 'completed', { completed_at: new Date().toISOString() });
-      console.error('[DEBUG] Completed: Status Update (draft)');
-    } catch (statusErr: any) {
-      console.error('[DEBUG] FAILED: Status Update (draft)', statusErr);
-      logger.error({ reportId, err: statusErr.message }, 'Failed to transition to draft');
-    }
+    await updateReportStatus(reportId, 'generating' as any, {
+      generation_started_at: generationStartedAt,
+    });
+    await updateJobStatus(jobId, 'processing', {
+      started_at: generationStartedAt,
+      attempts: attempt,
+      last_error: null,
+    }, leaseOwnerToken ? {
+      leaseOwnerToken,
+      expectedCurrentStatus: 'processing',
+    } : undefined);
+
+    await pipeline.run(context);
+
+    await updateReportStatus(reportId, 'draft');
+    await updateJobStatus(jobId, 'completed', {
+      completed_at: new Date().toISOString(),
+      attempts: attempt,
+      last_error: null,
+      bull_job_id: null,
+    }, leaseOwnerToken ? {
+      leaseOwnerToken,
+      expectedCurrentStatus: 'processing',
+    } : undefined);
+
+    logger.info({ reportId, jobId, attempt, runKey, idempotencyKey }, 'Report generation pipeline completed');
     
   } catch (error: any) {
-    logger.error({ reportId, err: error.message }, 'Report Generation Pipeline Failed');
-    
-    console.error('[DEBUG] About to run: Status Update (failed)');
+    logger.error({ reportId, jobId, attempt, err: error.message }, 'Report generation pipeline failed');
+
     try {
       await updateReportStatus(reportId, 'failed', { cancelled_reason: error.message });
-      await updateJobStatus(jobId, 'failed', { 
-        last_error: error.message, 
-        completed_at: new Date().toISOString() 
-      });
-      console.error('[DEBUG] Completed: Status Update (failed)');
+      await updateJobStatus(jobId, 'failed', {
+        attempts: attempt,
+        last_error: error.stack ? error.stack : error.message,
+        completed_at: new Date().toISOString(),
+        bull_job_id: null,
+      }, leaseOwnerToken ? {
+        leaseOwnerToken,
+        expectedCurrentStatus: 'processing',
+      } : undefined);
     } catch (statusErr: any) {
-      console.error('[DEBUG] FAILED: Status Update (failed)', statusErr);
       logger.error({ reportId, err: statusErr.message }, 'Failed to transition to failed status');
     }
 

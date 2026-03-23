@@ -8,7 +8,7 @@ export interface Report {
   id: string;
   client_name: string;
   period: string;
-  status: 'draft' | 'pending_review' | 'approved' | 'sent';
+  status?: 'draft' | 'pending_review' | 'approved' | 'sent' | string;
   created_at: string;
 }
 
@@ -17,16 +17,16 @@ interface RecentReportsProps {
   loading?: boolean;
 }
 
-const statusColors = {
-  draft: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
-  pending_review: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
-  approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
-  sent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+const statusClasses: Record<string, string> = {
+  draft: 'bg-slate-50 text-slate-500 border-slate-200',
+  pending_review: 'bg-amber-50 text-amber-700 border-amber-100',
+  approved: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  sent: 'bg-indigo-50 text-indigo-700 border-indigo-100',
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   draft: 'Draft',
-  pending_review: 'Pending Review',
+  pending_review: 'Reviewing',
   approved: 'Approved',
   sent: 'Sent',
 };
@@ -34,55 +34,66 @@ const statusLabels = {
 export function RecentReports({ reports = [], loading = false }: RecentReportsProps) {
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="space-y-3">
+      <div className="p-10 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)]">
+        <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-12 rounded bg-slate-200 dark:bg-slate-800 animate-pulse" />
+            <div key={i} className="h-16 rounded-2xl bg-gray-50 animate-pulse" />
           ))}
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Reports</h3>
-          <Button variant="outline" asChild>
-            <Link href="/reports">View All</Link>
-          </Button>
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="p-8 pb-4 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-bold tracking-tight text-slate-900">Recent Activity</h3>
+          <p className="text-[13px] font-medium text-slate-400 mt-0.5">Track report progression across your portfolio</p>
         </div>
+        <Button variant="ghost" asChild className="font-bold text-xs uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg pr-1">
+          <Link href="/reports">View Archive</Link>
+        </Button>
       </div>
 
       {reports.length === 0 ? (
-        <div className="p-6 text-center">
-          <p className="text-slate-600 dark:text-slate-400">No reports yet</p>
+        <div className="p-10 text-center border-t border-slate-50">
+          <p className="text-slate-400 text-sm font-medium">No recent report activity detected.</p>
         </div>
       ) : (
-        <div className="divide-y divide-slate-200 dark:divide-slate-700">
-          {reports.slice(0, 5).map((report) => (
-            <Link
-              key={report.id}
-              href={`/reports/${report.id}`}
-              className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors"
-            >
-              <div className="flex-1">
-                <h4 className="font-medium text-slate-900 dark:text-white">{report.client_name}</h4>
-                <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">{report.period}</p>
-              </div>
+        <div className="px-5 pb-5">
+          <div className="flex flex-col">
+            {reports.slice(0, 5).map((report, idx) => {
+              const statusKey = typeof report.status === 'string' ? report.status : 'draft';
+              const badgeClass = statusClasses[statusKey] ?? 'bg-slate-50 text-slate-500 border-slate-200';
+              const badgeLabel = statusLabels[statusKey] ?? 'Unknown';
 
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  statusColors[report.status]
-                }`}
+              return (
+              <Link
+                key={report.id}
+                href={`/reports/${report.id}`}
+                className={`flex items-center justify-between p-4 rounded-xl transition-all group hover:bg-slate-50 ${idx !== reports.length - 1 ? 'border-b border-slate-50 hover:border-transparent' : ''}`}
               >
-                {statusLabels[report.status]}
-              </span>
-            </Link>
-          ))}
+                <div className="flex-1 min-w-0 pr-4">
+                  <h4 className="text-[14px] font-bold text-slate-900 truncate">{report.client_name}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{report.period}</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-200" />
+                    <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Report Payload</span>
+                  </div>
+                </div>
+
+                <span
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider border ${badgeClass}`}
+                >
+                  {badgeLabel}
+                </span>
+              </Link>
+            );
+            })}
+          </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }

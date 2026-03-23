@@ -19,18 +19,23 @@ export function Sidebar() {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="dashboard-sidebar flex flex-col justify-between hidden md:flex">
+    <aside className="w-[var(--sidebar-width)] h-screen flex flex-col justify-between hidden md:flex bg-slate-50 border-r border-slate-200 sticky top-0">
       {/* Top Section */}
-      <div className="flex flex-col flex-1 p-4 overflow-y-auto">
+      <div className="flex flex-col flex-1 p-6 overflow-y-auto">
         {/* Brand */}
-        <div className="flex items-center h-12 px-3 mb-6">
-          <Link href="/dashboard" className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
-            <span className="w-6 h-6 rounded bg-white text-black flex items-center justify-center text-sm font-bold">
+        <div className="flex items-center h-14 px-2 mb-10 overflow-hidden">
+          <Link href="/dashboard" className="flex items-center gap-3 group transition-transform hover:scale-[1.01]">
+            <div className="w-9 h-9 shrink-0 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
               {user?.agency_name?.[0]?.toUpperCase() || 'R'}
-            </span>
-            <span className="truncate max-w-[150px]">
-              {user?.agency_name || 'Reportly'}
-            </span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-bold text-slate-900 truncate tracking-tight">
+                {user?.agency_name || 'Reportly'}
+              </span>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                Agency Node
+              </span>
+            </div>
           </Link>
         </div>
 
@@ -46,13 +51,13 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-                style={{
-                  background: isActive ? '#1A1A1A' : 'transparent',
-                  color: isActive ? '#FFFFFF' : 'rgba(255,255,255,0.6)',
-                }}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[14px] font-semibold transition-all ${
+                  isActive 
+                    ? 'bg-white text-indigo-600 shadow-sm border border-slate-200 ring-1 ring-slate-200/50' 
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
               >
-                <Icon size={18} />
+                <Icon size={18} className={isActive ? 'text-indigo-600' : 'text-slate-400'} />
                 {item.label}
               </Link>
             );
@@ -61,11 +66,10 @@ export function Sidebar() {
       </div>
 
       {/* Bottom Section */}
-      <div className="p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+      <div className="p-6 border-t border-slate-200 bg-slate-100/30">
         <button
           onClick={logout}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium transition-colors hover:bg-white/5"
-          style={{ color: 'rgba(255,255,255,0.6)' }}
+          className="flex items-center gap-3 px-4 py-2.5 w-full rounded-xl text-[14px] font-semibold transition-all text-slate-500 hover:text-red-600 hover:bg-red-50/50"
         >
           <LogOut size={18} />
           Sign out

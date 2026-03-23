@@ -1,221 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Backgrounds */
+  /* Enterprise-Grade Responsive Typography (no 10px fonts) */
+  --text-xs:   clamp(0.875rem, 1.25vw, 0.9375rem); /* ~14px - 15px */
+  --text-sm:   clamp(0.9375rem, 1.5vw, 1rem);      /* ~15px - 16px */
+  --text-base: clamp(1rem,    2vw,   1.125rem);    /* ~16px - 18px */
+  --text-lg:   clamp(1.125rem, 2.5vw, 1.25rem);
+  --text-xl:   clamp(1.25rem, 3.5vw, 1.75rem);
+  --text-2xl:  clamp(1.5rem,  4.5vw, 2.25rem);
+  --text-3xl:  clamp(2rem,    6vw,   3.25rem);
+  --text-4xl:  clamp(2.5rem,  8vw,   4.5rem);
+
+  /* Enterprise Surface System (Structured & Clean) */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(226, 232, 240, 0.8); /* Slate-200 */
+  --glass-blur: 8px;
+
+  /* Professional Shadow Tiering */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  
+  /* Enterprise Colors (Slate & Indigo Palette) */
   --bg-primary:    #FFFFFF;
-  --bg-surface:    #F8F8F8;
-  --bg-muted:      #F2F2F2;
-  --bg-dark:       #000000;
-  --bg-black-2:    #0D0D0D;
-  --bg-black-3:    #1A1A1A;
-  --bg-black-card: #111111;
-
-  /* Text */
-  --text-primary:   #000000;
-  --text-secondary: #333333;
-  --text-muted:     #777777;
-  --text-dim:       #AAAAAA;
-  --text-inverse:   #FFFFFF;
-  --text-on-dark:   rgba(255, 255, 255, 0.85);
-  --text-dim-dark:  rgba(255, 255, 255, 0.40);
-
-  /* Borders */
-  --border:         #E5E5E5;
-  --border-strong:  #CCCCCC;
-  --border-dark:    rgba(255, 255, 255, 0.10);
-
-  /* Primary (no amber) */
-  --primary:        #000000;
-  --primary-hover:  #1A1A1A;
-  --primary-fg:     #FFFFFF;
-
-  /* Semantic */
-  --success:        #1A7A3A;
-  --success-bg:     #F0FAF4;
-  --warning:        #7A5A0A;
-  --warning-bg:     #FDFAF0;
-  --error:          #8B1A2A;
-  --error-bg:       #FFF4F4;
-  --error-border:   rgba(139, 26, 42, 0.20);
-
-  /* Layout */
-  --sidebar-width:  240px;
-  --topbar-height:  60px;
-  --max-width:      1200px;
-
-  /* Radius */
-  --radius-sm:   4px;
-  --radius-md:   8px;
-  --radius-lg:   12px;
-  --radius-xl:   16px;
-  --radius-full: 9999px;
-
-  /* Shadows */
-  --shadow-xs:    0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md:    0 4px 12px rgba(0, 0, 0, 0.10);
-  --shadow-lg:    0 12px 32px rgba(0, 0, 0, 0.12);
-  --shadow-focus: 0 0 0 3px rgba(0, 0, 0, 0.12);
-
-  /* Shadcn UI V4 Compatibility Tokens */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 0%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 0%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 0%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 96.1%;
-  --secondary-foreground: 0 0% 0%;
-  --muted-foreground: 0 0% 45.1%;
-  --accent: 0 0% 96.1%;
-  --accent-foreground: 0 0% 0%;
-  --destructive-foreground: 0 0% 98%;
-  --input: #E5E5E5;
-  --ring: 0 0% 0%;
-  --radius: 0.5rem;
+  --bg-surface:    #F8FAFC; /* Slate-50 */
+  --bg-muted:      #F1F5F9; /* Slate-100 */
+  --bg-dark:       #0F172A; /* Slate-900 */
+  
+  --text-primary:   #1E293B; /* Slate-800 */
+  --text-secondary: #475569; /* Slate-600 */
+  --text-muted:     #94A3B8; /* Slate-400 */
+  
+  --border:         #E2E8F0; /* Slate-200 */
+  --primary:        #4F46E5; /* Indigo-600 */
+  --primary-hover:  #4338CA;
+  --success:        #059669; /* Emerald-600 */
+  
+  /* Layout Constants */
+  --sidebar-width:  260px;
+  --topbar-height:  72px;
 }
 
-/* ── Reset ─────────────────────────────────────────────────── */
+/* ── Reset & Baseline ────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html {
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   scroll-behavior: smooth;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.6;
+  margin: 0;
+  min-height: 100vh;
 }
 
-/* ── Typography ─────────────────────────────────────────────── */
-h1, h2, h3, h4, h5, h6 {
-  line-height: 1.2;
+h1, h2, h3, h4 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  font-weight: 600;
-}
-
-/* ── Scrollbar ──────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: var(--radius-full);
-}
-::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-/* ── Focus ──────────────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* ── Selection ──────────────────────────────────────────────── */
-::selection {
-  background: rgba(0, 0, 0, 0.12);
   color: var(--text-primary);
 }
 
-/* ── Utility classes ────────────────────────────────────────── */
-.container {
-  max-width: var(--max-width);
+/* ── Enterprise Component Primitives ───────────────────────── */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.glass-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.glass-elevated {
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Utility for clean, robust containers */
+.enterprise-container {
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+/* Shared shell for non-hero marketing sections */
+.marketing-content-shell {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding-inline: 1rem;
 }
 
-/* ── Dashboard layout ───────────────────────────────────────── */
+@media (min-width: 768px) {
+  .marketing-content-shell {
+    padding-inline: 2.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-content-shell {
+    padding-inline: 4rem;
+  }
+}
+
+/* ── Dashboard Shell Layout ─────────────────────────────── */
 .dashboard-layout {
   display: flex;
-  min-height: 100vh;
-  background: var(--bg-surface);
-}
-
-.dashboard-sidebar {
-  width: var(--sidebar-width);
-  flex-shrink: 0;
-  background: var(--bg-black-2);
-  min-height: 100vh;
-  position: sticky;
-  top: 0;
-  overflow-y: auto;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-surface);
 }
 
 .dashboard-main {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-}
-
-.dashboard-topbar {
-  height: var(--topbar-height);
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-primary);
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 40;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .dashboard-content {
   flex: 1;
-  padding: 2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--bg-surface);
 }
 
-/* ── Marketing ──────────────────────────────────────────────── */
-.marketing-section {
-  padding: 6rem 0;
+/* ── Performance & Accessibility ───────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-@media (max-width: 768px) {
-  .marketing-section { padding: 4rem 0; }
-  .dashboard-content { padding: 1rem; }
+.text-balance {
+  text-wrap: balance;
 }
 
-/* ── Animations ─────────────────────────────────────────────── */
-@keyframes shimmer-slide {
-  to { transform: translate(calc(100cqw - 100%), 0); }
-}
-
-@keyframes spin-around {
-  0%        { transform: translateZ(0) rotate(0); }
-  15%, 35%  { transform: translateZ(0) rotate(90deg); }
-  65%, 85%  { transform: translateZ(0) rotate(270deg); }
-  100%      { transform: translateZ(0) rotate(360deg); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%      { transform: translateY(-8px); }
-}
-
+/* ── Animations (Subtle & Functional) ───────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse-dot {
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* ── Workspace & Editor Utilities ────────────────────────── */
+.workspace-viewport {
+  height: calc(100vh - var(--topbar-height));
+  display: flex;
+  overflow: hidden;
+}
+
+.a4-scaling-wrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: #f1f5f9; /* Slate-100 */
+}
+
+/* Professional Scrollbar for Workspace */
+.a4-scaling-wrapper::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.a4-scaling-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.a4-scaling-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* Slate-300 */
+  border: 4px solid #f1f5f9;
+  border-radius: 10px;
+}
+.a4-scaling-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* Slate-400 */
+}
+
+@keyframes pulse-soft {
   0%, 100% { opacity: 1; }
-  50%      { opacity: 0.4; }
+  50%      { opacity: 0.7; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

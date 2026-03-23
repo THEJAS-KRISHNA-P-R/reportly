@@ -29,26 +29,26 @@ export function Problem() {
   return (
     <section
       id="features"
-      className="marketing-section"
+      className="marketing-section py-16"
       style={{ background: '#FFFFFF' }}
     >
-      <div className="container">
+      <div className="marketing-content-shell">
         {/* Header */}
-        <div className="text-center mb-16" style={{ maxWidth: 640, margin: '0 auto 4rem' }}>
+        <div className="text-center mb-10" style={{ maxWidth: 640, margin: '0 auto 2.5rem' }}>
           <p
-            className="text-xs font-semibold tracking-widest uppercase mb-4"
-            style={{ color: '#777777' }}
+            className="text-[9px] font-black tracking-widest uppercase mb-3"
+            style={{ color: '#AAAAAA' }}
           >
             The problem
           </p>
           <h2
-            className="text-4xl md:text-5xl font-semibold tracking-tight mb-5"
+            className="text-2xl md:text-3xl font-black tracking-tight mb-4"
             style={{ color: '#000000' }}
           >
-            Manual reporting is silently killing your agency
+            Manual reporting is killing your agency
           </h2>
-          <p className="text-lg" style={{ color: '#555555' }}>
-            Every month, agencies across India repeat the same painful cycle.
+          <p className="text-xs md:text-sm font-medium opacity-40 px-4" style={{ color: '#000000' }}>
+            Every month, agencies repeat the same painful cycle.
             It doesn&apos;t have to be this way.
           </p>
         </div>
@@ -59,7 +59,7 @@ export function Problem() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          className="grid md:grid-cols-3 gap-6"
+          className="grid md:grid-cols-3 gap-4"
         >
           {pains.map((pain) => {
             const Icon = pain.icon;
@@ -67,26 +67,28 @@ export function Problem() {
               <motion.article
                 key={pain.title}
                 variants={fadeUp}
-                className="rounded-2xl p-8 flex flex-col gap-5"
-                style={{ border: '1px solid #E5E5E5', background: '#FAFAFA' }}
+                className="rounded-xl p-5 md:p-6 flex flex-col gap-4 transition-all duration-500 hover:shadow-xl hover:-translate-y-1 group border border-black/5"
+                style={{ 
+                  background: '#FDFDFD',
+                }}
               >
                 <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 duration-500"
                   style={{ background: '#000000' }}
                 >
-                  <Icon size={18} color="#FFFFFF" />
+                  <Icon size={14} color="#FFFFFF" strokeWidth={2.5} />
                 </div>
                 <div>
                   <p
-                    className="text-3xl font-bold tracking-tight mb-1"
+                    className="text-2xl md:text-3xl font-black tracking-tight mb-0.5"
                     style={{ color: '#000000' }}
                   >
                     {pain.stat}
                   </p>
-                  <p className="text-base font-semibold mb-3" style={{ color: '#000000' }}>
+                  <p className="text-[10px] font-black uppercase tracking-wider mb-2.5 opacity-40" style={{ color: '#000000' }}>
                     {pain.title}
                   </p>
-                  <p className="text-sm leading-relaxed" style={{ color: '#666666' }}>
+                  <p className="text-xs leading-relaxed opacity-50 font-medium" style={{ color: '#000000' }}>
                     {pain.body}
                   </p>
                 </div>

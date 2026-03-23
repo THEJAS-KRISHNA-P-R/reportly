@@ -5,6 +5,7 @@ export async function generatePdfFromHtml(html: string): Promise<Buffer> {
   let browser;
   try {
     browser = await puppeteer.launch({
+      executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });

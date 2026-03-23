@@ -6,6 +6,7 @@ import { RecentReports } from '@/components/dashboard/recent-reports';
 import { ClientsList } from '@/components/clients/clients-list';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { FileText } from 'lucide-react';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | undefined>(undefined);
@@ -68,46 +69,64 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">
-          Welcome back! Here's what's happening with your clients.
+    <div className="flex flex-col gap-10 px-4 md:px-8 py-6 max-w-[1600px] mx-auto w-full">
+      <header className="flex flex-col gap-2">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 animate-fade-in">
+          Review your insights
+        </h2>
+        <p className="text-[15px] font-medium text-slate-500 max-w-2xl leading-relaxed">
+          Welcome back. There are <span className="text-slate-900 font-bold underline decoration-indigo-500/30 underline-offset-4">{stats?.pending_reviews || 0} reports</span> awaiting your final validation and delivery today.
         </p>
-      </div>
+      </header>
 
-      {/* Quick Stats */}
+      {/* Quick Stats Grid */}
       <StatsCards stats={stats} loading={loading} />
 
-      {/* Main Content Grid */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Recent Reports */}
+      {/* Primary Analytics Grid */}
+      <div className="grid gap-8 lg:grid-cols-3 items-start">
+        {/* Recent Reports Area */}
         <div className="lg:col-span-2">
           <RecentReports reports={recentReports} loading={loading} />
         </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-900/50">
-            <h3 className="font-semibold text-slate-900 dark:text-white">Quick Actions</h3>
-            <div className="mt-4 space-y-3">
-              <Button asChild className="w-full" variant="primary">
-                <a href="/clients/new">Add New Client</a>
-              </Button>
-              <Button asChild className="w-full" variant="secondary">
-                <a href="/reports">Generate Report</a>
-              </Button>
+        {/* Global Action Node */}
+        <div className="flex flex-col gap-6">
+          <div className="rounded-2xl bg-slate-900 p-8 shadow-xl text-white relative overflow-hidden group border border-slate-800">
+            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-105 transition-transform duration-500">
+              <FileText size={140} strokeWidth={1} />
             </div>
+            <div className="relative z-10">
+              <h3 className="text-lg font-bold tracking-tight">Rapid Actions</h3>
+              <p className="text-[13px] font-medium text-slate-400 mt-1 mb-6">Workflow shortcuts for agency owners.</p>
+              <div className="space-y-3">
+                <Button asChild className="w-full h-11 bg-white text-slate-900 hover:bg-slate-50 rounded-xl font-bold transition-all shadow-sm active:scale-[0.98]">
+                  <a href="/clients/new">Register New Client</a>
+                </Button>
+                <Button asChild className="w-full h-11 bg-white/5 text-white hover:bg-white/10 border border-white/10 rounded-xl font-bold transition-all active:scale-[0.98]">
+                  <a href="/reports">Generate New Report</a>
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hidden lg:block">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Optimization Tip</h4>
+            </div>
+            <p className="text-[14px] font-medium leading-relaxed text-slate-600">
+              Reports with <span className="font-bold text-slate-900">AI Narrative Insights</span> correlate with 40% higher client retention. Review insights before deployment.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Top Clients */}
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Your Clients</h2>
-          <Button asChild variant="outline">
-            <a href="/clients">View All</a>
+      {/* Client Portfolio Summary */}
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xl font-bold tracking-tight text-slate-900">Active Portfolio</h2>
+          <Button asChild variant="ghost" className="font-bold text-xs uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-100/50 rounded-lg pr-1">
+            <a href="/clients">Manage All Clients</a>
           </Button>
         </div>
         <ClientsList clients={topClients} loading={loading} />

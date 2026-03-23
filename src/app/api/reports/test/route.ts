@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     const db = createSupabaseServiceClient();
 
-    // Get agency_id from the client
+    // 1. Get agency_id from the client
     const { data: client, error: clientError } = await db
       .from('clients')
       .select('id, agency_id')
@@ -29,46 +29,37 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!client) {
-      return NextResponse.json(
-        { error: 'Client not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Client not found' }, { status: 404 });
     }
 
     const agencyId = client.agency_id;
-    const periodStart = new Date(start);
-    const periodEnd = new Date(end);
-    const label = periodStart.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const dateStart = start.split('T')[0];
+    const dateEnd = end.split('T')[0];
+    const label = new Date(start).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    // Delete any existing report for this period
-    const { data: existing } = await db
+    // 2. Clear clean: Delete any existing report for this exact period. 
+    // Since FKs are CASCADE in DB, this wipes audit_logs, job_queue, etc.
+    logger.info({ clientId, dateStart, dateEnd }, 'Cleaning existing test reports to ensure fresh cycle');
+    const { error: deleteError } = await db
       .from('reports')
-      .select('id')
+      .delete()
       .eq('client_id', clientId)
-      .eq('period_start', periodStart.toISOString())
-      .eq('period_end', periodEnd.toISOString())
-      .maybeSingle();
+      .eq('period_start', dateStart)
+      .eq('period_end', dateEnd);
 
-    if (existing) {
-      await db.from('audit_logs')
-        .delete()
-        .eq('report_id', existing.id);
-      await db.from('job_queue')
-        .delete()
-        .eq('report_id', existing.id);
-      await db.from('reports')
-        .delete()
-        .eq('id', existing.id);
+    if (deleteError) {
+      logger.error({ err: deleteError.message }, 'Failed to clear existing reports');
+      return NextResponse.json({ error: `[cleanup] ${deleteError.message}` }, { status: 500 });
     }
 
-    // Now create fresh
-    const { data: report, error } = await db
+    // 3. Create fresh record
+    const { data: report, error: createError } = await db
       .from('reports')
       .insert({
         client_id:        clientId,
         agency_id:        agencyId,
-        period_start:     periodStart.toISOString(),
-        period_end:       periodEnd.toISOString(),
+        period_start:     dateStart,
+        period_end:       dateEnd,
         status:           'pending',
         prompt_version:   'v1.0',
         template_version: 'v1.0',
@@ -77,17 +68,18 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (error || !report) {
+    if (createError || !report) {
+      logger.error({ err: createError?.message }, 'Failed to create fresh report record');
       return NextResponse.json(
-        { error: '[createReport] ' + (error?.message || 'Failed to create report') },
+        { error: '[createReport] ' + (createError?.message || 'Failed to create report') },
         { status: 500 }
       );
     }
 
     const reportId = report.id;
-    logger.info({ reportId }, 'Test report created freshly');
+    logger.info({ reportId }, 'Fresh test report record established');
 
-    // 2. Create a job
+    // 4. Create an orchestration job
     const job = await createJob({
       job_type: 'generate_report',
       agency_id: agencyId,
@@ -95,23 +87,28 @@ export async function POST(request: Request) {
       report_id: reportId,
       payload: { test: true }
     });
-    logger.info({ jobId: job.id }, 'Test job created');
+    
+    logger.info({ jobId: job.id }, 'Generation job queued');
 
-    // 3. Run generation (Async trigger, return job ID)
-    // For test route, we trigger it immediately and optionally return the result
-    runReportGeneration(clientId, agencyId, { start: periodStart, end: periodEnd, label }, reportId, job.id);
+    const periodStart = new Date(start);
+    const periodEnd = new Date(end);
+
+    // 5. Run generation pipeline (Async trigger)
+    const mock = body.mock === true;
+    runReportGeneration(clientId, agencyId, { start: periodStart, end: periodEnd, label }, reportId, job.id, { mock });
 
     return NextResponse.json({
       success: true,
       reportId: reportId,
       jobId: job.id,
-      message: 'Test report generation job started successfully'
+      mock: mock,
+      message: `Test sequence initiated successfully${mock ? ' (MOCK MODE)' : ''}`
     });
 
   } catch (error: any) {
-    logger.error({ err: error.message }, 'Report test trigger failed');
+    logger.error({ err: error.message }, 'Report test trigger critical failure');
     return NextResponse.json(
-      { error: error.message || 'Failed to trigger test' },
+      { error: error.message || 'Critical fault in test trigger' },
       { status: 500 }
     );
   }

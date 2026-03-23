@@ -108,83 +108,102 @@ export default function BillingPage() {
   if (loading) return <div className="p-8 text-sm text-gray-500">Loading billing...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="max-w-6xl mx-auto py-12 px-6 lg:px-10">
       {/* Load Razorpay SDK */}
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight" style={{ color: '#000000' }}>Billing & Plans</h1>
-        <p className="text-sm mt-1" style={{ color: '#666666' }}>
-          Manage your subscription, view payment history, and upgrade your limits.
+      <div className="mb-14">
+        <h2 className="text-4xl font-bold tracking-tight text-slate-900">Infrastructure & Scale</h2>
+        <p className="text-[15px] font-medium text-slate-500 mt-2 max-w-2xl">
+          Manage your agency's operational capacity, billing intelligence, and scaling trajectory.
         </p>
       </div>
 
       {/* Current Usage Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div className="rounded-xl border p-6" style={{ borderColor: '#E5E5E5', background: '#FFFFFF' }}>
-          <p className="text-sm font-medium" style={{ color: '#666666' }}>Current Plan</p>
-          <div className="flex items-end gap-2 mt-2">
-            <h3 className="text-2xl font-bold uppercase tracking-tight" style={{ color: '#000000' }}>{currentPlan}</h3>
-          </div>
-          <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded border border-green-200">
-            <ShieldCheck size={14} /> Active
-          </div>
-        </div>
-
-        <div className="rounded-xl border p-6" style={{ borderColor: '#E5E5E5', background: '#FFFFFF' }}>
-          <p className="text-sm font-medium" style={{ color: '#666666' }}>Report Usage</p>
-          <div className="mt-2 flex items-baseline gap-1">
-            <h3 className="text-2xl font-bold" style={{ color: '#000000' }}>{agency?.reports_generated_this_month || 0}</h3>
-            <span className="text-sm font-medium" style={{ color: '#666666' }}>/ {agency?.plan_report_limit || 2} used</span>
-          </div>
-          <div className="w-full h-1.5 bg-gray-100 rounded-full mt-4 overflow-hidden">
-            <div 
-              className="h-full bg-black rounded-full" 
-              style={{ width: `${Math.min(((agency?.reports_generated_this_month || 0) / (agency?.plan_report_limit || 2)) * 100, 100)}%` }}
-            />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm group">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-6 px-1">Current Protocol</p>
+          <div className="flex flex-col gap-6">
+            <h3 className="text-2xl font-bold tracking-tight text-slate-900 uppercase">{currentPlan} EDITION</h3>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-[11px] font-bold tracking-wider bg-emerald-50 text-emerald-600 self-start border border-emerald-100">
+              <ShieldCheck size={14} /> ACTIVE NODE
+            </div>
           </div>
         </div>
 
-        <div className="rounded-xl border p-6 flex flex-col justify-between" style={{ borderColor: '#E5E5E5', background: '#FAFAFA' }}>
-           <div>
-             <p className="text-sm font-medium" style={{ color: '#000000' }}>Payment Method</p>
-             <div className="flex items-center gap-3 mt-4 text-sm" style={{ color: '#666666' }}>
-               <CreditCard size={18} />
-               <span>No card on file</span>
+        <div className="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-6 px-1">Intelligence Usage</p>
+          <div className="flex flex-col gap-6">
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-4xl font-bold tracking-tight text-slate-900">{agency?.reports_generated_this_month || 0}</h3>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">/ {agency?.plan_report_limit || 2} REPORTS</span>
+            </div>
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-slate-900 rounded-full transition-all duration-1000" 
+                style={{ width: `${Math.min(((agency?.reports_generated_this_month || 0) / (agency?.plan_report_limit || 2)) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 p-10 rounded-3xl shadow-lg flex flex-col justify-between group overflow-hidden relative border border-slate-800">
+           <div className="relative z-10">
+             <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-6 px-1">Funding Source</p>
+             <div className="flex items-center gap-4 text-white">
+               <CreditCard size={20} className="text-slate-500" />
+               <span className="text-[13px] font-bold uppercase tracking-wider text-slate-400 italic">No Card Encrypted</span>
              </div>
            </div>
-           <button className="text-sm font-medium hover:underline text-left mt-4" style={{ color: '#000000' }}>
-             Add Payment Method
+           <button className="text-[12px] font-bold uppercase tracking-wider text-white hover:text-indigo-400 transition-colors mt-8 relative z-10 text-left">
+             Authorize Payment Method →
            </button>
         </div>
       </div>
 
       {/* Pricing grid */}
-      <h2 className="text-lg font-semibold tracking-tight mb-6" style={{ color: '#000000' }}>Upgrade Plan</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div className="flex items-center justify-between mb-10 px-4">
+        <h2 className="text-2xl font-black tracking-tighter text-black">Scaling Tiers</h2>
+        <div className="h-[2px] flex-1 mx-8 bg-gray-50" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
         {plans.map(plan => {
           const isCurrent = currentPlan === plan.id;
+          const isPro = plan.id === 'pro';
           
           return (
             <div 
               key={plan.id}
-              className={`rounded-xl border p-6 flex flex-col ${isCurrent ? 'ring-2 ring-black bg-gray-50' : 'bg-white'}`}
-              style={{ borderColor: isCurrent ? '#000000' : '#E5E5E5' }}
+              className={`relative rounded-[3rem] p-12 flex flex-col transition-all duration-500 hover:-translate-y-2 group ${
+                isCurrent 
+                  ? 'bg-gray-50 ring-4 ring-black shadow-2xl' 
+                  : isPro 
+                    ? 'bg-black text-white shadow-[0_40px_100px_rgba(0,0,0,0.1)]' 
+                    : 'bg-white shadow-[0_20px_60px_rgba(0,0,0,0.03)]'
+              }`}
             >
-              <h3 className="font-semibold text-lg" style={{ color: '#000000' }}>{plan.name}</h3>
-              <div className="mt-4 mb-6 flex items-baseline gap-1 text-black">
-                <span className="text-2xl font-bold">₹{plan.price.toLocaleString()}</span>
-                <span className="text-sm text-gray-500 font-medium">/mo</span>
+              {isPro && !isCurrent && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-slate-900 text-white text-[11px] font-bold uppercase tracking-wider shadow-lg">Most Popular</div>
+              )}
+              
+              <h3 className={`text-2xl font-bold tracking-tight mb-4 ${isCurrent ? 'text-slate-900' : isPro ? 'text-white' : 'text-slate-900'}`}>
+                {plan.name}
+              </h3>
+              
+              <div className="flex items-baseline gap-2 mb-10">
+                <span className="text-4xl font-black tracking-tighter">₹{plan.price.toLocaleString()}</span>
+                <span className={`text-xs font-black uppercase tracking-widest opacity-40`}>/ month</span>
               </div>
               
-              <div className="space-y-3 mb-8 flex-1">
-                <div className="flex items-start gap-2.5 text-sm font-medium text-black">
-                  <Check size={16} className="mt-0.5 shrink-0" />
+              <div className="space-y-4 mb-12 flex-1">
+                <div className={`flex items-start gap-3 text-xs font-black uppercase tracking-widest ${isPro && !isCurrent ? 'text-white' : 'text-black'}`}>
+                  <Check size={16} strokeWidth={4} className="shrink-0 text-green-500" />
                   {plan.limits}
                 </div>
                 {plan.features.map(f => (
-                  <div key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
-                    <Check size={16} className="mt-0.5 shrink-0 text-gray-400" />
+                  <div key={f} className={`flex items-start gap-3 text-xs font-bold ${isPro && !isCurrent ? 'text-white/60' : 'text-gray-400'}`}>
+                    <Check size={16} strokeWidth={2} className="shrink-0 opacity-40" />
                     {f}
                   </div>
                 ))}
@@ -193,28 +212,28 @@ export default function BillingPage() {
               <button
                 disabled={isCurrent || processing}
                 onClick={() => handleUpgrade(plan.id, plan.price)}
-                className={`w-full h-10 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full h-12 rounded-xl text-[12px] font-bold uppercase tracking-wider transition-all active:scale-[0.98] ${
                   isCurrent 
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed border-transparent' 
-                    : plan.id === 'pro'
-                      ? 'bg-black text-white hover:bg-gray-900 border-transparent'
-                      : 'bg-white text-black border border-gray-300 hover:bg-gray-50'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                    : isPro
+                      ? 'bg-white text-slate-900 shadow-sm hover:bg-slate-50'
+                      : 'bg-slate-900 text-white shadow-sm hover:bg-slate-800'
                 }`}
               >
-                {isCurrent ? 'Current Plan' : `Upgrade to ${plan.name}`}
+                {isCurrent ? 'Active Tier' : `Deploy ${plan.id}`}
               </button>
             </div>
           )
         })}
       </div>
 
-      {/* Invoice History */}
-      <div className="rounded-xl border bg-white overflow-hidden" style={{ borderColor: '#E5E5E5' }}>
-        <div className="p-4 border-b bg-gray-50 flex items-center justify-between" style={{ borderColor: '#E5E5E5' }}>
-          <h3 className="font-semibold text-sm" style={{ color: '#000000' }}>Invoice History</h3>
+      {/* Transaction History */}
+      <div className="rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-8 px-10 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Transaction Record</h3>
         </div>
-        <div className="p-12 text-center text-sm" style={{ color: '#666666' }}>
-          No invoices yet.
+        <div className="p-20 text-center">
+           <p className="text-[13px] font-bold text-slate-300 uppercase tracking-widest">Vault is Currently Empty</p>
         </div>
       </div>
     </div>

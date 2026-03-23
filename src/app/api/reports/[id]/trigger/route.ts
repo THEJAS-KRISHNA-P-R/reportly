@@ -27,14 +27,19 @@ export async function POST(
     logger.info({ reportId }, 'Report record reset for regeneration');
 
     // 3. Queue new generation job
+    const runKey = `manual-regenerate-${Date.now()}`;
     const job = await createJob({
       job_type: 'generate_report',
       agency_id: agencyId,
       client_id: report.client_id,
       report_id: reportId,
+      run_key: runKey,
       payload: {
         regenerate: true,
-        triggered_by: 'manual'
+        triggered_by: 'manual',
+        runKey,
+        periodStart: new Date(report.period_start).toISOString(),
+        periodEnd: new Date(report.period_end).toISOString(),
       }
     });
 

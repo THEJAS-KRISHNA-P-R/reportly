@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NewClientPage() {
@@ -78,25 +78,26 @@ export default function NewClientPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-8 flex flex-col gap-6">
-      <Link 
-        href="/clients" 
-        className="text-sm font-medium flex items-center gap-2 hover:underline transition-opacity"
-        style={{ color: '#666666' }}
-      >
-        <ArrowLeft size={16} /> Back to clients
-      </Link>
-
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight" style={{ color: '#000000' }}>Add new client</h1>
-        <p className="text-sm mt-1" style={{ color: '#666666' }}>
-          Enter their details below to create a dedicated workspace.
-        </p>
+    <div className="flex flex-col gap-8 px-4 md:px-8 py-6 max-w-3xl mx-auto w-full">
+      <div className="flex flex-col gap-6">
+        <Link 
+          href="/clients" 
+          className="text-[13px] font-bold uppercase tracking-widest flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors"
+        >
+          <ArrowLeft size={14} strokeWidth={3} /> Back to clients
+        </Link>
+  
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Add new client</h1>
+          <p className="text-[14px] font-medium text-slate-500">
+            Provision a new dedicated workspace node for your client.
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6 rounded-2xl border" style={{ borderColor: '#E5E5E5', background: '#FFFFFF' }}>
-        <div className="space-y-1.5">
-          <label htmlFor="name" className="text-sm font-medium" style={{ color: '#000000' }}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-8 p-8 rounded-3xl bg-white border border-slate-200 shadow-sm transition-all hover:shadow-md">
+        <div className="space-y-2">
+          <label htmlFor="name" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
             Client Name *
           </label>
           <input
@@ -105,82 +106,79 @@ export default function NewClientPage() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full h-10 px-3 rounded-md border text-sm outline-none transition-colors focus:border-black"
-            style={{ borderColor: '#E5E5E5' }}
-            placeholder="Acme Corp"
+            className="w-full h-12 px-4 rounded-xl border border-slate-200 text-[15px] font-medium transition-all focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 outline-none"
+            placeholder="e.g. Acme Research Labs"
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="contactEmail" className="text-sm font-medium" style={{ color: '#000000' }}>
-            Point of Contact Email
-          </label>
-          <input
-            id="contactEmail"
-            type="email"
-            value={contactEmail}
-            onChange={(e) => setContactEmail(e.target.value)}
-            className="w-full h-10 px-3 rounded-md border text-sm outline-none transition-colors focus:border-black"
-            style={{ borderColor: '#E5E5E5' }}
-            placeholder="john@acme.com"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            <label htmlFor="contactEmail" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Point of Contact Email
+            </label>
+            <input
+              id="contactEmail"
+              type="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl border border-slate-200 text-[15px] font-medium transition-all focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 outline-none"
+              placeholder="john@acme.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="timezone" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Operational Timezone
+            </label>
+            <select
+              id="timezone"
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              className="w-full h-12 px-4 rounded-xl border border-slate-200 text-[15px] font-medium transition-all focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 outline-none appearance-none bg-white cursor-pointer"
+            >
+              <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+              <option value="UTC">UTC</option>
+              <option value="America/New_York">America/New_York (EST)</option>
+              <option value="Europe/London">Europe/London (GMT)</option>
+            </select>
+          </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="reportEmails" className="text-sm font-medium" style={{ color: '#000000' }}>
-            Report Recipients (comma separated)
+        <div className="space-y-2">
+          <label htmlFor="reportEmails" className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            Automated Report Recipients
           </label>
+          <p className="text-[12px] text-slate-400 mb-2">Comma separated list of emails for automated delivery.</p>
           <textarea
             id="reportEmails"
             value={reportEmails}
             onChange={(e) => setReportEmails(e.target.value)}
-            className="w-full px-3 py-2 rounded-md border text-sm outline-none transition-colors focus:border-black min-h-[80px]"
-            style={{ borderColor: '#E5E5E5' }}
-            placeholder="ceo@acme.com, marketing@acme.com"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-[15px] font-medium transition-all focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 outline-none min-h-[100px] resize-none"
+            placeholder="strategy@acme.com, marketing@acme.com"
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="timezone" className="text-sm font-medium" style={{ color: '#000000' }}>
-            Timezone
-          </label>
-          <select
-            id="timezone"
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            className="w-full h-10 px-3 rounded-md border text-sm outline-none transition-colors focus:border-black appearance-none bg-white font-sans"
-            style={{ borderColor: '#E5E5E5' }}
-          >
-            <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-            <option value="UTC">UTC</option>
-            <option value="America/New_York">America/New_York (EST)</option>
-            <option value="Europe/London">Europe/London (GMT)</option>
-          </select>
-        </div>
-
         {error && (
-          <div className="p-3 rounded-md text-sm font-medium" style={{ background: '#FFF4F4', color: '#8B1A2A', border: '1px solid rgba(139,26,42,0.2)' }}>
-            {error}
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 text-[13px] font-bold flex items-center gap-2">
+            <X size={14} /> {error}
           </div>
         )}
 
-        <div className="flex justify-end pt-4 border-t" style={{ borderColor: '#F2F2F2' }}>
+        <div className="flex justify-end pt-6 border-t border-slate-100">
           {atLimit ? (
              <Link
                href="/billing"
-               className="h-10 px-6 rounded-lg text-sm font-medium flex items-center justify-center transition-opacity hover:opacity-85"
-               style={{ background: '#8B1A2A', color: '#FFFFFF' }}
+               className="h-12 px-8 rounded-xl bg-rose-600 text-white text-[13px] font-bold uppercase tracking-widest transition-all hover:bg-rose-700 active:scale-[0.98] shadow-lg shadow-rose-200 flex items-center"
              >
-               Upgrade Plan to Add Clients
+               Upgrade Scope to Add Clients
              </Link>
           ) : (
             <button
               type="submit"
               disabled={loading}
-              className="h-10 px-6 rounded-lg text-sm font-medium transition-opacity hover:opacity-85 disabled:opacity-50"
-              style={{ background: '#000000', color: '#FFFFFF' }}
+              className="h-12 px-8 rounded-xl bg-slate-900 text-white text-[13px] font-bold uppercase tracking-widest transition-all hover:bg-slate-800 active:scale-[0.98] shadow-lg shadow-slate-200 disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Client'}
+              {loading ? 'Provisioning...' : 'Provision Client'}
             </button>
           )}
         </div>

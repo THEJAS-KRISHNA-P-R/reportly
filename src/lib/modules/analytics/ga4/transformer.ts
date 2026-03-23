@@ -11,56 +11,52 @@ export function transformGA4Response(
   // want to aggregate manually or check the structure.
   
   // Minimal implementation for aggregate metrics:
-  const metrics: Record<string, number | null> = {
-    sessions: 0,
-    users: 0,
-    newUsers: 0,
-    bounceRate: null,
-    avgSessionDuration: null
+  // CURRENT PERIOD (index 0)
+  const currentMetrics: Record<string, number> = {
+    sessions: 0, users: 0, newUsers: 0, bounceRate: 0, avgSessionDuration: 0
   };
+  let currentRows = 0;
+
+  // PRIOR PERIOD (index 1)
+  const priorMetrics: Record<string, number> = {
+    sessions: 0, users: 0, newUsers: 0, bounceRate: 0, avgSessionDuration: 0
+  };
+  let priorRows = 0;
 
   const rows = responseData.rows || [];
   const metricHeaders = responseData.metricHeaders || [];
 
-  // If there are rows, calculate totals (though runReport totals field exists, 
-  // manual summation helps for breakdown visibility)
-  let totalSessions = 0;
-  let totalUsers = 0;
-  let totalNewUsers = 0;
-  let totalBounceRate = 0;
-  let totalAvgDuration = 0;
-  let rowCount = 0;
-
   for (const row of rows) {
-    rowCount++;
+    const isPrior = row.dimensionValues[0].value === 'date_range_1'; // date_range_0 is current
+    const target = isPrior ? priorMetrics : currentMetrics;
+    if (isPrior) priorRows++; else currentRows++;
+
     row.metricValues.forEach((mv: any, index: number) => {
       const name = metricHeaders[index].name;
       const val = parseFloat(mv.value);
       
-      if (name === 'sessions') totalSessions += val;
-      if (name === 'activeUsers') totalUsers += val;
-      if (name === 'newUsers') totalNewUsers += val;
-      if (name === 'bounceRate') totalBounceRate += val;
-      if (name === 'averageSessionDuration') totalAvgDuration += val;
+      if (name === 'sessions') target.sessions += val;
+      if (name === 'activeUsers') target.users += val;
+      if (name === 'newUsers') target.newUsers += val;
+      if (name === 'bounceRate') target.bounceRate += val;
+      if (name === 'averageSessionDuration') target.avgSessionDuration += val;
     });
   }
 
-  metrics.sessions = totalSessions;
-  metrics.users = totalUsers;
-  metrics.newUsers = totalNewUsers;
-  // Averages/Rates aren't additive, so we take the average across rows (crude but functional for MVP)
-  // Ideally, use GA4's built-in totals if the API supports it in this request type.
-  if (rowCount > 0) {
-    metrics.bounceRate = totalBounceRate / rowCount;
-    metrics.avgSessionDuration = totalAvgDuration / rowCount;
+  const finalMetrics: Record<string, number | null> = { ...currentMetrics };
+  if (currentRows > 0) {
+    finalMetrics.bounceRate = currentMetrics.bounceRate / currentRows;
+    finalMetrics.avgSessionDuration = currentMetrics.avgSessionDuration / currentRows;
   }
 
-  // Dimension breakdown (Top Sources)
+  // Dimension breakdown (Top Sources - Current Period Only for local MVP)
   const breakdown: Record<string, number> = {};
   for (const row of rows) {
-    const source = row.dimensionValues[0].value;
-    const sessionCount = parseInt(row.metricValues[0].value, 10);
-    breakdown[source] = (breakdown[source] || 0) + sessionCount;
+    if (row.dimensionValues[0].value === 'date_range_0') {
+      const source = row.dimensionValues[1].value;
+      const sessions = parseInt(row.metricValues[0].value, 10);
+      breakdown[source] = (breakdown[source] || 0) + sessions;
+    }
   }
 
   return {
@@ -68,7 +64,7 @@ export function transformGA4Response(
     periodStart,
     periodEnd,
     retrievedAt: new Date(),
-    metrics,
+    metrics: finalMetrics,
     breakdown
   };
 }

@@ -13,28 +13,12 @@ export default function PricingPage() {
   return (
     <>
       <MarketingNav />
-      <main style={{ paddingTop: 80 }}>
-        {/* Header */}
-        <section className="marketing-section" style={{ background: '#FFFFFF' }}>
-          <div className="container text-center" style={{ maxWidth: 640, margin: '0 auto' }}>
-            <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: '#777777' }}>
-              Pricing
-            </p>
-            <h1 className="text-5xl font-semibold tracking-tight mb-5" style={{ color: '#000000' }}>
-              Start free. Scale as you grow.
-            </h1>
-            <p className="text-lg" style={{ color: '#555555' }}>
-              Every plan includes GA4 integration, AI narratives, and white-label PDF delivery.
-              No hidden fees, no per-report charges.
-            </p>
-          </div>
-        </section>
-
+      <main style={{ paddingTop: 112 }}>
         <Pricing />
 
         {/* FAQ */}
         <section className="marketing-section" style={{ background: '#FFFFFF' }}>
-          <div className="container" style={{ maxWidth: 640, margin: '0 auto' }}>
+          <div className="marketing-content-shell" style={{ maxWidth: 760, margin: '0 auto' }}>
             <h2 className="text-2xl font-semibold tracking-tight mb-8" style={{ color: '#000000' }}>
               Frequently asked questions
             </h2>
@@ -49,7 +33,7 @@ export default function PricingPage() {
               },
               {
                 q: 'Is my client\'s data safe?',
-                a: 'All OAuth tokens are AES-256 encrypted. Data is scoped by agency and never shared across accounts.',
+                a: 'Reportly applies encrypted transport, access scoping, and account-level isolation controls. Final security posture also depends on your connected providers and internal access policies.',
               },
               {
                 q: 'Can I white-label completely?',

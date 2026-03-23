@@ -8,11 +8,53 @@ export async function fetchDataStep(context: PipelineContext): Promise<void> {
   logger.info({ clientId: context.clientId, platform: 'ga4' }, 'Starting data fetch step');
 
   try {
+    if (context.mock) {
+      logger.info({ clientId: context.clientId }, 'Using MOCK data for fetch step');
+      context.fetchResult = {
+        platform: 'ga4',
+        retrievedAt: new Date(),
+        periodStart: context.period.start,
+        periodEnd: context.period.end,
+        raw: { mock: true },
+        metrics: {
+          platform: 'ga4',
+          periodStart: context.period.start,
+          periodEnd: context.period.end,
+          retrievedAt: new Date(),
+          metrics: {
+            sessions: 1250,
+            users: 950,
+            newUsers: 400,
+            bounceRate: 42.5,
+            avgSessionDuration: 155,
+          }
+        },
+        priorMetrics: {
+          platform: 'ga4',
+          periodStart: new Date(context.period.start.getTime() - 2592000000),
+          periodEnd: new Date(context.period.end.getTime() - 2592000000),
+          retrievedAt: new Date(),
+          metrics: {
+            sessions: 1000,
+            users: 800,
+            newUsers: 350,
+            bounceRate: 45.0,
+            avgSessionDuration: 140,
+          }
+        }
+      };
+      return;
+    }
+
     const freshAccessToken = await refreshGA4Token(context.clientId);
     logger.info({ clientId: context.clientId }, 'GA4 token refreshed successfully for pipeline');
 
     const adapter = analyticsRegistry.getAdapter('ga4');
-    const fetchResult = await adapter.fetch(context.clientId, context.period);
+    const fetchResult = await adapter.fetch(
+      context.clientId, 
+      context.period,
+      freshAccessToken
+    );
     context.fetchResult = fetchResult;
 
     if (context.reportId) {
@@ -29,8 +71,10 @@ export async function fetchDataStep(context: PipelineContext): Promise<void> {
     }
     logger.info({ clientId: context.clientId }, 'Data fetch successful');
   } catch (error: any) {
-    console.error('[FetchDataStep] Failed:', error);
-    logger.error({ err: error.message, clientId: context.clientId }, 'Data fetch step failed');
+    logger.error(
+      { err: error.message, stack: error.stack, clientId: context.clientId },
+      'Data fetch step failed'
+    );
     throw error; // Re-throw because Fetch is critical
   }
 }

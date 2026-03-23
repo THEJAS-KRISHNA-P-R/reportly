@@ -12,9 +12,7 @@ export default function DashboardLayout({
       <div className="dashboard-main">
         <Topbar />
         <main className="dashboard-content">
-          <div className="container" style={{ maxWidth: '1000px', padding: 0 }}>
-            {children}
-          </div>
+          {children}
         </main>
       </div>
     </div>

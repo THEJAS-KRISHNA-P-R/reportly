@@ -7,6 +7,7 @@ export interface PipelineContext {
   clientId: string;
   agencyId: string;
   period: ReportPeriod;
+  correlationId?: string;
   idempotencyKey?: string;
   runKey?: string;
   jobId?: string;
@@ -68,6 +69,7 @@ export class Pipeline {
       {
         reportId: context.reportId,
         jobId: context.jobId,
+        correlationId: context.correlationId,
         idempotencyKey: context.idempotencyKey,
         runKey: context.runKey,
         stepCount: this.steps.length,
@@ -85,6 +87,7 @@ export class Pipeline {
           logger.info(
             {
               reportId: context.reportId,
+              correlationId: context.correlationId,
               step: name,
               durationMs: Date.now() - startedAt,
             },
@@ -98,6 +101,7 @@ export class Pipeline {
             logger.error(
               {
                 reportId: context.reportId,
+                correlationId: context.correlationId,
                 step: name,
                 durationMs: Date.now() - startedAt,
                 err: message,
@@ -111,6 +115,7 @@ export class Pipeline {
           logger.warn(
             {
               reportId: context.reportId,
+              correlationId: context.correlationId,
               step: name,
               durationMs: Date.now() - startedAt,
               err: message,
@@ -120,9 +125,15 @@ export class Pipeline {
         }
       }
 
-      logger.info({ reportId: context.reportId, idempotencyKey: context.idempotencyKey }, 'Pipeline completed successfully');
+      logger.info(
+        { reportId: context.reportId, correlationId: context.correlationId, idempotencyKey: context.idempotencyKey },
+        'Pipeline completed successfully'
+      );
     } catch (error) {
-      logger.error({ reportId: context.reportId, idempotencyKey: context.idempotencyKey }, 'Pipeline failed');
+      logger.error(
+        { reportId: context.reportId, correlationId: context.correlationId, idempotencyKey: context.idempotencyKey },
+        'Pipeline failed'
+      );
       throw error;
     }
   }
@@ -137,7 +148,7 @@ export class Pipeline {
     const existingRun = Pipeline.inFlightByIdempotencyKey.get(key);
     if (existingRun) {
       logger.warn(
-        { reportId: context.reportId, jobId: context.jobId, idempotencyKey: key },
+        { reportId: context.reportId, jobId: context.jobId, correlationId: context.correlationId, idempotencyKey: key },
         'Pipeline dedupe hit: waiting for in-flight run with the same idempotency key'
       );
       await existingRun;

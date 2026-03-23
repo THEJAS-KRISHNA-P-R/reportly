@@ -10,6 +10,7 @@ import { runReportGeneration } from '@/lib/services/reportService';
 import { logger } from '@/lib/utils/logger';
 import type { ReportPeriod } from '@/types/adapters';
 import { randomUUID } from 'crypto';
+import { buildSystemCorrelationId, getPayloadCorrelationId } from '@/lib/observability/correlation';
 
 const WORKER_LEASE_TIMEOUT_MS = Math.max(60_000, Number(process.env.WORKER_LEASE_TIMEOUT_MS ?? 10 * 60_000));
 const WORKER_HEARTBEAT_MS = Math.max(10_000, Number(process.env.WORKER_HEARTBEAT_MS ?? Math.floor(WORKER_LEASE_TIMEOUT_MS / 3)));
@@ -101,6 +102,7 @@ export async function pollAndProcessJobs() {
         const period = parseReportPeriod(payload);
         const runKey = typeof payload.runKey === 'string' ? payload.runKey : undefined;
         const idempotencyKey = typeof payload.idempotencyKey === 'string' ? payload.idempotencyKey : undefined;
+        const correlationId = getPayloadCorrelationId(payload) ?? buildSystemCorrelationId(`job.${job.id}`);
         
         await runReportGeneration(
           job.client_id,
@@ -113,6 +115,7 @@ export async function pollAndProcessJobs() {
             runKey,
             idempotencyKey,
             jobLeaseOwnerToken: leaseOwnerToken,
+            correlationId,
           }
         );
 
@@ -121,16 +124,17 @@ export async function pollAndProcessJobs() {
         }
 
         logger.info(
-          { jobId: job.id, reportId: job.report_id, attempt: attemptNumber },
+          { jobId: job.id, reportId: job.report_id, attempt: attemptNumber, correlationId },
           'Worker: Job completed'
         );
       } catch (error: any) {
         const errorMessage = error?.message ?? 'Unknown worker error';
         const stackTrace = error?.stack ? String(error.stack) : undefined;
+        const correlationId = getPayloadCorrelationId((job.payload ?? {}) as Record<string, unknown>);
 
         if (leaseLost) {
           logger.warn(
-            { jobId: job.id, attempt: attemptNumber, err: errorMessage },
+            { jobId: job.id, attempt: attemptNumber, correlationId, err: errorMessage },
             'Worker: Lease lost during processing; skipping retry/DLQ mutation'
           );
           return;
@@ -157,6 +161,7 @@ export async function pollAndProcessJobs() {
               attempt: attemptNumber,
               maxAttempts,
               retryAt: retryAt.toISOString(),
+              correlationId,
               err: errorMessage,
             },
             'Worker: Job failed and was re-queued'
@@ -172,7 +177,7 @@ export async function pollAndProcessJobs() {
         });
 
         logger.error(
-          { jobId: job.id, attempt: attemptNumber, maxAttempts, err: errorMessage },
+          { jobId: job.id, attempt: attemptNumber, maxAttempts, correlationId, err: errorMessage },
           'Worker: Job exhausted retries and was moved to DLQ'
         );
       } finally {

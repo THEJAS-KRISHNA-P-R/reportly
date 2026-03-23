@@ -33,6 +33,7 @@ export async function runReportGeneration(
     runKey?: string;
     idempotencyKey?: string;
     jobLeaseOwnerToken?: string;
+    correlationId?: string;
   }
 ): Promise<void> {
   const attempt = Math.max(1, options?.attempt ?? 1);
@@ -48,8 +49,9 @@ export async function runReportGeneration(
       })
     );
   const leaseOwnerToken = options?.jobLeaseOwnerToken;
+  const correlationId = options?.correlationId;
 
-  logger.info({ reportId, jobId, clientId, attempt, runKey, idempotencyKey }, 'Report generation pipeline starting');
+  logger.info({ reportId, jobId, clientId, attempt, runKey, idempotencyKey, correlationId }, 'Report generation pipeline starting');
 
   const context: PipelineContext = {
     clientId,
@@ -58,6 +60,7 @@ export async function runReportGeneration(
     reportId,
     jobId,
     attempt,
+    correlationId,
     runKey,
     idempotencyKey,
     mock: options?.mock,
@@ -103,10 +106,10 @@ export async function runReportGeneration(
       expectedCurrentStatus: 'processing',
     } : undefined);
 
-    logger.info({ reportId, jobId, attempt, runKey, idempotencyKey }, 'Report generation pipeline completed');
+    logger.info({ reportId, jobId, attempt, runKey, idempotencyKey, correlationId }, 'Report generation pipeline completed');
     
   } catch (error: any) {
-    logger.error({ reportId, jobId, attempt, err: error.message }, 'Report generation pipeline failed');
+    logger.error({ reportId, jobId, attempt, correlationId, err: error.message }, 'Report generation pipeline failed');
 
     try {
       await updateReportStatus(reportId, 'failed', { cancelled_reason: error.message });

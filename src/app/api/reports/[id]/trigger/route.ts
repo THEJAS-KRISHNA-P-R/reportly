@@ -3,6 +3,7 @@ import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 import { getReportById, resetReport } from '@/lib/db/repositories/reportRepo';
 import { createJob } from '@/lib/db/repositories/jobRepo';
 import { logger } from '@/lib/utils/logger';
+import { getPayloadCorrelationId, resolveCorrelationId, withCorrelationHeader } from '@/lib/observability/correlation';
 
 /**
  * Triggers regeneration of an existing report.
@@ -12,6 +13,8 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestCorrelationId = resolveCorrelationId(request);
+
   try {
     const { id: reportId } = await params;
     const { agencyId } = await getAuthenticatedAgency(request);
@@ -38,24 +41,28 @@ export async function POST(
         regenerate: true,
         triggered_by: 'manual',
         runKey,
+        correlationId: requestCorrelationId,
         periodStart: new Date(report.period_start).toISOString(),
         periodEnd: new Date(report.period_end).toISOString(),
       }
     });
 
-    logger.info({ reportId, jobId: job.id }, 'Regeneration job queued');
+    const correlationId = getPayloadCorrelationId(job.payload) ?? requestCorrelationId;
+
+    logger.info({ reportId, jobId: job.id, correlationId }, 'Regeneration job queued');
 
     return NextResponse.json({
       success: true,
       jobId: job.id,
-      message: 'Regeneration process started'
-    });
+      message: 'Regeneration process started',
+      correlationId,
+    }, { headers: withCorrelationHeader(correlationId) });
 
   } catch (error: any) {
-    logger.error({ err: error.message, reportId: (await params).id }, 'Regeneration trigger failed');
+    logger.error({ err: error.message, reportId: (await params).id, correlationId: requestCorrelationId }, 'Regeneration trigger failed');
     return NextResponse.json(
       { error: error.message || 'Failed to trigger regeneration' },
-      { status: 500 }
+      { status: 500, headers: withCorrelationHeader(requestCorrelationId) }
     );
   }
 }

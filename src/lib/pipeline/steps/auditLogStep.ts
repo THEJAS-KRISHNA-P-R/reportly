@@ -20,11 +20,16 @@ export async function auditLogStep(context: PipelineContext): Promise<void> {
         hasValidation: !!context.validationResult,
         confidence: context.validationResult?.confidence || 0,
         source: context.narrativeResult?.source || 'unknown'
+      },
+      {
+        correlationId: context.correlationId,
+        pipelineStep: 'Audit Log',
+        jobId: context.jobId,
       }
     );
     
-    logger.info({ reportId: context.reportId }, 'Pipeline Audit Log Finalized');
+    logger.info({ reportId: context.reportId, correlationId: context.correlationId }, 'Pipeline Audit Log Finalized');
   } catch (error: any) {
-    logger.error({ err: error.message, reportId: context.reportId }, 'Audit Log Step Failed');
+    logger.error({ err: error.message, reportId: context.reportId, correlationId: context.correlationId }, 'Audit Log Step Failed');
   }
 }

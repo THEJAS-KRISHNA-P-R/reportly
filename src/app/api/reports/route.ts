@@ -7,6 +7,8 @@ import { isConnected } from '@/lib/db/repositories/connectionRepo';
 import { createReport } from '@/lib/db/repositories/reportRepo';
 import { createJob } from '@/lib/db/repositories/jobRepo';
 import { checkReportLimit, incrementReportCount } from '@/lib/utils/limits';
+import { getPayloadCorrelationId, resolveCorrelationId, withCorrelationHeader } from '@/lib/observability/correlation';
+import { logger } from '@/lib/utils/logger';
 
 const generateReportSchema = z.object({
   clientId: z.string().uuid(),
@@ -38,6 +40,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const requestCorrelationId = resolveCorrelationId(request);
+
   try {
     const { agencyId } = await getAuthenticatedAgency(request);
     
@@ -82,8 +86,16 @@ export async function POST(request: NextRequest) {
       payload: {
         periodStart: periodStart.toISOString(),
         periodEnd: periodEnd.toISOString(),
+        correlationId: requestCorrelationId,
       },
     });
+
+    const correlationId = getPayloadCorrelationId(job.payload) ?? requestCorrelationId;
+
+    logger.info(
+      { reportId: report.id, jobId: job.id, clientId, agencyId, correlationId },
+      'Reports POST: generation job queued'
+    );
 
     // 8. Increment report count
     await incrementReportCount(null, agencyId);
@@ -93,14 +105,15 @@ export async function POST(request: NextRequest) {
       success: true,
       reportId: report.id,
       jobId: job.id,
-      status: 'queued'
-    });
+      status: 'queued',
+      correlationId,
+    }, { headers: withCorrelationHeader(correlationId) });
 
   } catch (err: any) {
-    console.error('[Reports POST] Error:', err);
+    logger.error({ err, correlationId: requestCorrelationId }, 'Reports POST failed');
     return NextResponse.json(
       { error: err.message || 'Failed to trigger report generation' },
-      { status: 500 }
+      { status: 500, headers: withCorrelationHeader(requestCorrelationId) }
     );
   }
 }

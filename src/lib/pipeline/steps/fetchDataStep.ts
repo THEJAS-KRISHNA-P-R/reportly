@@ -5,11 +5,11 @@ import { logger } from '@/lib/utils/logger';
 import { refreshGA4Token } from '@/lib/modules/analytics/ga4/refresh';
 
 export async function fetchDataStep(context: PipelineContext): Promise<void> {
-  logger.info({ clientId: context.clientId, platform: 'ga4' }, 'Starting data fetch step');
+  logger.info({ clientId: context.clientId, reportId: context.reportId, correlationId: context.correlationId, platform: 'ga4' }, 'Starting data fetch step');
 
   try {
     if (context.mock) {
-      logger.info({ clientId: context.clientId }, 'Using MOCK data for fetch step');
+      logger.info({ clientId: context.clientId, reportId: context.reportId, correlationId: context.correlationId }, 'Using MOCK data for fetch step');
       context.fetchResult = {
         platform: 'ga4',
         retrievedAt: new Date(),
@@ -47,7 +47,7 @@ export async function fetchDataStep(context: PipelineContext): Promise<void> {
     }
 
     const freshAccessToken = await refreshGA4Token(context.clientId);
-    logger.info({ clientId: context.clientId }, 'GA4 token refreshed successfully for pipeline');
+    logger.info({ clientId: context.clientId, reportId: context.reportId, correlationId: context.correlationId }, 'GA4 token refreshed successfully for pipeline');
 
     const adapter = analyticsRegistry.getAdapter('ga4');
     const fetchResult = await adapter.fetch(
@@ -66,13 +66,18 @@ export async function fetchDataStep(context: PipelineContext): Promise<void> {
              platform: fetchResult.platform,
              metricsCount: Object.keys(fetchResult.metrics.metrics).length,
              retrievedAt: fetchResult.retrievedAt 
+           },
+           {
+             correlationId: context.correlationId,
+             pipelineStep: 'Fetch Data',
+             jobId: context.jobId,
            }
        );
     }
-    logger.info({ clientId: context.clientId }, 'Data fetch successful');
+    logger.info({ clientId: context.clientId, reportId: context.reportId, correlationId: context.correlationId }, 'Data fetch successful');
   } catch (error: any) {
     logger.error(
-      { err: error.message, stack: error.stack, clientId: context.clientId },
+      { err: error.message, stack: error.stack, clientId: context.clientId, reportId: context.reportId, correlationId: context.correlationId },
       'Data fetch step failed'
     );
     throw error; // Re-throw because Fetch is critical

@@ -24,6 +24,11 @@ export async function validateDataStep(context: PipelineContext): Promise<void> 
         passed: validationResult.passedValidation,
         warnings: validationResult.warnings,
         validated: validationResult.validated
+      },
+      {
+        correlationId: context.correlationId,
+        pipelineStep: 'Validate Data',
+        jobId: context.jobId,
       }
     );
   }
@@ -31,7 +36,17 @@ export async function validateDataStep(context: PipelineContext): Promise<void> 
   // Critical Path Rule: Block if >50% metrics are unreliable
   if (!validationResult.passedValidation) {
     if (context.reportId) {
-       await createAuditLog(context.reportId, context.agencyId, 'validation_failure', { reason: 'Over 50% metrics failed validation' });
+       await createAuditLog(
+         context.reportId,
+         context.agencyId,
+         'validation_failure',
+         { reason: 'Over 50% metrics failed validation' },
+         {
+           correlationId: context.correlationId,
+           pipelineStep: 'Validate Data',
+           jobId: context.jobId,
+         }
+       );
     }
     throw new ReportlyError(
       'VALIDATION_FAILED',

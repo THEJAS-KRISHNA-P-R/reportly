@@ -2,6 +2,7 @@ import { getClientsScheduledForDay } from '@/lib/db/repositories/clientRepo';
 import { createJob } from '@/lib/db/repositories/jobRepo';
 import { createReport } from '@/lib/db/repositories/reportRepo';
 import { logger } from '@/lib/utils/logger';
+import { buildSystemCorrelationId } from '@/lib/observability/correlation';
 
 export async function scheduleDailyReports() {
   const today = new Date().getDate();
@@ -25,6 +26,8 @@ export async function scheduleDailyReports() {
       );
 
       // 2. Queue the generation job
+      const correlationId = buildSystemCorrelationId(`scheduler.${client.id}`);
+
       await createJob({
         job_type: 'generate_report',
         agency_id: client.agency_id,
@@ -33,11 +36,12 @@ export async function scheduleDailyReports() {
         payload: {
           periodStart: periodStart.toISOString(),
           periodEnd: periodEnd.toISOString(),
+          correlationId,
         },
         // We could add scheduled_for here if we wanted the delay delayMs
       });
 
-      logger.info({ clientId: client.id, reportId: report.id }, 'Weekly/Daily report scheduled');
+      logger.info({ clientId: client.id, reportId: report.id, correlationId }, 'Weekly/Daily report scheduled');
     } catch (error: any) {
       logger.error({ clientId: client.id, err: error.message }, 'Failed to schedule report for client');
     }

@@ -13,26 +13,46 @@ export async function createAuditLog(
   agencyId: string,
   eventType: AuditEventType,
   payload: Record<string, unknown>,
-  options?: { actorId?: string; ipAddress?: string; userAgent?: string }
+  options?: {
+    actorId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    correlationId?: string;
+    pipelineStep?: string;
+    jobId?: string;
+  }
 ): Promise<void> {
   try {
+    const enrichedPayload = {
+      ...payload,
+      ...(options?.correlationId ? { correlationId: options.correlationId } : {}),
+      ...(options?.pipelineStep ? { pipelineStep: options.pipelineStep } : {}),
+      ...(options?.jobId ? { jobId: options.jobId } : {}),
+    };
+
     const db = createSupabaseServiceClient();
     const { error } = await db.from('audit_logs').insert({
       report_id: reportId,
       agency_id: agencyId,
       event_type: eventType,
       actor_id: options?.actorId ?? null,
-      payload,
+      payload: enrichedPayload,
       ip_address: options?.ipAddress ?? null,
       user_agent: options?.userAgent?.slice(0, 200) ?? null,
     });
     // Even if there's an error, we do NOT throw — only log
     if (error) {
-      logger.error({ err: error, reportId, eventType }, 'Failed to write audit log');
+      logger.error(
+        { err: error, reportId, eventType, correlationId: options?.correlationId, pipelineStep: options?.pipelineStep },
+        'Failed to write audit log'
+      );
     }
   } catch (err) {
     // Swallow all errors from audit log writes — never block the pipeline
-    logger.error({ err, reportId, eventType }, 'Unexpected error writing audit log');
+    logger.error(
+      { err, reportId, eventType, correlationId: options?.correlationId, pipelineStep: options?.pipelineStep },
+      'Unexpected error writing audit log'
+    );
   }
 }
 

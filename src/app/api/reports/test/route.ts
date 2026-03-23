@@ -4,6 +4,7 @@ import { createJob } from '@/lib/db/repositories/jobRepo';
 import { runReportGeneration } from '@/lib/services/reportService';
 import { logger } from '@/lib/utils/logger';
 import { createSupabaseServiceClient } from '@/lib/db/client';
+import { getPayloadCorrelationId, resolveCorrelationId, withCorrelationHeader } from '@/lib/observability/correlation';
 
 /**
  * POST /api/reports/test
@@ -11,6 +12,8 @@ import { createSupabaseServiceClient } from '@/lib/db/client';
  * Use this to verify the pipeline, AI models, and PDF generation.
  */
 export async function POST(request: Request) {
+  const requestCorrelationId = resolveCorrelationId(request);
+
   try {
     const body = await request.json();
     const { clientId, periodStart: start, periodEnd: end } = body;
@@ -85,31 +88,42 @@ export async function POST(request: Request) {
       agency_id: agencyId,
       client_id: clientId,
       report_id: reportId,
-      payload: { test: true }
+      payload: {
+        test: true,
+        periodStart: new Date(start).toISOString(),
+        periodEnd: new Date(end).toISOString(),
+        correlationId: requestCorrelationId,
+      }
     });
-    
-    logger.info({ jobId: job.id }, 'Generation job queued');
+
+    const correlationId = getPayloadCorrelationId(job.payload) ?? requestCorrelationId;
+
+    logger.info({ jobId: job.id, reportId, correlationId }, 'Generation job queued');
 
     const periodStart = new Date(start);
     const periodEnd = new Date(end);
 
     // 5. Run generation pipeline (Async trigger)
     const mock = body.mock === true;
-    runReportGeneration(clientId, agencyId, { start: periodStart, end: periodEnd, label }, reportId, job.id, { mock });
+    runReportGeneration(clientId, agencyId, { start: periodStart, end: periodEnd, label }, reportId, job.id, {
+      mock,
+      correlationId,
+    });
 
     return NextResponse.json({
       success: true,
       reportId: reportId,
       jobId: job.id,
       mock: mock,
-      message: `Test sequence initiated successfully${mock ? ' (MOCK MODE)' : ''}`
-    });
+      message: `Test sequence initiated successfully${mock ? ' (MOCK MODE)' : ''}`,
+      correlationId,
+    }, { headers: withCorrelationHeader(correlationId) });
 
   } catch (error: any) {
-    logger.error({ err: error.message }, 'Report test trigger critical failure');
+    logger.error({ err: error.message, correlationId: requestCorrelationId }, 'Report test trigger critical failure');
     return NextResponse.json(
       { error: error.message || 'Critical fault in test trigger' },
-      { status: 500 }
+      { status: 500, headers: withCorrelationHeader(requestCorrelationId) }
     );
   }
 }

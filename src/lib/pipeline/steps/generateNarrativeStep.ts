@@ -17,10 +17,18 @@ export async function generateNarrativeStep(context: PipelineContext): Promise<v
       await createAuditLog(context.reportId, context.agencyId, 'ai_response', { 
         source: result.source, 
         output: result.content 
+      }, {
+        correlationId: context.correlationId,
+        pipelineStep: 'Generate Narrative',
+        jobId: context.jobId,
       });
     } else {
       await createAuditLog(context.reportId, context.agencyId, 'fallback_activated', { 
         reason: 'AI failed or rejected' 
+      }, {
+        correlationId: context.correlationId,
+        pipelineStep: 'Generate Narrative',
+        jobId: context.jobId,
       });
     }
 

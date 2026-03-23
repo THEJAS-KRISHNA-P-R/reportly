@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
 
 export const maxDuration = 300; // 5 mins
 
@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     const cookieStore = await cookies();
@@ -28,12 +28,12 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ 
+    return apiOk({ 
       success: true, 
       message: 'Monthly report counts reset successfully via RPC' 
     });
   } catch (err: any) {
     console.error('CRON Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return fromUnknownError(err, 'Failed to reset monthly counts');
   }
 }

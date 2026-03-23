@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { createSupabaseServiceClient } from '@/lib/db/client';
+import { apiError, apiOk } from '@/lib/api-contract';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -10,7 +10,7 @@ export async function GET() {
   });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || user.email !== process.env.SUPER_ADMIN_EMAIL) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return apiError('FORBIDDEN', 'Forbidden', 403);
   }
 
   const supabaseAdmin = createSupabaseServiceClient();
@@ -28,7 +28,7 @@ export async function GET() {
       supabaseAdmin.from('job_queue').select('*', { count: 'exact', head: true }).eq('status', 'failed'),
     ]);
 
-    return NextResponse.json({
+    return apiOk({
       active: active ?? 0,
       waiting: queued ?? 0,
       completed: completed ?? 0,
@@ -36,6 +36,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("Queue fetch failed (table may not exist):", err);
-    return NextResponse.json({ active: 0, waiting: 0, completed: 0, failed: 0 });
+    return apiOk({ active: 0, waiting: 0, completed: 0, failed: 0 });
   }
 }

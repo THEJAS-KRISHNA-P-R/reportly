@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
-
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +15,7 @@ export async function POST(request: Request) {
     );
 
     if (!data?.to?.[0]) {
-      return NextResponse.json({ received: true, skip: 'No recipient data' });
+      return apiOk({ received: true, skip: 'No recipient data' });
     }
 
     const recipient = data.to[0];
@@ -36,9 +35,8 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ received: true });
+    return apiOk({ received: true });
   } catch (err: any) {
-    console.error('Resend Webhook Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return fromUnknownError(err, 'Resend webhook failed');
   }
 }

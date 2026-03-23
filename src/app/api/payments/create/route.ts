@@ -1,7 +1,13 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { createOrder } from '@/lib/payments/razorpay';
+import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';
+
+const paymentCreateSchema = z.object({
+  plan_id: z.enum(['pro', 'agency']),
+  amount: z.number().positive(),
+}).strict();
 
 export async function POST(request: Request) {
   try {
@@ -18,18 +24,14 @@ export async function POST(request: Request) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return apiError('UNAUTHORIZED', 'Unauthorized', 401);
 
     const agencyId = user.user_metadata?.agency_id || user.app_metadata?.agency_id || 
                     (await supabase.from('agencies').select('id').eq('owner_id', user.id).single())?.data?.id;
 
-    if (!agencyId) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
+    if (!agencyId) return apiError('NOT_FOUND', 'Agency not found', 404);
 
-    const { plan_id, amount } = await request.json();
-
-    if (!['pro', 'agency'].includes(plan_id)) {
-      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
-    }
+    const { plan_id, amount } = await parseJsonBody(request, paymentCreateSchema);
 
     // Receipt ID tracking format: agencyId|plan_id|timestamp
     const receiptId = `${agencyId.substring(0,8)}|${plan_id}|${Date.now()}`;
@@ -37,13 +39,12 @@ export async function POST(request: Request) {
     // Create Razorpay Order
     const order = await createOrder(amount, receiptId);
 
-    return NextResponse.json({
+    return apiOk({
       id: order.id,
       currency: order.currency,
       amount: order.amount,
     });
   } catch (err: any) {
-    console.error('Payment Create Error:', err);
-    return NextResponse.json({ error: 'Failed to create pre-payment order' }, { status: 500 });
+    return fromUnknownError(err, 'Failed to create pre-payment order');
   }
 }

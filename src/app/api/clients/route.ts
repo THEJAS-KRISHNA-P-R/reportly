@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 import { checkClientLimit } from '@/lib/utils/limits';
+import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';
+import { createClientSchema } from '@/lib/validators/inputValidator';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,10 +19,10 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return NextResponse.json(clients);
+    return apiOk(clients ?? []);
   } catch (err: any) {
-    console.error('[Clients GET] Error:', err);
-    return NextResponse.json({ error: err.message || 'Failed to list clients' }, { status: 500 });
+    logger.error({ err }, 'Clients GET failed');
+    return fromUnknownError(err, 'Failed to list clients');
   }
 }
 
@@ -31,16 +34,10 @@ export async function POST(request: NextRequest) {
     // Validate limit
     const canCreate = await checkClientLimit(supabase, agencyId);
     if (!canCreate) {
-      return NextResponse.json(
-        { error: 'Client limit reached. Please upgrade your plan.' },
-        { status: 403 }
-      );
+      return apiError('LIMIT_REACHED', 'Client limit reached. Please upgrade your plan.', 403);
     }
 
-    const body = await request.json();
-    if (!body.name) {
-      return NextResponse.json({ error: 'Client name is required' }, { status: 400 });
-    }
+    const body = await parseJsonBody(request, createClientSchema);
 
     const { data: client, error: insertError } = await supabase
       .from('clients')
@@ -57,13 +54,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('[Clients POST] Insert error:', insertError);
+      logger.error({ err: insertError }, 'Clients POST insert failed');
       throw insertError;
     }
     
-    return NextResponse.json(client);
+    return apiOk(client);
   } catch (err: any) {
-    console.error('[Clients POST] Final catch Error:', err);
-    return NextResponse.json({ error: err.message || 'Failed to create client' }, { status: 500 });
+    logger.error({ err }, 'Clients POST failed');
+    return fromUnknownError(err, 'Failed to create client');
   }
 }

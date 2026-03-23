@@ -1,7 +1,15 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { verifySignature } from '@/lib/payments/razorpay';
+import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';
+
+const paymentVerifySchema = z.object({
+  razorpay_payment_id: z.string().min(1),
+  razorpay_order_id: z.string().min(1),
+  razorpay_signature: z.string().min(1),
+  plan_id: z.enum(['pro', 'agency']),
+}).strict();
 
 export async function POST(request: Request) {
   try {
@@ -18,20 +26,20 @@ export async function POST(request: Request) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!user) return apiError('UNAUTHORIZED', 'Unauthorized', 401);
 
     const agencyId = user.user_metadata?.agency_id || user.app_metadata?.agency_id || 
                     (await supabase.from('agencies').select('id').eq('owner_id', user.id).single())?.data?.id;
 
-    if (!agencyId) return NextResponse.json({ error: 'Agency not found' }, { status: 404 });
+    if (!agencyId) return apiError('NOT_FOUND', 'Agency not found', 404);
 
-    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan_id } = await request.json();
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan_id } = await parseJsonBody(request, paymentVerifySchema);
 
     // Mathematically verify the source of the payment completion securely
     const isValid = verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
     
     if (!isValid) {
-      return NextResponse.json({ error: 'Invalid signature. Payment failed.' }, { status: 400 });
+      return apiError('VALIDATION_ERROR', 'Invalid signature. Payment failed.', 400);
     }
 
     // Apply Limits
@@ -49,9 +57,8 @@ export async function POST(request: Request) {
       razorpay_sub_id: razorpay_order_id, // Store order_id temporarily or real sub_id if recurring
     });
 
-    return NextResponse.json({ success: true });
+    return apiOk({ success: true });
   } catch (err: any) {
-    console.error('Payment Verify Error:', err);
-    return NextResponse.json({ error: 'Failed to verify payment' }, { status: 500 });
+    return fromUnknownError(err, 'Failed to verify payment');
   }
 }

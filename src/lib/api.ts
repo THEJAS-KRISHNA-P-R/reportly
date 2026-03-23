@@ -9,6 +9,11 @@ interface ApiResponse<T> {
 interface ApiError {
   message: string;
   status: number;
+  code?: string;
+}
+
+function isApiEnvelope(value: unknown): value is { ok: boolean; data?: unknown; error?: { message?: string; code?: string } } {
+  return !!value && typeof value === 'object' && 'ok' in (value as Record<string, unknown>);
 }
 
 /**
@@ -29,16 +34,28 @@ async function apiCall<T>(
       },
     });
 
-    const data = await response.json();
+    const payload = await response.json();
+
+    if (isApiEnvelope(payload)) {
+      if (!payload.ok) {
+        throw {
+          message: payload.error?.message || 'An error occurred',
+          status: response.status,
+          code: payload.error?.code,
+        } as ApiError;
+      }
+
+      return payload.data as T;
+    }
 
     if (!response.ok) {
       throw {
-        message: data.message || 'An error occurred',
+        message: (payload as any)?.message || (payload as any)?.error || 'An error occurred',
         status: response.status,
       } as ApiError;
     }
 
-    return data as T;
+    return payload as T;
   } catch (error) {
     if (error instanceof Error) {
       throw {

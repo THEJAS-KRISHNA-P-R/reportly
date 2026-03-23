@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { verifyWebhookSignature } from '@/lib/payments/razorpay';
 import { cookies } from 'next/headers';
+import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
 
 export async function POST(request: Request) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     const signature = request.headers.get('x-razorpay-signature') as string;
 
     if (!signature || !verifyWebhookSignature(rawBody, signature)) {
-      return NextResponse.json({ error: 'Invalid Webhook Signature' }, { status: 400 });
+      return apiError('VALIDATION_ERROR', 'Invalid Webhook Signature', 400);
     }
 
     const payload = JSON.parse(rawBody);
@@ -38,9 +38,8 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ received: true });
+    return apiOk({ received: true });
   } catch (err: any) {
-    console.error('Webhook Error:', err);
-    return NextResponse.json({ error: 'Webhook Handler Failed' }, { status: 500 });
+    return fromUnknownError(err, 'Webhook Handler Failed');
   }
 }

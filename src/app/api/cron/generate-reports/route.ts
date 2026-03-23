@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
 
 export const maxDuration = 300; // 5 minutes max execution time
 
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     // Usually handled in proxy.ts, but good to have double confirmation for crons.
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return apiError('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     const cookieStore = await cookies();
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     if (clientErr) throw clientErr;
     if (!clients || clients.length === 0) {
-      return NextResponse.json({ success: true, message: 'No reports scheduled for today' });
+      return apiOk({ success: true, message: 'No reports scheduled for today' });
     }
 
     let reportsTriggered = 0;
@@ -67,12 +67,12 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ 
+    return apiOk({ 
       success: true, 
       message: `Triggered ${reportsTriggered} report generations for day ${today}` 
     });
   } catch (err: any) {
     console.error('CRON Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return fromUnknownError(err, 'Failed to generate reports');
   }
 }

@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { apiError, apiOk } from '@/lib/api-contract';
 
 async function checkAdmin() {
   const cookieStore = await cookies();
@@ -18,7 +18,7 @@ import { createSupabaseServiceClient } from '@/lib/db/client';
 
 export async function GET() {
   const auth = await checkAdmin();
-  if (auth.error) return NextResponse.json({ error: auth.error }, { status: 403 });
+  if (auth.error) return apiError('FORBIDDEN', auth.error, 403);
 
   const supabaseAdmin = createSupabaseServiceClient();
   
@@ -33,7 +33,7 @@ export async function GET() {
     .select('*', { count: 'exact', head: true })
     .gte('created_at', today.toISOString());
 
-  return NextResponse.json({ 
+  return apiOk({ 
     metrics: { 
       total_agencies: total_agencies ?? 0, 
       active_reports_today: active_reports_today ?? 0, 

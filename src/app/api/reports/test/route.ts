@@ -1,10 +1,18 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createReport } from '@/lib/db/repositories/reportRepo';
 import { createJob } from '@/lib/db/repositories/jobRepo';
 import { runReportGeneration } from '@/lib/services/reportService';
 import { logger } from '@/lib/utils/logger';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getPayloadCorrelationId, resolveCorrelationId, withCorrelationHeader } from '@/lib/observability/correlation';
+import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';
+
+const reportsTestSchema = z.object({
+  clientId: z.string().min(1),
+  periodStart: z.string().min(1),
+  periodEnd: z.string().min(1),
+  mock: z.boolean().optional(),
+}).strict();
 
 /**
  * POST /api/reports/test
@@ -15,11 +23,11 @@ export async function POST(request: Request) {
   const requestCorrelationId = resolveCorrelationId(request);
 
   try {
-    const body = await request.json();
+    const body = await parseJsonBody(request, reportsTestSchema);
     const { clientId, periodStart: start, periodEnd: end } = body;
 
     if (!clientId || !start || !end) {
-      return NextResponse.json({ error: 'Missing clientId, periodStart, or periodEnd' }, { status: 400 });
+      return apiError('VALIDATION_ERROR', 'Missing clientId, periodStart, or periodEnd', 400);
     }
 
     const db = createSupabaseServiceClient();
@@ -32,7 +40,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!client) {
-      return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+      return apiError('NOT_FOUND', 'Client not found', 404);
     }
 
     const agencyId = client.agency_id;
@@ -52,7 +60,7 @@ export async function POST(request: Request) {
 
     if (deleteError) {
       logger.error({ err: deleteError.message }, 'Failed to clear existing reports');
-      return NextResponse.json({ error: `[cleanup] ${deleteError.message}` }, { status: 500 });
+      return apiError('DB_ERROR', `[cleanup] ${deleteError.message}`, 500);
     }
 
     // 3. Create fresh record
@@ -73,10 +81,7 @@ export async function POST(request: Request) {
 
     if (createError || !report) {
       logger.error({ err: createError?.message }, 'Failed to create fresh report record');
-      return NextResponse.json(
-        { error: '[createReport] ' + (createError?.message || 'Failed to create report') },
-        { status: 500 }
-      );
+      return apiError('DB_ERROR', '[createReport] ' + (createError?.message || 'Failed to create report'), 500);
     }
 
     const reportId = report.id;
@@ -110,20 +115,23 @@ export async function POST(request: Request) {
       correlationId,
     });
 
-    return NextResponse.json({
-      success: true,
-      reportId: reportId,
-      jobId: job.id,
-      mock: mock,
-      message: `Test sequence initiated successfully${mock ? ' (MOCK MODE)' : ''}`,
-      correlationId,
-    }, { headers: withCorrelationHeader(correlationId) });
+    return apiOk(
+      {
+        success: true,
+        reportId: reportId,
+        jobId: job.id,
+        mock: mock,
+        message: `Test sequence initiated successfully${mock ? ' (MOCK MODE)' : ''}`,
+        correlationId,
+      },
+      200,
+      { headers: withCorrelationHeader(correlationId) }
+    );
 
   } catch (error: any) {
     logger.error({ err: error.message, correlationId: requestCorrelationId }, 'Report test trigger critical failure');
-    return NextResponse.json(
-      { error: error.message || 'Critical fault in test trigger' },
-      { status: 500, headers: withCorrelationHeader(requestCorrelationId) }
-    );
+    const response = fromUnknownError(error, 'Critical fault in test trigger');
+    response.headers.set('x-correlation-id', requestCorrelationId);
+    return response;
   }
 }

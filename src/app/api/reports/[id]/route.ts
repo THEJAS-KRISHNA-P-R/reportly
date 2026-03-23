@@ -1,6 +1,13 @@
-import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
+import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';
+import { logger } from '@/lib/utils/logger';
+
+const reportPatchSchema = z.object({
+  ai_narrative: z.string().max(10_000).optional(),
+  status: z.string().optional(),
+}).strict();
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -16,7 +23,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .maybeSingle();
 
     if (error || !report) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      return apiError('NOT_FOUND', 'Report not found', 404);
     }
 
     // Fetch latest metrics for this client
@@ -28,13 +35,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .limit(1)
       .maybeSingle();
 
-    return NextResponse.json({
+    return apiOk({
       ...report,
       latest_metrics: metrics
     });
   } catch (err: any) {
-    console.error('[Report Detail GET] Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    logger.error({ err }, 'Report detail GET failed');
+    return fromUnknownError(err, 'Failed to fetch report');
   }
 }
 
@@ -53,10 +60,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .single();
 
     if (!existing) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return apiError('FORBIDDEN', 'Unauthorized', 403);
     }
 
-    const body = await request.json();
+    const body = await parseJsonBody(request, reportPatchSchema);
     
     // Clean up input
     const updateData: any = {};
@@ -73,9 +80,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (error) throw error;
     
-    return NextResponse.json({ success: true });
+    return apiOk({ success: true });
   } catch (err: any) {
-    console.error('[Report Detail PATCH] Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    logger.error({ err }, 'Report detail PATCH failed');
+    return fromUnknownError(err, 'Failed to update report');
   }
 }

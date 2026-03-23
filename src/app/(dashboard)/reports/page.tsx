@@ -5,6 +5,29 @@ import Link from 'next/link';
 import { Plus, FileText, Search, Filter, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
+type ReportListResponse =
+  | any[]
+  | {
+      ok: boolean;
+      data?: any[];
+      error?: { code?: string; message?: string };
+    };
+
+function unwrapReports(payload: ReportListResponse): any[] {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && typeof payload === 'object' && 'ok' in payload) {
+    if (payload.ok && Array.isArray(payload.data)) {
+      return payload.data;
+    }
+    return [];
+  }
+
+  return [];
+}
+
 export default function ReportsPage() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +39,7 @@ export default function ReportsPage() {
         const res = await fetch('/api/reports');
         if (res.ok) {
           const data = await res.json();
-          setReports(data);
+          setReports(unwrapReports(data));
         }
       } catch (err) {
         toast.error('Failed to load reports');

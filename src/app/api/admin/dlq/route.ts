@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getDLQEntries } from '@/lib/db/repositories/jobRepo';
+import { apiError, apiOk } from '@/lib/api-contract';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -10,14 +10,14 @@ export async function GET() {
   });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user || user.email !== process.env.SUPER_ADMIN_EMAIL) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    return apiError('FORBIDDEN', 'Forbidden', 403);
   }
 
   try {
     const dlq_jobs = await getDLQEntries(50);
-    return NextResponse.json({ dlq_jobs });
+    return apiOk({ dlq_jobs });
   } catch (err) {
     console.error("DLQ fetch failed (table may not exist):", err);
-    return NextResponse.json({ dlq_jobs: [] });
+    return apiOk({ dlq_jobs: [] });
   }
 }

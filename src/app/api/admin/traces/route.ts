@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { normalizeCorrelationId } from '@/lib/observability/correlation';
 import { logger } from '@/lib/utils/logger';
+import { apiError, apiOk } from '@/lib/api-contract';
 
 type JobTraceRow = {
   id: string;
@@ -122,18 +123,13 @@ function buildTimeline(jobs: JobTraceRow[], audits: AuditTraceRow[]) {
 export async function GET(request: NextRequest) {
   const auth = await checkAdmin();
   if ('error' in auth) {
-    return NextResponse.json({ error: auth.error }, { status: 403 });
+    return apiError('FORBIDDEN', auth.error ?? 'Forbidden', 403);
   }
 
   const correlationIdRaw = request.nextUrl.searchParams.get('correlationId');
   const correlationId = normalizeCorrelationId(correlationIdRaw);
   if (!correlationId) {
-    return NextResponse.json(
-      {
-        error: 'Invalid or missing correlationId. Use ?correlationId=<trace-id>',
-      },
-      { status: 400 }
-    );
+    return apiError('VALIDATION_ERROR', 'Invalid or missing correlationId. Use ?correlationId=<trace-id>', 400);
   }
 
   const requestedLimit = Number(request.nextUrl.searchParams.get('limit') ?? 100);
@@ -171,7 +167,7 @@ export async function GET(request: NextRequest) {
         },
         'Admin trace lookup failed'
       );
-      return NextResponse.json({ error: 'Trace lookup failed' }, { status: 500 });
+      return apiError('INTERNAL_ERROR', 'Trace lookup failed', 500);
     }
 
     const jobRows = (jobs ?? []) as JobTraceRow[];
@@ -193,7 +189,7 @@ export async function GET(request: NextRequest) {
       'Admin trace lookup completed'
     );
 
-    return NextResponse.json({
+    return apiOk({
       correlationId,
       counts: {
         jobs: jobRows.length,
@@ -207,6 +203,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     logger.error({ err: error, correlationId, requesterUserId: auth.userId }, 'Admin trace lookup crashed');
-    return NextResponse.json({ error: 'Trace lookup failed' }, { status: 500 });
+    return apiError('INTERNAL_ERROR', 'Trace lookup failed', 500);
   }
 }

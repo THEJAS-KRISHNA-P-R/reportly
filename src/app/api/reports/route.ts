@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
@@ -9,6 +9,7 @@ import { createJob } from '@/lib/db/repositories/jobRepo';
 import { checkReportLimit, incrementReportCount } from '@/lib/utils/limits';
 import { getPayloadCorrelationId, resolveCorrelationId, withCorrelationHeader } from '@/lib/observability/correlation';
 import { logger } from '@/lib/utils/logger';
+import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';
 
 const generateReportSchema = z.object({
   clientId: z.string().uuid(),
@@ -29,13 +30,10 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
     
-    return NextResponse.json(reports);
+    return apiOk(reports);
   } catch (err: any) {
-    console.error('[Reports GET] Error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to list reports' },
-      { status: 500 }
-    );
+    logger.error({ err }, 'Reports GET failed');
+    return fromUnknownError(err, 'Failed to list reports');
   }
 }
 
@@ -45,33 +43,24 @@ export async function POST(request: NextRequest) {
   try {
     const { agencyId } = await getAuthenticatedAgency(request);
     
-    // 2. Validate request body
-    const bodyRaw = await request.json();
-    const result = generateReportSchema.safeParse(bodyRaw);
-    if (!result.success) {
-      return NextResponse.json({ error: 'Invalid request body', details: result.error.format() }, { status: 400 });
-    }
-    const { clientId, periodStart, periodEnd } = result.data;
+    const { clientId, periodStart, periodEnd } = await parseJsonBody(request, generateReportSchema);
 
     // 3. Check usage limits
     const allowed = await checkReportLimit(null, agencyId);
     if (!allowed) {
-      return NextResponse.json({ 
-        error: 'limit_reached', 
-        message: 'Monthly report limit reached. Please upgrade your plan.' 
-      }, { status: 403 });
+      return apiError('LIMIT_REACHED', 'Monthly report limit reached. Please upgrade your plan.', 403);
     }
 
     // 4. Check client ownership
     const client = await getClientById(clientId, agencyId);
     if (!client) {
-      return NextResponse.json({ error: 'Client not found or unauthorized' }, { status: 403 });
+      return apiError('FORBIDDEN', 'Client not found or unauthorized', 403);
     }
 
     // 5. Check GA4 connection status
     const ga4Connected = await isConnected(clientId, 'ga4');
     if (!ga4Connected) {
-      return NextResponse.json({ error: 'ga4_not_connected', message: 'GA4 is not connected for this client' }, { status: 400 });
+      return apiError('GA4_NOT_CONNECTED', 'GA4 is not connected for this client', 400);
     }
 
     // 6. Create report record (Status is 'pending' initially)
@@ -101,19 +90,22 @@ export async function POST(request: NextRequest) {
     await incrementReportCount(null, agencyId);
 
     // 9. Return immediately
-    return NextResponse.json({
-      success: true,
-      reportId: report.id,
-      jobId: job.id,
-      status: 'queued',
-      correlationId,
-    }, { headers: withCorrelationHeader(correlationId) });
+    return apiOk(
+      {
+        success: true,
+        reportId: report.id,
+        jobId: job.id,
+        status: 'queued',
+        correlationId,
+      },
+      200,
+      { headers: withCorrelationHeader(correlationId) }
+    );
 
   } catch (err: any) {
     logger.error({ err, correlationId: requestCorrelationId }, 'Reports POST failed');
-    return NextResponse.json(
-      { error: err.message || 'Failed to trigger report generation' },
-      { status: 500, headers: withCorrelationHeader(requestCorrelationId) }
-    );
+    return fromUnknownError(err, 'Failed to trigger report generation', {
+      headers: withCorrelationHeader(requestCorrelationId),
+    });
   }
 }

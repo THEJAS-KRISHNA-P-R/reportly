@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 import { getReportById, resetReport } from '@/lib/db/repositories/reportRepo';
 import { createJob } from '@/lib/db/repositories/jobRepo';
 import { logger } from '@/lib/utils/logger';
 import { getPayloadCorrelationId, resolveCorrelationId, withCorrelationHeader } from '@/lib/observability/correlation';
+import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
 
 /**
  * Triggers regeneration of an existing report.
@@ -22,7 +22,7 @@ export async function POST(
     // 1. Verify ownership
     const report = await getReportById(reportId, agencyId);
     if (!report) {
-      return NextResponse.json({ error: 'Report not found or unauthorized' }, { status: 404 });
+      return apiError('NOT_FOUND', 'Report not found or unauthorized', 404);
     }
 
     // 2. Reset report record
@@ -51,18 +51,21 @@ export async function POST(
 
     logger.info({ reportId, jobId: job.id, correlationId }, 'Regeneration job queued');
 
-    return NextResponse.json({
-      success: true,
-      jobId: job.id,
-      message: 'Regeneration process started',
-      correlationId,
-    }, { headers: withCorrelationHeader(correlationId) });
+    return apiOk(
+      {
+        success: true,
+        jobId: job.id,
+        message: 'Regeneration process started',
+        correlationId,
+      },
+      200,
+      { headers: withCorrelationHeader(correlationId) }
+    );
 
   } catch (error: any) {
     logger.error({ err: error.message, reportId: (await params).id, correlationId: requestCorrelationId }, 'Regeneration trigger failed');
-    return NextResponse.json(
-      { error: error.message || 'Failed to trigger regeneration' },
-      { status: 500, headers: withCorrelationHeader(requestCorrelationId) }
-    );
+    const response = fromUnknownError(error, 'Failed to trigger regeneration');
+    response.headers.set('x-correlation-id', requestCorrelationId);
+    return response;
   }
 }

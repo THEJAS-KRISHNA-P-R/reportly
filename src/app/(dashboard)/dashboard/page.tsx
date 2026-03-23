@@ -8,6 +8,22 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { FileText } from 'lucide-react';
 
+type Envelope<T> =
+  | T
+  | {
+      ok: boolean;
+      data?: T;
+      error?: { code?: string; message?: string };
+    };
+
+function unwrapData<T>(payload: Envelope<T>, fallback: T): T {
+  if (payload && typeof payload === 'object' && 'ok' in (payload as Record<string, unknown>)) {
+    const envelope = payload as { ok: boolean; data?: T };
+    return envelope.ok ? (envelope.data ?? fallback) : fallback;
+  }
+  return (payload as T) ?? fallback;
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | undefined>(undefined);
   const [recentReports, setRecentReports] = useState<any[]>([]);
@@ -25,7 +41,8 @@ export default function DashboardPage() {
           
           // 2. Fetch Reports for additional status counts
           const reportsRes = await fetch('/api/reports');
-          const reportsData = reportsRes.ok ? await reportsRes.json() : [];
+           const reportsPayload = reportsRes.ok ? await reportsRes.json() : [];
+           const reportsData = unwrapData<any[]>(reportsPayload, []);
           setRecentReports(reportsData.slice(0, 5).map((r: any) => ({
              id: r.id,
              client_name: r.clients?.name || 'Unknown',
@@ -49,7 +66,8 @@ export default function DashboardPage() {
         // 3. Fetch Clients
         const clientsRes = await fetch('/api/clients');
         if (clientsRes.ok) {
-          const clientsData = await clientsRes.json();
+          const clientsPayload = await clientsRes.json();
+          const clientsData = unwrapData<any[]>(clientsPayload, []);
           setTopClients(clientsData.slice(0, 5).map((c: any) => ({
             id: c.id,
             name: c.name,

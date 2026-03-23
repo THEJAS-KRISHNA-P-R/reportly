@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 import { getReportById, updateReportStatus } from '@/lib/db/repositories/reportRepo';
@@ -10,6 +9,7 @@ import { logger } from '@/lib/utils/logger';
 
 import { isEnabled } from '@/lib/featureFlags';
 import { FEATURE_FLAGS } from '@/lib/constants';
+import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -21,11 +21,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 2. Verify report ownership
     const report = await getReportById(reportId, agencyId);
     if (!report) {
-      return NextResponse.json({ error: 'Report not found or unauthorized' }, { status: 404 });
+      return apiError('NOT_FOUND', 'Report not found or unauthorized', 404);
     }
 
     if (report.status === 'approved' || report.status === 'sent') {
-       return NextResponse.json({ error: 'Report is already approved or sent' }, { status: 400 });
+       return apiError('REPORT_CONFLICT', 'Report is already approved or sent', 400);
     }
 
     // 3. Update status to 'approved'
@@ -99,7 +99,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
     }
 
-    return NextResponse.json({ 
+    return apiOk({ 
       success: true, 
       status: emailEnabled ? 'sent' : 'approved',
       message: emailEnabled ? 'Report approved and emails sent' : 'Report approved successfully'
@@ -107,9 +107,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   } catch (err: any) {
     logger.error({ err: err.message }, '[Report Approval POST] Unhandled Error');
-    return NextResponse.json(
-      { error: err.message || 'Failed to approve report' },
-      { status: 500 }
-    );
+    return fromUnknownError(err, 'Failed to approve report');
   }
 }

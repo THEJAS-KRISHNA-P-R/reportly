@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
+import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
+import { logger } from '@/lib/utils/logger';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -16,13 +17,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .maybeSingle();
 
     if (error || !client) {
-      return NextResponse.json({ error: 'Client not found' }, { status: 404 });
+      return apiError('NOT_FOUND', 'Client not found', 404);
     }
 
-    return NextResponse.json(client);
+    return apiOk(client);
   } catch (err: any) {
-    console.error('[Client Detail GET] Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    logger.error({ err }, 'Client detail GET failed');
+    return fromUnknownError(err, 'Failed to fetch client');
   }
 }
 
@@ -40,9 +41,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     if (error) throw error;
     
-    return NextResponse.json({ success: true });
+    return apiOk({ success: true });
   } catch (err: any) {
-    console.error('[Client Detail DELETE] Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    logger.error({ err }, 'Client detail DELETE failed');
+    return fromUnknownError(err, 'Failed to delete client');
   }
 }

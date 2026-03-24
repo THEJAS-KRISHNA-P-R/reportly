@@ -9,7 +9,7 @@ import { ReportlyError } from '@/types/errors';
 export class GA4DataSourceAdapter implements DataSourceAdapter {
   platform: Platform = 'ga4';
 
-  async connect(clientId: string, authCode: string, _agencyId: string): Promise<void> {
+  async connect(clientId: string, authCode: string): Promise<void> {
     const tokens = await oauth.exchangeCodeForTokens(authCode);
     
     // For GA4, we usually need the propertyId. In a real flow, 

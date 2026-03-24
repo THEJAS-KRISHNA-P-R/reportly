@@ -1,4 +1,5 @@
 import { createSupabaseServiceClient } from '@/lib/db/client';
+import { sanitizeText } from '@/lib/security/sanitizer';
 import type { Agency } from '@/types/report';
 import { handleDbError } from './_base';
 
@@ -22,7 +23,7 @@ export async function getAgencyById(agencyId: string): Promise<Agency | null> {
 
 export async function getAgencyUserByEmail(email: string) {
   const db = createSupabaseServiceClient();
-    const { data, error } = await db
+    const { data } = await db
       .from('agency_users')
       .select(`
         id,
@@ -48,9 +49,14 @@ export async function updateAgency(
   updates: Partial<Pick<Agency, 'name' | 'logo_url' | 'brand_color'>>
 ): Promise<Agency> {
   const db = createSupabaseServiceClient();
+  const sanitizedUpdates = { ...updates };
+  if (updates.name) sanitizedUpdates.name = sanitizeText(updates.name, 100);
+  if (updates.brand_color) sanitizedUpdates.brand_color = sanitizeText(updates.brand_color, 20);
+  if (updates.logo_url) sanitizedUpdates.logo_url = sanitizeText(updates.logo_url, 1000);
+
   const { data, error } = await db
     .from('agencies')
-    .update(updates)
+    .update(sanitizedUpdates)
     .eq('id', agencyId)
     .select()
     .maybeSingle();

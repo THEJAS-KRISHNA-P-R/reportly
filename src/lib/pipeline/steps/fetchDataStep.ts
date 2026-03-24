@@ -3,8 +3,12 @@ import { analyticsRegistry } from '@/lib/modules/analytics/registry';
 import { createAuditLog } from '@/lib/db/repositories/auditRepo';
 import { logger } from '@/lib/utils/logger';
 import { refreshGA4Token } from '@/lib/modules/analytics/ga4/refresh';
+import { updateReportProgress } from '@/lib/db/repositories/reportRepo';
 
 export async function fetchDataStep(context: PipelineContext): Promise<void> {
+  if (context.reportId) {
+    await updateReportProgress(context.reportId, context.agencyId, 'Fetching Analytics Data', 15);
+  }
   logger.info({ clientId: context.clientId, reportId: context.reportId, correlationId: context.correlationId, platform: 'ga4' }, 'Starting data fetch step');
 
   try {

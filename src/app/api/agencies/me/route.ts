@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/db/client';
+import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 
 export async function GET(request: NextRequest) {
@@ -8,8 +8,6 @@ export async function GET(request: NextRequest) {
     const supabase = createSupabaseServiceClient(); // Use service role for metadata/counts
 
     // Fetch the full agency record with related counts
-    // Using a more standard query structure for Next.js 16/supabase-js
-    // 1. Fetch the full agency record
     const { data: agency, error } = await supabase
       .from('agencies')
       .select(`
@@ -26,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    // 2. Fetch accurate count of non-deleted clients
+    // Fetch accurate count of non-deleted clients
     const { count } = await supabase
       .from('clients')
       .select('*', { count: 'exact', head: true })
@@ -44,6 +42,40 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err: any) {
     console.error('[Agencies Me GET] Error:', err);
+    return NextResponse.json(
+      { error: err.message || 'Internal error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const { agencyId, role } = await getAuthenticatedAgency(request);
+    
+    if (role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized: Admin role required' }, { status: 403 });
+    }
+
+    const supabase = createSupabaseServiceClient();
+    const body = await request.json();
+
+    if (!body.name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from('agencies')
+      .update({ name: body.name })
+      .eq('id', agencyId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(data);
+  } catch (err: any) {
+    console.error('[Agencies Me PATCH] Error:', err);
     return NextResponse.json(
       { error: err.message || 'Internal error' },
       { status: 500 }

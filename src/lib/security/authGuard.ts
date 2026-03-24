@@ -1,4 +1,4 @@
-import type { Agency, AgencyUser } from '@/types/report';
+import type { Agency } from '@/types/report';
 import { ReportlyError } from '@/types/errors';
 import { logger } from '@/lib/utils/logger';
 import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/db/client';

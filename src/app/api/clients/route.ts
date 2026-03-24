@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/db/client';
+import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 import { checkClientLimit } from '@/lib/utils/limits';
 import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';

@@ -39,11 +39,15 @@ function parseReportPeriod(payload: Record<string, unknown>): ReportPeriod {
   return { start, end, label };
 }
 
+// Graceful Shutdown Flag
+let isShuttingDown = false;
+
 /**
  * Poor man's worker: Polls the job_queue for 'queued' jobs and processes them.
- * In production, this would be a separate process or a robust queue like BullMQ.
  */
 export async function pollAndProcessJobs() {
+  if (isShuttingDown) return;
+
   try {
     const concurrency = Math.max(1, Number(process.env.WORKER_CONCURRENCY ?? 5));
 
@@ -116,6 +120,7 @@ export async function pollAndProcessJobs() {
             idempotencyKey,
             jobLeaseOwnerToken: leaseOwnerToken,
             correlationId,
+            maxAttempts,
           }
         );
 
@@ -189,11 +194,39 @@ export async function pollAndProcessJobs() {
   }
 }
 
+// Handle signals for graceful shutdown
+if (typeof process !== 'undefined') {
+  const shutdown = (signal: string) => {
+    logger.info({ signal }, `Worker: Received ${signal}, initiating graceful shutdown`);
+    isShuttingDown = true;
+    // Allow 10s for in-flight jobs to complete or at least update heartbeat
+    setTimeout(() => {
+      logger.info('Worker: Shutdown timer exhausted, exiting');
+      process.exit(0);
+    }, 10_000);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error({ reason, promise }, 'Worker: Unhandled Promise Rejection');
+  });
+
+  process.on('uncaughtException', (error) => {
+    logger.error({ err: error.message, stack: error.stack }, 'Worker: Uncaught Exception');
+    // For uncaught exceptions, we should probably exit and let the orchestrator restart us.
+    // The shutdown() call above handles the delay.
+    shutdown('UNCAUGHT_EXCEPTION');
+  });
+}
+
 // If run via CLI
 if (require.main === module) {
-    logger.info('Worker: Starting manual poll cycle');
-    pollAndProcessJobs().then(() => {
-        logger.info('Worker: Cycle finished');
-        process.exit(0);
-    });
+  logger.info('Worker: Starting manual poll cycle');
+  pollAndProcessJobs().then(() => {
+    logger.info('Worker: Cycle finished');
+    // Don't exit immediately if we want to keep polling, but for manual test it's fine
+    if (!isShuttingDown) process.exit(0);
+  });
 }

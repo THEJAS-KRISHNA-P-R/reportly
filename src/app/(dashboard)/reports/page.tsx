@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, FileText, Search, Filter, ArrowRight } from 'lucide-react';
+import { Plus, FileText, Search, Eye, Download, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type ReportListResponse =
   | any[]
@@ -14,17 +16,10 @@ type ReportListResponse =
     };
 
 function unwrapReports(payload: ReportListResponse): any[] {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
+  if (Array.isArray(payload)) return payload;
   if (payload && typeof payload === 'object' && 'ok' in payload) {
-    if (payload.ok && Array.isArray(payload.data)) {
-      return payload.data;
-    }
-    return [];
+    if (payload.ok && Array.isArray(payload.data)) return payload.data;
   }
-
   return [];
 }
 
@@ -32,6 +27,7 @@ export default function ReportsPage() {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchReports() {
@@ -41,7 +37,7 @@ export default function ReportsPage() {
           const data = await res.json();
           setReports(unwrapReports(data));
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to load reports');
       } finally {
         setLoading(false);
@@ -50,18 +46,47 @@ export default function ReportsPage() {
     fetchReports();
   }, []);
 
-  const getStatusColor = (status: string) => {
+  const handleExport = (report: any) => {
+    try {
+      const metrics = report.latest_metrics?.validated_metrics || {};
+      const exportData = [
+        ['Report Detail', 'Value'],
+        ['Client', report.clients?.name],
+        ['Period', report.month],
+        ['Status', report.status],
+        ['Created At', new Date(report.created_at).toLocaleString()],
+        [''],
+        ['Metric', 'Value', 'Delta (%)'],
+        ...Object.entries(metrics).map(([key, val]: [string, any]) => [
+          key,
+          typeof val === 'object' ? val.value : val,
+          typeof val === 'object' ? val.delta : 'N/A'
+        ])
+      ];
+
+      const csvContent = exportData.map(e => e.join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `report_export_${report.clients?.name}_${report.month}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Enterprise data export completed');
+    } catch {
+      toast.error('Export failed');
+    }
+  };
+
+  const getStatusVariant = (status: string) => {
     switch (status) {
       case 'ready':
       case 'approved':
-      case 'sent':
-        return { bg: '#F0FAF4', text: '#1A7A3A', dot: '#1A7A3A' };
-      case 'generating':
-        return { bg: '#F2F2F2', text: '#666666', dot: '#999999' };
-      case 'error':
-        return { bg: '#FFF4F4', text: '#8B1A2A', dot: '#8B1A2A' };
-      default: // draft
-        return { bg: '#F8F8F8', text: '#333333', dot: '#CCCCCC' };
+      case 'sent': return 'default';
+      case 'error': return 'destructive';
+      case 'generating': return 'secondary';
+      default: return 'outline';
     }
   };
 
@@ -71,11 +96,11 @@ export default function ReportsPage() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
       {/* Search & Actions Area */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex flex-col gap-1">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Reports</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Intelligence Archive</h2>
           <p className="text-sm text-slate-500">Historical performance records and delivery status.</p>
         </div>
         
@@ -87,17 +112,12 @@ export default function ReportsPage() {
               placeholder="Filter by client or period"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-11 pl-11 pr-4 rounded-xl bg-white border border-slate-200 text-sm font-medium outline-none transition-all focus:border-indigo-500 focus:shadow-sm w-full placeholder:text-slate-400"
+              className="h-11 pl-11 pr-4 rounded-xl bg-white border border-slate-200 text-sm font-semibold outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 w-full placeholder:text-slate-400"
             />
           </div>
-          <button
-            className="h-11 w-11 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <Filter size={18} />
-          </button>
           <Link
             href="/clients"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-bold text-white transition-all hover:bg-slate-800 shadow-md shadow-slate-200"
           >
             <Plus size={16} /> Generate Report
           </Link>
@@ -111,75 +131,134 @@ export default function ReportsPage() {
              <p className="text-[12px] font-bold uppercase tracking-widest text-slate-400 animate-pulse">Synchronizing Intelligence...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-2xl bg-white border border-slate-200 flex flex-col items-center justify-center p-12 text-center shadow-sm">
-            <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 text-slate-400 border border-slate-100">
+          <div className="rounded-2xl bg-white border border-slate-200 flex flex-col items-center justify-center p-20 text-center shadow-sm">
+            <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 text-slate-300 border border-slate-100">
               <FileText size={32} />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">No records found</h3>
-            <p className="text-[15px] font-medium text-slate-500 max-w-sm">
-              Your intelligence archive is currently empty. Reports appear here once generated from a client node.
+            <h3 className="text-lg font-bold text-slate-900 mb-2">No records localized</h3>
+            <p className="text-[14px] font-medium text-slate-500 max-w-sm mx-auto">
+              Your intelligence archive is empty. Reports appear once generated from client nodes.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map(report => {
-              const statusColors = getStatusColor(report.status);
               const clientName = report.clients?.name || 'Unknown Node';
               
               return (
-                <Link 
+                <div 
                   key={report.id} 
-                  href={`/reports/${report.id}`}
-                  className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-indigo-200 hover:shadow-md"
+                  className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white p-5 transition-all hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-500/5"
                 >
-                  <div className="mb-5 flex items-start justify-between gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-lg font-bold text-slate-600 transition-all group-hover:bg-indigo-50 group-hover:text-indigo-600">
-                      {clientName.charAt(0).toUpperCase()}
+                  <Link 
+                    href={`/reports/${report.id}`}
+                    className="flex-1 cursor-pointer"
+                  >
+                    <div className="mb-6 flex items-start justify-between">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-lg font-bold text-slate-600 transition-all group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-indigo-200">
+                        {clientName.charAt(0).toUpperCase()}
+                      </div>
+                      <Badge variant={getStatusVariant(report.status)} className="capitalize">
+                        {report.status}
+                      </Badge>
                     </div>
-                    <div 
-                      className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider"
-                      style={{ 
-                        background: statusColors.bg.replace('#', 'rgba(0,0,0,0)').replace('F0FAF4', '#ECFDF5').replace('F2F2F2', '#F8FAFC').replace('FFF4F4', '#FFF1F2').replace('F8F8F8', '#F8FAFC'), 
-                        color: statusColors.text,
-                        borderColor: 'currentColor',
-                        opacity: 0.8
-                      }}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${report.status === 'generating' ? 'animate-pulse' : ''}`} style={{ background: 'currentColor' }} />
-                      {report.status}
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col h-full">
-                    <div className="flex-1">
-                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">{report.month}</p>
-                      <h3 className="text-xl font-bold tracking-tight text-slate-900 truncate mb-6 group-hover:text-indigo-600 transition-colors">
+                    <div className="space-y-1 mb-6">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{report.month}</p>
+                      <h3 className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">
                         {clientName}
                       </h3>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between pb-3 border-b border-slate-50">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Timestamp</span>
-                          <span className="text-[12px] font-bold text-slate-600">{new Date(report.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Classification</span>
-                           <span className="text-[12px] font-bold text-slate-600">Standard Analysis</span>
-                        </div>
-                      </div>
                     </div>
-
-                    <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
-                      <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-600">Enter Editor</span>
-                      <ArrowRight size={14} className="text-indigo-600 group-hover:translate-x-1 transition-transform" />
-                    </div>
+                  </Link>
+                  
+                  <div className="grid grid-cols-2 gap-2 mt-auto pt-4 border-t border-slate-50">
+                     <button 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         if (report.pdf_url) {
+                           setPreviewUrl(report.pdf_url);
+                         } else {
+                           toast.info('PDF is being generated...');
+                         }
+                       }}
+                       className="flex items-center justify-center gap-2 h-10 rounded-xl bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 text-[12px] font-bold transition-all"
+                     >
+                       <Eye size={14} /> Preview
+                     </button>
+                     <button 
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         handleExport(report);
+                       }}
+                       className="flex items-center justify-center gap-2 h-10 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 text-[12px] font-bold transition-all"
+                     >
+                       <Download size={14} /> Export
+                     </button>
                   </div>
-                </Link>
+
+                </div>
               )
             })}
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      <AnimatePresence>
+        {previewUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-10">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPreviewUrl(null)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full h-full max-w-5xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white shadow-sm">
+                 <div className="flex items-center gap-3">
+                   <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                     <FileText size={18} />
+                   </div>
+                   <span className="text-[13px] font-bold text-slate-900 uppercase tracking-widest">Enterprise PDF Preview</span>
+                 </div>
+                 <button 
+                   onClick={() => setPreviewUrl(null)}
+                   className="p-2 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-slate-900 transition-all"
+                 >
+                   <X size={20} />
+                 </button>
+              </div>
+              <div className="flex-1 bg-slate-100">
+                {previewUrl.startsWith('http') ? (
+                  <iframe src={previewUrl} className="w-full h-full border-none" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center p-20 text-center">
+                    <div>
+                      <Check size={48} className="mx-auto text-emerald-500 mb-4" />
+                      <p className="text-lg font-bold text-slate-900">PDF Ready for Download</p>
+                      <p className="text-sm text-slate-500 mt-2 mb-6">This report is stored in the encrypted storage node.</p>
+                      <a 
+                        href={previewUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100"
+                      >
+                         Open PDF Node →
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

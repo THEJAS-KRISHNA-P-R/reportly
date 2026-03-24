@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Flag, ShieldCheck, Loader2, Cpu } from 'lucide-react';
+import { Flag, ShieldCheck, Cpu } from 'lucide-react';
 
 export default function AdminFlagsPage() {
   const [data, setData] = useState<any>(null);

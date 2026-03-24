@@ -1,18 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { securityHeaders } from '@/lib/security/headers';
 import { getPolicyDecision, getRouteGroup, resolveUserRole } from '@/lib/security/routePolicy';
 
 const CRON_PATHS  = ['/api/cron'];
 
 function applySecurityHeaders(res: NextResponse): NextResponse {
-  res.headers.set('X-Frame-Options', 'DENY');
-  res.headers.set('X-Content-Type-Options', 'nosniff');
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    res.headers.set(key, value);
+  });
   return res;
+}
+
+function isValidOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  if (!siteUrl) return true; 
+  
+  const expectedOrigin = new URL(siteUrl).origin;
+  
+  if (origin && origin !== expectedOrigin) return false;
+  if (!origin && referer) {
+    try {
+      const refererOrigin = new URL(referer).origin;
+      if (refererOrigin !== expectedOrigin) return false;
+    } catch {
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method;
+
+  // CSRF Protection for API Writes
+  if (pathname.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    if (!isValidOrigin(request)) {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+  }
+
   const routeGroup = getRouteGroup(pathname);
 
   // Cron routes — verify Vercel cron secret

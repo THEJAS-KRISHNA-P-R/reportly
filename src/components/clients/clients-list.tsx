@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Users, FileText } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 interface Client {
   id: string;

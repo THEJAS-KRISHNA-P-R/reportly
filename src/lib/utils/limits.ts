@@ -1,10 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { createSupabaseServiceClient } from '@/lib/db/client';
 
-export async function checkClientLimit(_unused: any, agencyId: string): Promise<boolean> {
-  const supabase = createSupabaseServiceClient();
+export async function checkClientLimit(supabase: SupabaseClient, agencyId: string): Promise<boolean> {
   // 1. Get plan info
-  const { data: agency, error: planError } = await supabase
+  const { data: agency } = await supabase
     .from('agencies')
     .select('agency_billing(plan_id)')
     .eq('id', agencyId)
@@ -33,8 +31,7 @@ export async function checkClientLimit(_unused: any, agencyId: string): Promise<
   return true; // 'agency' plan
 }
 
-export async function checkReportLimit(_unused: any, agencyId: string): Promise<boolean> {
-  const supabase = createSupabaseServiceClient();
+export async function checkReportLimit(supabase: SupabaseClient, agencyId: string): Promise<boolean> {
   // Simple check for now
   const { data: agency, error } = await supabase
     .from('agencies')
@@ -47,7 +44,6 @@ export async function checkReportLimit(_unused: any, agencyId: string): Promise<
   return (agency.reports_generated_this_month || 0) < (agency.plan_report_limit || 0);
 }
 
-export async function incrementReportCount(_unused: any, agencyId: string): Promise<void> {
-  const supabase = createSupabaseServiceClient();
+export async function incrementReportCount(supabase: SupabaseClient, agencyId: string): Promise<void> {
   await supabase.rpc('increment_report_count', { p_agency_id: agencyId });
 }

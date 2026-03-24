@@ -27,7 +27,8 @@ export interface RawMetricSet {
   periodEnd: Date;
   retrievedAt: Date;
   metrics: Record<string, number | null>;
-  breakdown?: Record<string, number>;
+  breakdown?: any; 
+  freshness?: FreshnessStatus;
 }
 
 export interface ValidatedMetricSet {
@@ -36,6 +37,7 @@ export interface ValidatedMetricSet {
   periodEnd: Date;
   retrievedAt: Date;
   validated: Record<string, MetricValue>;
+  breakdown?: any; 
   freshnessStatus: FreshnessStatus;
   confidence: ConfidenceSummary;
   warnings: string[];

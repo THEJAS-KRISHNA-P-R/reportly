@@ -1,7 +1,6 @@
 'use client';
 
 import { Suspense } from 'react';
-import Link from 'next/link';
 import { LoginForm } from '@/components/auth/login-form';
 import { AuthProvider } from '@/lib/auth-context';
 import { BeamsDynamic } from '@/components/ui/beams-dynamic';

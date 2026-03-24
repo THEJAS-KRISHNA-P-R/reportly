@@ -53,7 +53,7 @@ export function verifyOAuthState(state: string): Record<string, string> | null {
       return null;
     }
     // Parse and validate payload
-    const [jsonPart, _timestamp] = data.split('|');
+    const [jsonPart] = data.split('|');
     return JSON.parse(jsonPart) as Record<string, string>;
   } catch {
     return null;

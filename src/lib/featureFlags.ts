@@ -23,7 +23,7 @@ export async function isEnabled(flagName: string): Promise<boolean> {
       .maybeSingle();
 
     return data?.enabled ?? false;
-  } catch (err) {
+  } catch {
     // If table doesn't exist or query fails, default to false (safe)
     return false;
   }

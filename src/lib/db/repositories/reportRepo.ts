@@ -72,6 +72,7 @@ export async function getReportsByAgency(agencyId: string, limit = 50): Promise<
 
 export async function updateReportStatus(
   reportId: string,
+  agencyId: string, // Enforce agency scoping
   status: ReportStatus,
   extra?: Partial<
     Pick<Report, 'generation_started_at' | 'approved_at' | 'approved_by' | 'sent_at' | 'cancelled_reason'>
@@ -81,12 +82,14 @@ export async function updateReportStatus(
   const { error } = await db
     .from('reports')
     .update({ status, ...extra })
-    .eq('id', reportId);
+    .eq('id', reportId)
+    .eq('agency_id', agencyId); // strict isolation
   if (error) handleDbError(error, 'updateReportStatus');
 }
 
 export async function updateReportNarrative(
   reportId: string,
+  agencyId: string, // Enforce agency scoping
   narrative: string,
   source: NarrativeSource,
   raw: string,
@@ -105,7 +108,8 @@ export async function updateReportNarrative(
       confidence_summary: confidence,
       status: 'draft' satisfies ReportStatus,
     })
-    .eq('id', reportId);
+    .eq('id', reportId)
+    .eq('agency_id', agencyId); // strict isolation
   if (error) handleDbError(error, 'updateReportNarrative');
 }
 
@@ -124,13 +128,31 @@ export async function updateReportNarrativeEdit(
   if (error) handleDbError(error, 'updateReportNarrativeEdit');
 }
 
-export async function updateReportPdf(reportId: string, pdfUrl: string): Promise<void> {
+export async function updateReportPdf(reportId: string, agencyId: string, pdfUrl: string): Promise<void> {
   const db = createSupabaseServiceClient();
   const { error } = await db
     .from('reports')
     .update({ pdf_url: pdfUrl, pdf_generated_at: new Date().toISOString() })
-    .eq('id', reportId);
+    .eq('id', reportId)
+    .eq('agency_id', agencyId);
   if (error) handleDbError(error, 'updateReportPdf');
+}
+
+export async function updateReportProgress(
+  reportId: string,
+  agencyId: string,
+  stepName: string,
+  percentage: number,
+  status: 'in_progress' | 'success' | 'error' = 'in_progress'
+): Promise<void> {
+  const db = createSupabaseServiceClient();
+  await db
+    .from('reports')
+    .update({ 
+      current_step: { name: stepName, percentage, status, updatedAt: new Date().toISOString() } 
+    })
+    .eq('id', reportId)
+    .eq('agency_id', agencyId);
 }
 
 export async function approveReport(
@@ -182,7 +204,7 @@ export async function reportExistsForPeriod(
 }
 
 /** Resets a report to pending state for regeneration. */
-export async function resetReport(reportId: string): Promise<void> {
+export async function resetReport(reportId: string, agencyId: string): Promise<void> {
   const db = createSupabaseServiceClient();
   const { error } = await db
     .from('reports')
@@ -200,6 +222,7 @@ export async function resetReport(reportId: string): Promise<void> {
       generation_started_at: null,
       pdf_generated_at: null,
     })
-    .eq('id', reportId);
+    .eq('id', reportId)
+    .eq('agency_id', agencyId);
   if (error) handleDbError(error, 'resetReport');
 }

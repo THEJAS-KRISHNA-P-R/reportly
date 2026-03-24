@@ -2,8 +2,12 @@ import { PipelineContext } from '../pipeline';
 import { validateMetrics } from '@/lib/validators/metricValidator';
 import { createAuditLog } from '@/lib/db/repositories/auditRepo';
 import { ReportlyError } from '@/types/errors';
+import { updateReportProgress } from '@/lib/db/repositories/reportRepo';
 
 export async function validateDataStep(context: PipelineContext): Promise<void> {
+  if (context.reportId) {
+    await updateReportProgress(context.reportId, context.agencyId, 'Verifying Metric Accuracy', 35);
+  }
   if (!context.fetchResult) {
     throw new Error('fetchResult missing in pipeline context');
   }
@@ -22,8 +26,11 @@ export async function validateDataStep(context: PipelineContext): Promise<void> 
       'validation',
       {
         passed: validationResult.passedValidation,
+        retrievedAt: context.fetchResult.retrievedAt,
         warnings: validationResult.warnings,
-        validated: validationResult.validated
+        validated: validationResult.validated,
+        breakdown: context.fetchResult.metrics?.breakdown,
+        freshnessStatus: context.fetchResult.metrics?.freshness || 'fresh',
       },
       {
         correlationId: context.correlationId,

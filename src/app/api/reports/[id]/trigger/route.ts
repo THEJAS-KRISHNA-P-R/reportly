@@ -26,7 +26,7 @@ export async function POST(
     }
 
     // 2. Reset report record
-    await resetReport(reportId);
+    await resetReport(reportId, agencyId);
     logger.info({ reportId }, 'Report record reset for regeneration');
 
     // 3. Queue new generation job

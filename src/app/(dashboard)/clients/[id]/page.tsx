@@ -4,8 +4,8 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  ArrowLeft, Settings, Activity, FileText, Blocks, Trash2, 
-  ExternalLink, RotateCcw, ChevronRight, Mail, Calendar, MapPin, Plus
+  ArrowLeft, Settings, Activity, FileText, Blocks, 
+  ChevronRight, Mail, Calendar, MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -17,7 +17,6 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [properties, setProperties] = useState<any[]>([]);
-  const [isDiscovering, setIsDiscovering] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
 
   useEffect(() => {
@@ -26,11 +25,11 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         const res = await fetch(`/api/clients/${resolvedParams.id}`);
         if (res.ok) {
           const data = await res.json();
-          setClient(data);
+          setClient(data.data);
         } else {
           router.push('/clients');
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to load client');
       } finally {
         setLoading(false);
@@ -47,7 +46,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         toast.success('Client deleted');
         router.push('/clients');
       }
-    } catch (err) {
+    } catch {
       toast.error('Error deleting client');
     }
   };
@@ -57,7 +56,6 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
   };
 
   const handleDiscoverProperties = async () => {
-    setIsDiscovering(true);
     const tid = toast.loading('Discovering GA4 Properties...');
     try {
       const res = await fetch(`/api/clients/${resolvedParams.id}/analytics/properties`);
@@ -68,7 +66,7 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         toast.success(`Found ${data.properties?.length || 0} properties`, { id: tid });
       }
     } finally {
-      setIsDiscovering(false);
+      // Done
     }
   };
 
@@ -84,7 +82,10 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         toast.success('Property updated', { id: tid });
         setIsSelecting(false);
         const cRes = await fetch(`/api/clients/${resolvedParams.id}`);
-        if (cRes.ok) setClient(await cRes.json());
+        if (cRes.ok) {
+          const data = await cRes.json();
+          setClient(data.data);
+        }
       }
     } finally {
       toast.dismiss(tid);

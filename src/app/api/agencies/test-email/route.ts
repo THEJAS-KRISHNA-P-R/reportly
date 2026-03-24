@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     // Retrieve branding settings
     const { data: brand } = await supabase.from('agency_branding').select('report_layout').eq('agency_id', agencyId).single();
 
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: 'Reportly App <noreply@resend.dev>', // Needs custom domain verified in prod
       to: [to_email],
       subject: 'Reportly Customization Test Email',

@@ -21,7 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // 3. Get connection tokens
-    const { data: conn, error: connError } = await db
+    const { data: conn } = await db
       .from('api_connections')
       .select('*')
       .eq('client_id', clientId)

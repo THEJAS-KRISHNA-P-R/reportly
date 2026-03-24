@@ -21,7 +21,6 @@ export function transformGA4Response(
   const priorMetrics: Record<string, number> = {
     sessions: 0, users: 0, newUsers: 0, bounceRate: 0, avgSessionDuration: 0
   };
-  let priorRows = 0;
 
   const rows = responseData.rows || [];
   const metricHeaders = responseData.metricHeaders || [];
@@ -29,7 +28,7 @@ export function transformGA4Response(
   for (const row of rows) {
     const isPrior = row.dimensionValues[0].value === 'date_range_1'; // date_range_0 is current
     const target = isPrior ? priorMetrics : currentMetrics;
-    if (isPrior) priorRows++; else currentRows++;
+    if (isPrior) { /* no-op */ } else currentRows++;
 
     row.metricValues.forEach((mv: any, index: number) => {
       const name = metricHeaders[index].name;
@@ -50,14 +49,23 @@ export function transformGA4Response(
   }
 
   // Dimension breakdown (Top Sources - Current Period Only for local MVP)
-  const breakdown: Record<string, number> = {};
+  const trafficSources: Array<{ source: string; sessions: number }> = [];
+  const sourceMap: Record<string, number> = {};
+
   for (const row of rows) {
     if (row.dimensionValues[0].value === 'date_range_0') {
       const source = row.dimensionValues[1].value;
       const sessions = parseInt(row.metricValues[0].value, 10);
-      breakdown[source] = (breakdown[source] || 0) + sessions;
+      sourceMap[source] = (sourceMap[source] || 0) + sessions;
     }
   }
+
+  for (const [source, sessions] of Object.entries(sourceMap)) {
+    trafficSources.push({ source, sessions });
+  }
+
+  // Sort by sessions descending
+  trafficSources.sort((a, b) => b.sessions - a.sessions);
 
   return {
     platform: 'ga4',
@@ -65,6 +73,7 @@ export function transformGA4Response(
     periodEnd,
     retrievedAt: new Date(),
     metrics: finalMetrics,
-    breakdown
+    breakdown: { trafficSources }
   };
 }
+

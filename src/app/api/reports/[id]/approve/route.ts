@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // 3. Update status to 'approved'
-    await updateReportStatus(reportId, 'approved', { approved_at: new Date().toISOString(), approved_by: userId });
+    await updateReportStatus(reportId, agencyId, 'approved', { approved_at: new Date().toISOString(), approved_by: userId });
 
     // 4. Log approval event
     await createAuditLog(reportId, agencyId, 'approval', { userId });
@@ -91,7 +91,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           await createAuditLog(reportId, agencyId, 'email_sent', { recipients: client.report_emails });
           
           // D. Final report status: 'sent'
-          await updateReportStatus(reportId, 'sent');
+          await updateReportStatus(reportId, agencyId, 'sent');
         }
       } catch (deliveryErr: any) {
         logger.error({ err: deliveryErr.message, reportId }, 'Batch email delivery process failed');

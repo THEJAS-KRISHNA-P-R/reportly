@@ -45,8 +45,10 @@ export async function POST(request: NextRequest) {
     
     const { clientId, periodStart, periodEnd } = await parseJsonBody(request, generateReportSchema);
 
+    const supabase = createSupabaseServiceClient();
+
     // 3. Check usage limits
-    const allowed = await checkReportLimit(null, agencyId);
+    const allowed = await checkReportLimit(supabase, agencyId);
     if (!allowed) {
       return apiError('LIMIT_REACHED', 'Monthly report limit reached. Please upgrade your plan.', 403);
     }
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
     );
 
     // 8. Increment report count
-    await incrementReportCount(null, agencyId);
+    await incrementReportCount(supabase, agencyId);
 
     // 9. Return immediately
     return apiOk(

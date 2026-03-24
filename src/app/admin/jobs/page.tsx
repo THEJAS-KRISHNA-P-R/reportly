@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Activity, CheckCircle2, AlertCircle, Loader2, BarChart3 } from 'lucide-react';
+import { Clock, Activity, CheckCircle2, AlertCircle, BarChart3 } from 'lucide-react';
 
 export default function AdminJobsPage() {
   const [data, setData] = useState<any>(null);

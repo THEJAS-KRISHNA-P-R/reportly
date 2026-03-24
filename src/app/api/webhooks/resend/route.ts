@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
+import { apiOk, fromUnknownError } from '@/lib/api-contract';
 
 export async function POST(request: Request) {
   try {

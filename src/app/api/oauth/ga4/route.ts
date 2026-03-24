@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. Get authenticated agency (polymorphic)
-    const { agencyId, user } = await getAuthenticatedAgency(request);
+    const { agencyId } = await getAuthenticatedAgency(request);
 
     // 3. Initialize Supabase (service role for diagnostic visibility)
     const supabase = createSupabaseServiceClient();

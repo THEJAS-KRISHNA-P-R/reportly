@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 import { getClientById } from '@/lib/db/repositories/clientRepo';
 import { analyticsRegistry } from '@/lib/modules/analytics/registry';
@@ -13,7 +12,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     
     // 1. Get authenticated agency
     const { agencyId } = await getAuthenticatedAgency(request);
-    const supabase = createSupabaseServiceClient();
 
     // 2. Verify client ownership
     const client = await getClientById(clientId, agencyId);

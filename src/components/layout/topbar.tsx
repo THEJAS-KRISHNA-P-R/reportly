@@ -3,25 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, ChevronDown } from 'lucide-react';
+import { Bell, ChevronDown, LayoutGrid } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-
-/* 
-  Breadcrumb mapping for known paths
-*/
-const getPageTitle = (pathname: string) => {
-  if (pathname === '/dashboard') return 'Overview';
-  if (pathname === '/clients') return 'Clients';
-  if (pathname === '/reports') return 'Reports';
-  if (pathname === '/analytics') return 'Analytics';
-  if (pathname === '/customize') return 'Customize';
-  if (pathname === '/settings') return 'Settings';
-  if (pathname === '/billing') return 'Billing';
-  if (pathname.startsWith('/clients/new')) return 'Add Client';
-  if (pathname.startsWith('/clients/')) return 'Client Details';
-  if (pathname.startsWith('/reports/')) return 'Report Editor';
-  return '';
-};
+import { Breadcrumbs } from '@/components/ui/breadcrumbs';
 
 export function Topbar() {
   const pathname = usePathname();
@@ -35,8 +19,6 @@ export function Topbar() {
   const [clientsLimit, setClientsLimit] = useState(1);
   const [planId, setPlanId] = useState('free');
   
-  const title = getPageTitle(pathname);
-
   useEffect(() => {
     async function fetchUsage() {
       try {
@@ -58,7 +40,7 @@ export function Topbar() {
             }
           }
         }
-      } catch (err) {
+      } catch {
         // ignore
       }
     }
@@ -69,16 +51,17 @@ export function Topbar() {
   const clientsAtLimit = clientsUsed >= clientsLimit;
 
   return (
-    <header className="h-[var(--topbar-height)] flex items-center justify-between px-10 bg-white border-b border-slate-200 sticky top-0 z-40">
-      <div className="flex items-center gap-6">
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">
-          {title}
-        </h1>
+    <header className="h-[var(--topbar-height)] flex items-center justify-between px-6 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 transition-all">
+      <div className="flex items-center gap-4">
+        <div className="md:hidden p-2 rounded-lg bg-slate-100 text-slate-600 mr-2">
+           <LayoutGrid size={20} />
+        </div>
+        <Breadcrumbs />
         {planId !== 'free' && (
           <span
-            className="hidden sm:inline-block text-[11px] font-bold tracking-widest uppercase px-3 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100"
+            className="hidden sm:inline-block text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
           >
-            {planId} Node
+            {planId}
           </span>
         )}
       </div>

@@ -1,4 +1,5 @@
-import { createSupabaseServerClient, createSupabaseServiceClient } from '@/lib/db/client';
+import { createSupabaseServiceClient } from '@/lib/db/client';
+import { sanitizeText } from '@/lib/security/sanitizer';
 import type { Client, CreateClientInput, UpdateClientInput } from '@/types/report';
 import { handleDbError } from './_base';
 
@@ -37,9 +38,14 @@ export async function getClientById(clientId: string, agencyId: string): Promise
 
 export async function createClient(agencyId: string, input: CreateClientInput): Promise<Client> {
   const db = createSupabaseServiceClient();
+  const sanitizedInput: CreateClientInput = {
+    ...input,
+    name: sanitizeText(input.name, 100),
+    report_emails: input.report_emails.map(email => sanitizeText(email, 255))
+  };
   const { data, error } = await db
     .from('clients')
-    .insert({ ...input, agency_id: agencyId }) // agency_id from session, not user input
+    .insert({ ...sanitizedInput, agency_id: agencyId }) // agency_id from session, not user input
     .select()
     .single();
   if (error) handleDbError(error, 'createClient');
@@ -52,9 +58,15 @@ export async function updateClient(
   input: UpdateClientInput
 ): Promise<Client> {
   const db = createSupabaseServiceClient();
+  const sanitizedInput: UpdateClientInput = { ...input };
+  if (input.name) sanitizedInput.name = sanitizeText(input.name, 100);
+  if (input.report_emails) {
+    sanitizedInput.report_emails = input.report_emails.map(email => sanitizeText(email, 255));
+  }
+
   const { data, error } = await db
     .from('clients')
-    .update(input)
+    .update(sanitizedInput)
     .eq('id', clientId)
     .eq('agency_id', agencyId) // never skip agency scope on mutations
     .select()

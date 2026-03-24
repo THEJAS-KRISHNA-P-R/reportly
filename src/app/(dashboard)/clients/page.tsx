@@ -25,7 +25,7 @@ export default function ClientsPage() {
         
         if (clientsRes.ok) {
           const data = await clientsRes.json();
-          setClients(data);
+          setClients(data.data || []);
         }
         
         if (meRes.ok) {
@@ -37,8 +37,8 @@ export default function ClientsPage() {
           else if (plan === 'pro') setClientsLimit(5);
           else setClientsLimit(9999);
         }
-      } catch (err) {
-        // ignore
+      } catch {
+        setClients([]); // Fallback on error
       } finally {
         setLoading(false);
       }
@@ -46,7 +46,7 @@ export default function ClientsPage() {
     fetchData();
   }, []);
 
-  const filtered = clients.filter(c => 
+  const filtered = (Array.isArray(clients) ? clients : []).filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase()) || 
     c.contact_email?.toLowerCase().includes(search.toLowerCase())
   );

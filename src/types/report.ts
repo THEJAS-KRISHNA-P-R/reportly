@@ -18,6 +18,8 @@ export type AuditEventType =
   | 'ai_prompt'
   | 'ai_response'
   | 'ai_failure'
+  | 'snapshot_created'
+  | 'snapshot_failed'
   | 'fallback_activated'
   | 'output_rejected'
   | 'edit'
@@ -33,20 +35,55 @@ export type AuditEventType =
   | 'rate_limit_hit'
   | 'security_event';
 
+export interface AgencyBranding {
+  primary_color: string | null;
+  secondary_color: string | null;
+  accent_color: string | null;
+  logo_url: string | null;
+  logo_position: string | null;
+  report_font: string | null;
+  report_layout: string | null;
+  watermark_text: string | null;
+  watermark_enabled: boolean;
+  show_powered_by: boolean;
+  pdf_sections: string[] | null;
+  email_html: string | null;
+  email_css: string | null;
+  report_font_size: string | null;
+  metric_density: string | null;
+}
+
+
 export interface Agency {
   id: string;
   name: string;
   email: string;
   email_verified: boolean;
   logo_url: string | null;
-  brand_color: string;
+  logo_position: string;
+  brand_color: string; // Deprecated, use primary_color
+  primary_color: string;
+  secondary_color: string;
+  accent_color: string;
+  report_font: string;
+  report_layout: string;
+  show_powered_by: boolean;
+  watermark_text: string | null;
+  watermark_enabled: boolean;
+  email_html: string | null;
+  email_css: string | null;
+  pdf_sections: string[] | null;
+  report_font_size: string;
+  metric_density: string;
   plan: 'starter' | 'growth' | 'pro' | 'enterprise';
+
   plan_client_limit: number;
   is_active: boolean;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
+
 
 export interface AgencyUser {
   id: string;
@@ -136,7 +173,12 @@ export interface Report {
   cancelled_reason: string | null;
   created_at: string;
   updated_at: string;
+  // Joined fields
+  clients?: { name: string };
+  month?: string;
+  snapshot_id?: string | null;
 }
+
 
 export interface AuditLog {
   id: string;
@@ -174,6 +216,7 @@ export interface MetricSnapshot {
   period_end: string;
   raw_api_response: Record<string, unknown>;
   validated_metrics: Record<string, unknown> | null;
+  breakdown: any | null;
   validation_warnings: string[] | null;
   freshness_status: 'fresh' | 'preliminary' | 'stale';
   data_retrieved_at: string;

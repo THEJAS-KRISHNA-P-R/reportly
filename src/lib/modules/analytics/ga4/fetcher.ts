@@ -2,7 +2,6 @@ import { google } from 'googleapis';
 import { getOAuth2Client } from './oauth';
 import { withRetry } from '@/lib/utils/retry';
 import { CircuitBreaker } from '@/lib/utils/circuitBreaker';
-import { REPORT } from '@/lib/constants';
 
 const analyticsData = google.analyticsdata('v1beta');
 const analyticsAdmin = google.analyticsadmin('v1beta');
@@ -32,7 +31,6 @@ export async function fetchGA4Data(
             { name: 'averageSessionDuration' }
           ],
           dimensions: [
-            { name: 'dateRange' },
             { name: 'sessionSource' }
           ]
         }

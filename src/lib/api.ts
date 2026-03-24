@@ -1,10 +1,5 @@
 // Centralized API client for type-safe API calls
 
-interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-  message?: string;
-}
 
 interface ApiError {
   message: string;

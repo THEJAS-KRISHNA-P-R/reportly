@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, X } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function NewClientPage() {
   const router = useRouter();
@@ -32,7 +31,7 @@ export default function NewClientPage() {
             setError('Client limit reached. Please upgrade your plan.');
           }
         }
-      } catch (err) {
+      } catch {
         console.error('Limit check failed');
       } finally {
         setInitializing(false);

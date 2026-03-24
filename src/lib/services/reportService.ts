@@ -1,21 +1,22 @@
-import { Pipeline, PipelineContext } from '@/lib/pipeline/pipeline';
+import { createSupabaseServiceClient } from '@/lib/db/client';
+import { Pipeline, PipelineContext } from '../pipeline/pipeline';
 import { logger } from '@/lib/utils/logger';
-import { fetchDataStep } from '@/lib/pipeline/steps/fetchDataStep';
-import { validateDataStep } from '@/lib/pipeline/steps/validateDataStep';
-import { generateNarrativeStep } from '@/lib/pipeline/steps/generateNarrativeStep';
-import { generateChartsStep } from '@/lib/pipeline/steps/generateChartsStep';
-import { generatePDFStep } from '@/lib/pipeline/steps/generatePDFStep';
-import { snapshotDataStep } from '@/lib/pipeline/steps/snapshotDataStep';
+import { fetchDataStep } from '../pipeline/steps/fetchDataStep';
+import { validateDataStep } from '../pipeline/steps/validateDataStep';
+import { generateNarrativeStep } from '../pipeline/steps/generateNarrativeStep';
+import { generateChartsStep } from '../pipeline/steps/generateChartsStep';
+import { generatePDFStep } from '../pipeline/steps/generatePDFStep';
+import { snapshotDataStep } from '../pipeline/steps/snapshotDataStep';
 import { emailReportStep } from '@/lib/pipeline/steps/emailReportStep';
 import { auditLogStep } from '@/lib/pipeline/steps/auditLogStep';
 import { ReportPeriod } from '@/types/adapters';
-import { updateReportStatus } from '@/lib/db/repositories/reportRepo';
+import { updateReportStatus, resetReport } from '../db/repositories/reportRepo';
 import {
   buildReportIdempotencyKey,
   buildReportJobIdentity,
   normalizeRunKey,
   updateJobStatus,
-} from '@/lib/db/repositories/jobRepo';
+} from '../db/repositories/jobRepo';
 
 /**
  * Orchestrates the full report generation pipeline:
@@ -34,6 +35,7 @@ export async function runReportGeneration(
     idempotencyKey?: string;
     jobLeaseOwnerToken?: string;
     correlationId?: string;
+    maxAttempts?: number;
   }
 ): Promise<void> {
   const attempt = Math.max(1, options?.attempt ?? 1);
@@ -50,8 +52,10 @@ export async function runReportGeneration(
     );
   const leaseOwnerToken = options?.jobLeaseOwnerToken;
   const correlationId = options?.correlationId;
+  const maxAttempts = options?.maxAttempts ?? 3;
+  const isLastAttempt = attempt >= maxAttempts;
 
-  logger.info({ reportId, jobId, clientId, attempt, runKey, idempotencyKey, correlationId }, 'Report generation pipeline starting');
+  logger.info({ reportId, jobId, clientId, attempt, runKey, idempotencyKey, correlationId, isLastAttempt }, 'Report generation pipeline starting');
 
   const context: PipelineContext = {
     clientId,
@@ -71,8 +75,8 @@ export async function runReportGeneration(
   // 1. Define Pipeline Steps
   pipeline.addStep('Fetch Data', fetchDataStep, true, 90_000); // Critical
   pipeline.addStep('Validate Data', validateDataStep, true, 30_000); // Critical
-  pipeline.addStep('Snapshot Metrics', snapshotDataStep, false, 45_000); // Persistence
-  pipeline.addStep('Generate Narrative', generateNarrativeStep, false, 120_000); // Non-critical fallback
+  pipeline.addStep('Snapshot Metrics', snapshotDataStep, true, 45_000); // Critical Persistence
+  pipeline.addStep('Generate Narrative', generateNarrativeStep, true, 120_000); // Critical AI
   pipeline.addStep('Generate Charts', generateChartsStep, false, 60_000); // Non-critical fallback
   pipeline.addStep('Generate PDF', generatePDFStep, false, 180_000); // Non-critical fallback
   pipeline.addStep('Email Notification', emailReportStep, false, 45_000); // Agency notification
@@ -81,9 +85,18 @@ export async function runReportGeneration(
   try {
     const generationStartedAt = new Date().toISOString();
 
-    await updateReportStatus(reportId, 'generating' as any, {
+    await updateReportStatus(reportId, agencyId, 'generating' as any, {
       generation_started_at: generationStartedAt,
     });
+    
+    // Initial Progress
+    await createSupabaseServiceClient()
+      .from('reports')
+      .update({ 
+        current_step: { name: 'Initializing Pipeline', percentage: 5, status: 'in_progress' } 
+      })
+      .eq('id', reportId);
+
     await updateJobStatus(jobId, 'processing', {
       started_at: generationStartedAt,
       attempts: attempt,
@@ -93,9 +106,24 @@ export async function runReportGeneration(
       expectedCurrentStatus: 'processing',
     } : undefined);
 
+    // Helper to update progress during pipeline
+    const setProgress = async (name: string, percentage: number) => {
+      await createSupabaseServiceClient()
+        .from('reports')
+        .update({ current_step: { name, percentage, status: 'in_progress' } })
+        .eq('id', reportId);
+    };
+
+    // 9. Execute steps with manual progress tracking (inter-step)
+    // Note: We could wrap each step but a simple manual toggle is safer for now.
+    await setProgress('Fetching Analytics...', 15);
+    // ... pipeline.run handles the actual loop, but we can't easily hook into its internal loop without changing Pipeline class.
+    // For now we'll just run the pipeline.
     await pipeline.run(context);
 
-    await updateReportStatus(reportId, 'draft');
+    await updateReportStatus(reportId, agencyId, 'draft', {
+      current_step: { name: 'Completed', percentage: 100, status: 'success' }
+    } as any);
     await updateJobStatus(jobId, 'completed', {
       completed_at: new Date().toISOString(),
       attempts: attempt,
@@ -112,18 +140,27 @@ export async function runReportGeneration(
     logger.error({ reportId, jobId, attempt, correlationId, err: error.message }, 'Report generation pipeline failed');
 
     try {
-      await updateReportStatus(reportId, 'failed', { cancelled_reason: error.message });
-      await updateJobStatus(jobId, 'failed', {
-        attempts: attempt,
-        last_error: error.stack ? error.stack : error.message,
-        completed_at: new Date().toISOString(),
-        bull_job_id: null,
-      }, leaseOwnerToken ? {
-        leaseOwnerToken,
-        expectedCurrentStatus: 'processing',
-      } : undefined);
+      if (isLastAttempt) {
+        await updateReportStatus(reportId, agencyId, 'failed', { cancelled_reason: error.message });
+      } else {
+        // Transitional retry state in reports table
+        await createSupabaseServiceClient()
+          .from('reports')
+          .update({ 
+            current_step: { 
+              name: `Retrying (Attempt ${attempt}/${maxAttempts})...`, 
+              percentage: 0, 
+              status: 'in_progress',
+              last_error: error.message.slice(0, 500)
+            } 
+          })
+          .eq('id', reportId);
+        
+        // Clean up partial data before retry to ensure idempotency
+        await resetReport(reportId, agencyId);
+      }
     } catch (statusErr: any) {
-      logger.error({ reportId, err: statusErr.message }, 'Failed to transition to failed status');
+      logger.error({ reportId, err: statusErr.message }, 'Failed to update report status during failure');
     }
 
     throw error;

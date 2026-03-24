@@ -28,7 +28,8 @@ function NewReportForm() {
     async function fetchClient() {
       const res = await fetch(`/api/clients/${clientId}`);
       if (res.ok) {
-        setClient(await res.json());
+        const data = await res.json();
+        setClient(data.data);
       } else {
         toast.error('Client not found');
         router.push('/clients');
@@ -59,14 +60,14 @@ function NewReportForm() {
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const envelope = await res.json();
         toast.success('Report generation started');
-        router.push(`/reports/${data.reportId}`);
+        router.push(`/reports/${envelope.data.reportId}`);
       } else {
         const err = await res.json();
         toast.error(err.message || 'Failed to start report generation');
       }
-    } catch (err) {
+    } catch {
       toast.error('Network error');
     } finally {
       setLoading(false);

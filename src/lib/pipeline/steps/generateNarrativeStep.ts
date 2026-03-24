@@ -1,9 +1,13 @@
 import { PipelineContext } from '../pipeline';
 import { generateNarrative } from '@/lib/modules/ai';
 import { createAuditLog } from '@/lib/db/repositories/auditRepo';
-import { updateReportNarrative } from '@/lib/db/repositories/reportRepo';
+import { updateReportNarrative, updateReportProgress } from '@/lib/db/repositories/reportRepo';
+import { sanitizeNarrative } from '@/lib/security/sanitizer';
 
 export async function generateNarrativeStep(context: PipelineContext): Promise<void> {
+  if (context.reportId) {
+    await updateReportProgress(context.reportId, context.agencyId, 'Synthesizing AI Insights...', 75);
+  }
   if (!context.validationResult) {
     throw new Error('validationResult missing in pipeline context');
   }
@@ -35,7 +39,8 @@ export async function generateNarrativeStep(context: PipelineContext): Promise<v
     // Update report with the generated narrative
     await updateReportNarrative(
       context.reportId,
-      result.content,
+      context.agencyId,
+      sanitizeNarrative(result.content),
       result.source,
       result.rawAiOutput || '',
       result.source === 'rule_based' ? result.content : null,

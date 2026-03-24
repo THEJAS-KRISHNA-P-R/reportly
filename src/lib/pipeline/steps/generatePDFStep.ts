@@ -1,12 +1,15 @@
 import { PipelineContext } from '../pipeline';
 import { getReportHtml } from '@/lib/modules/pdf/template';
 import { generatePdfFromHtml } from '@/lib/modules/pdf/generator';
-import { updateReportPdf, getReportById } from '@/lib/db/repositories/reportRepo';
+import { updateReportPdf, getReportById, updateReportProgress } from '@/lib/db/repositories/reportRepo';
 import { getAgencyById } from '@/lib/db/repositories/agencyRepo';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { logger } from '@/lib/utils/logger';
 
 export async function generatePDFStep(context: PipelineContext): Promise<void> {
+  if (context.reportId) {
+    await updateReportProgress(context.reportId, context.agencyId, 'Assembling Enterprise PDF...', 90);
+  }
   if (!context.reportId || !context.validationResult || !context.narrativeResult) {
     throw new Error('Required context missing for generatePDFStep');
   }
@@ -70,7 +73,7 @@ export async function generatePDFStep(context: PipelineContext): Promise<void> {
       .from('report_pdfs')
       .getPublicUrl(filePath);
 
-    await updateReportPdf(context.reportId, publicUrl);
+    await updateReportPdf(context.reportId, context.agencyId, publicUrl);
     
     logger.info({ reportId: context.reportId }, 'PDF Generated and Uploaded Successfully');
   } catch (error: any) {

@@ -1,6 +1,5 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
 import { Users, FileText, Send, Clock } from 'lucide-react';
 
 export interface DashboardStats {

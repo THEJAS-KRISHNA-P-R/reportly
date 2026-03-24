@@ -1,7 +1,6 @@
 import { Resend } from 'resend';
 import { withRetry } from '@/lib/utils/retry';
 import { CircuitBreaker } from '@/lib/utils/circuitBreaker';
-import { logger } from '@/lib/utils/logger';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_DOMAIN = process.env.RESEND_FROM_DOMAIN || 'reports.reportly.app';

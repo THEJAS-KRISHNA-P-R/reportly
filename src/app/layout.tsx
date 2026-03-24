@@ -1,36 +1,30 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Reportly - Automated Agency Reports',
-  description: 'Automated Google Analytics reports with AI insights for digital agencies',
-  generator: 'reportly.ai',
+  title: 'Reportly - High-Density Agency Intelligence',
+  description: 'Automated executive-grade performance reports for modern digital agencies. GA4, Meta Ads, and Search Console integration with AI-powered narrative generation.',
+  keywords: ['agency reports', 'automated reporting', 'GA4 reporting', 'meta ads dashboard', 'AI marketing insights'],
+  authors: [{ name: 'Reportly Team' }],
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://reportly.ai',
+    title: 'Reportly - Automated Agency Reports',
+    description: 'The standard for high-density, executive-grade agency reporting.',
+    siteName: 'Reportly',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Reportly - Automated Agency Reports',
+    description: 'Transform raw data into high-density executive intelligence automagically.',
+  },
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
+    icon: '/icon.svg',
     apple: '/apple-icon.png',
   },
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
-  ],
 }
 
 import { AuthProvider } from '@/lib/auth-context'

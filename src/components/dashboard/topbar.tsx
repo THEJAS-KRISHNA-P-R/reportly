@@ -1,7 +1,6 @@
 'use client';
 
 import { UserMenu } from '@/components/ui/user-menu';
-import { AuthProvider } from '@/lib/auth-context';
 
 export function Topbar() {
   return (

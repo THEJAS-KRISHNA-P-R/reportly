@@ -43,7 +43,9 @@
   --success:        #059669; /* Emerald-600 */
   
   /* Layout Constants */
-  --sidebar-width:  260px;
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 80px;
+  --sidebar-current-width: var(--sidebar-width);
   --topbar-height:  72px;
 }
 
@@ -122,17 +124,16 @@ h1, h2, h3, h4 {
 /* ── Dashboard Shell Layout ─────────────────────────────── */
 .dashboard-layout {
   display: flex;
-  height: 100vh;
-  overflow: hidden;
-  background-color: var(--bg-surface);
+  min-height: 100vh;
+  background-color: #f8fafc;
 }
 
 .dashboard-main {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-width: 0;
-  overflow: hidden;
+  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dashboard-content {

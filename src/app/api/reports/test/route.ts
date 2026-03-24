@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { createReport } from '@/lib/db/repositories/reportRepo';
 import { createJob } from '@/lib/db/repositories/jobRepo';
 import { runReportGeneration } from '@/lib/services/reportService';
 import { logger } from '@/lib/utils/logger';
@@ -23,8 +22,12 @@ export async function POST(request: Request) {
   const requestCorrelationId = resolveCorrelationId(request);
 
   try {
+    const searchParams = new URL(request.url).searchParams;
+    const isMockQuery = searchParams.get('mock') === 'true';
+
     const body = await parseJsonBody(request, reportsTestSchema);
     const { clientId, periodStart: start, periodEnd: end } = body;
+    const isMock = body.mock === true || isMockQuery;
 
     if (!clientId || !start || !end) {
       return apiError('VALIDATION_ERROR', 'Missing clientId, periodStart, or periodEnd', 400);
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
     const db = createSupabaseServiceClient();
 
     // 1. Get agency_id from the client
-    const { data: client, error: clientError } = await db
+    const { data: client } = await db
       .from('clients')
       .select('id, agency_id')
       .eq('id', clientId)
@@ -48,19 +51,35 @@ export async function POST(request: Request) {
     const dateEnd = end.split('T')[0];
     const label = new Date(start).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-    // 2. Clear clean: Delete any existing report for this exact period. 
-    // Since FKs are CASCADE in DB, this wipes audit_logs, job_queue, etc.
-    logger.info({ clientId, dateStart, dateEnd }, 'Cleaning existing test reports to ensure fresh cycle');
-    const { error: deleteError } = await db
+    // 2. Clear clean: Explicitly delete dependencies first to avoid API-layer cascade issues.
+    logger.info({ clientId, dateStart, dateEnd }, 'Cleaning existing test reports and logs');
+    
+    // Find matching reports
+    const { data: existingReports } = await db
       .from('reports')
-      .delete()
+      .select('id')
       .eq('client_id', clientId)
       .eq('period_start', dateStart)
       .eq('period_end', dateEnd);
 
-    if (deleteError) {
-      logger.error({ err: deleteError.message }, 'Failed to clear existing reports');
-      return apiError('DB_ERROR', `[cleanup] ${deleteError.message}`, 500);
+    if (existingReports && existingReports.length > 0) {
+      const reportIds = existingReports.map(r => r.id);
+      
+      // Delete child logs first
+      await db.from('audit_logs').delete().in('report_id', reportIds);
+      await db.from('job_queue').delete().in('report_id', reportIds);
+      await db.from('report_emails').delete().in('report_id', reportIds);
+
+      // Finally delete reports
+      const { error: deleteError } = await db
+        .from('reports')
+        .delete()
+        .in('id', reportIds);
+
+      if (deleteError) {
+        logger.error({ err: deleteError.message }, 'Failed to clear existing reports');
+        return apiError('DB_ERROR', `[cleanup] ${deleteError.message}`, 500);
+      }
     }
 
     // 3. Create fresh record
@@ -98,6 +117,7 @@ export async function POST(request: Request) {
         periodStart: new Date(start).toISOString(),
         periodEnd: new Date(end).toISOString(),
         correlationId: requestCorrelationId,
+        mock: isMock
       }
     });
 
@@ -109,9 +129,8 @@ export async function POST(request: Request) {
     const periodEnd = new Date(end);
 
     // 5. Run generation pipeline (Async trigger)
-    const mock = body.mock === true;
     runReportGeneration(clientId, agencyId, { start: periodStart, end: periodEnd, label }, reportId, job.id, {
-      mock,
+      mock: isMock,
       correlationId,
     });
 
@@ -120,8 +139,8 @@ export async function POST(request: Request) {
         success: true,
         reportId: reportId,
         jobId: job.id,
-        mock: mock,
-        message: `Test sequence initiated successfully${mock ? ' (MOCK MODE)' : ''}`,
+        mock: isMock,
+        message: `Test sequence initiated successfully${isMock ? ' (MOCK MODE)' : ''}`,
         correlationId,
       },
       200,
@@ -131,7 +150,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     logger.error({ err: error.message, correlationId: requestCorrelationId }, 'Report test trigger critical failure');
     const response = fromUnknownError(error, 'Critical fault in test trigger');
-    response.headers.set('x-correlation-id', requestCorrelationId);
+    response.headers.set('x-correlation-id', requestCorrelationId || '');
     return response;
   }
 }

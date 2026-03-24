@@ -1,0 +1,7 @@
+﻿src/app/(dashboard)/customize/page.tsx(34,9): error TS2739: Type '{ primary_color: string; secondary_color: string; accent_color: string; logo_url: null; logo_position: string; report_font: string; report_layout: string; watermark_text: string; watermark_enabled: false; show_powered_by: true; pdf_sections: string[]; email_html: string; email_css: string; }' is missing the following properties from type 'AgencyBranding': report_font_size, metric_density
+src/app/(dashboard)/reports/[id]/page.tsx(189,23): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/app/(dashboard)/reports/[id]/page.tsx(331,47): error TS2552: Cannot find name 'setPreviewUrl'. Did you mean 'previewUrl'?
+src/app/(dashboard)/reports/[id]/page.tsx(388,30): error TS2552: Cannot find name 'setPreviewUrl'. Did you mean 'previewUrl'?
+src/app/(dashboard)/reports/[id]/page.tsx(415,37): error TS2552: Cannot find name 'setPreviewUrl'. Did you mean 'previewUrl'?
+src/app/api/reports/route.ts(49,44): error TS2345: Argument of type 'null' is not assignable to parameter of type 'SupabaseClient<any, "public", "public", any, any>'.
+src/app/api/reports/route.ts(90,32): error TS2345: Argument of type 'null' is not assignable to parameter of type 'SupabaseClient<any, "public", "public", any, any>'.

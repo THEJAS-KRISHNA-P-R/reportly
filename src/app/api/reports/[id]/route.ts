@@ -17,7 +17,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: report, error } = await supabase
       .from('reports')
-      .select('*, clients!inner(*)')
+      .select(`
+        *,
+        clients!inner(*),
+        metric_snapshots:snapshot_id (
+          validated_metrics,
+          breakdown,
+          freshness_status,
+          data_retrieved_at
+        )
+      `)
       .eq('id', id)
       .eq('clients.agency_id', agencyId)
       .maybeSingle();
@@ -26,20 +35,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return apiError('NOT_FOUND', 'Report not found', 404);
     }
 
-    // Fetch snapshot metrics. Prioritize linked snapshot_id.
-    const metricsQuery = supabase
-      .from('metric_snapshots')
-      .select('validated_metrics, breakdown, freshness_status, data_retrieved_at');
+    // Use linked snapshot if it came through the JOIN, else fallback to latest for client
+    let metrics = report.metric_snapshots;
     
-    if (report.snapshot_id) {
-      metricsQuery.eq('id', report.snapshot_id);
-    } else {
-      // Fallback to latest for this client (for legacy reports)
-      metricsQuery.eq('client_id', report.client_id).order('data_retrieved_at', { ascending: false });
+    if (!metrics) {
+      const { data: latestFallback } = await supabase
+        .from('metric_snapshots')
+        .select('validated_metrics, breakdown, freshness_status, data_retrieved_at')
+        .eq('client_id', report.client_id)
+        .order('data_retrieved_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      metrics = latestFallback;
     }
-
-    const { data: metrics } = await metricsQuery.limit(1).maybeSingle();
-
 
     return apiOk({
       ...report,

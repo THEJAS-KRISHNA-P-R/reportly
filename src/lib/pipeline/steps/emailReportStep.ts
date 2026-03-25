@@ -3,7 +3,6 @@ import { logger } from '@/lib/utils/logger';
 import { Resend } from 'resend';
 import { getAgencyById } from '@/lib/db/repositories/agencyRepo';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function emailReportStep(context: PipelineContext): Promise<void> {
   if (!context.reportId || !context.agencyId) return;
@@ -29,6 +28,7 @@ export async function emailReportStep(context: PipelineContext): Promise<void> {
 
     const reportUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/reports/${context.reportId}`;
 
+    const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from: 'Reportly <reports@mg.reportly.ai>', // Update with verified domain
       to: agency.email,

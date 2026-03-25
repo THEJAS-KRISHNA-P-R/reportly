@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Building2, Search, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageLoader } from '@/components/ui/page-loader';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
@@ -54,7 +55,11 @@ export default function ClientsPage() {
   const atLimit = clientsUsed >= clientsLimit;
 
   if (loading) {
-    return <div className="p-8 text-sm" style={{ color: '#666666' }}>Loading clients...</div>;
+    return (
+      <div className="flex flex-col gap-10 px-4 md:px-8 py-6 max-w-[1600px] mx-auto w-full">
+        <PageLoader rows={4} />
+      </div>
+    );
   }
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, ChevronDown, LayoutGrid } from 'lucide-react';
@@ -19,8 +19,15 @@ export function Topbar() {
   const [clientsLimit, setClientsLimit] = useState(1);
   const [planId, setPlanId] = useState('free');
   
+  const lastFetchRef = useRef<number>(0);
+
   useEffect(() => {
     async function fetchUsage() {
+      // Cache: only fetch if data is more than 60 seconds old
+      if (Date.now() - lastFetchRef.current < 60000) {
+        return;
+      }
+
       try {
         const res = await fetch('/api/agencies/me');
         if (res.ok) {
@@ -39,6 +46,7 @@ export function Topbar() {
               setClientsLimit(9999); // agency
             }
           }
+          lastFetchRef.current = Date.now();
         }
       } catch {
         // ignore

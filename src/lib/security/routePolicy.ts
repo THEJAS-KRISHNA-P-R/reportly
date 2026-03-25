@@ -32,8 +32,15 @@ export const PUBLIC_PAGE_PATHS = [
 ] as const;
 
 const AUTH_PAGE_PREFIXES = ['/login', '/register', '/auth'] as const;
-const STATIC_PREFIXES = ['/_next/', '/favicon'] as const;
-const PUBLIC_STATIC_FILES = ['/robots.txt', '/sitemap.xml'] as const;
+const STATIC_PREFIXES = ['/_next/', '/favicon', '/images', '/assets'] as const;
+const PUBLIC_STATIC_FILES = [
+  '/robots.txt',
+  '/sitemap.xml',
+  '/favicon.ico',
+  '/icon.svg',
+  '/apple-icon.png',
+  '/og-image.png',
+] as const;
 const PUBLIC_API_PREFIXES = [
   '/api/auth',
   '/api/webhooks',

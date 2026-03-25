@@ -26,6 +26,7 @@ export async function GET() {
     .from('agencies')
     .select('*', { count: 'exact', head: true });
     
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const { count: active_reports_today } = await supabaseAdmin
@@ -33,10 +34,17 @@ export async function GET() {
     .select('*', { count: 'exact', head: true })
     .gte('created_at', today.toISOString());
 
+  const { count: failed_reports_month } = await supabaseAdmin
+    .from('reports')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'failed')
+    .gte('created_at', startOfMonth.toISOString());
+
   return apiOk({ 
     metrics: { 
       total_agencies: total_agencies ?? 0, 
       active_reports_today: active_reports_today ?? 0, 
+      failed_reports_month: failed_reports_month ?? 0,
       system_health: '100% (All Systems Active)' 
     }
   });

@@ -47,9 +47,21 @@ export async function POST(
       }
     });
 
+    // --- BULLMQ INTEGRATION ---
+    const { reportQueue } = await import('@/lib/queue/client');
+    await reportQueue.add('generate-report', {
+      jobId: job.id,
+      clientId: report.client_id,
+      agencyId: agencyId,
+      reportId: reportId,
+      payload: job.payload,
+    }, {
+      jobId: `report-${reportId}-${runKey}`, // Idempotent by runKey
+    });
+
     const correlationId = getPayloadCorrelationId(job.payload) ?? requestCorrelationId;
 
-    logger.info({ reportId, jobId: job.id, correlationId }, 'Regeneration job queued');
+    logger.info({ reportId, jobId: job.id, correlationId }, 'Regeneration job queued to BullMQ');
 
     return apiOk(
       {

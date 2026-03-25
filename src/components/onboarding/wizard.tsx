@@ -4,8 +4,21 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Building2, 
+  Users, 
+  BarChart3, 
+  ArrowRight, 
+  ArrowLeft, 
+  CheckCircle2, 
+  Globe, 
+  Sparkles,
+  Loader2
+} from 'lucide-react';
+import { toast } from 'sonner';
 
-type Step = 'agency' | 'client' | 'ga4';
+type Step = 'agency' | 'client' | 'ga4' | 'success';
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -18,226 +31,267 @@ export function OnboardingWizard() {
   const [clientWebsite, setClientWebsite] = useState('');
   const [ga4PropertyId, setGa4PropertyId] = useState('');
 
-  const handleAgencyNext = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!agencyName.trim()) {
-      setError('Agency name is required');
-      return;
-    }
+  const steps = [
+    { id: 'agency', label: 'Agency', icon: Building2 },
+    { id: 'client', label: 'First Client', icon: Users },
+    { id: 'ga4', label: 'Analytics', icon: BarChart3 },
+  ];
 
+  const handleNext = () => {
+    if (step === 'agency') {
+      if (!agencyName.trim()) {
+        setError('Please name your agency to continue');
+        return;
+      }
+      setStep('client');
+    } else if (step === 'client') {
+      if (!clientName.trim() || !clientWebsite.trim()) {
+        setError('Client details are required');
+        return;
+      }
+      setStep('ga4');
+    }
     setError('');
-    // TODO: Call API to save agency name
-    setStep('client');
   };
 
-  const handleClientNext = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientName.trim() || !clientWebsite.trim()) {
-      setError('Client name and website are required');
-      return;
-    }
-
+  const handleBack = () => {
+    if (step === 'client') setStep('agency');
+    else if (step === 'ga4') setStep('client');
     setError('');
-    // TODO: Call API to save client
-    setStep('ga4');
   };
 
-  const handleGA4Submit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ga4PropertyId.trim()) {
-      setError('GA4 property ID is required');
-      return;
-    }
-
     setLoading(true);
     setError('');
 
     try {
-      // TODO: Call API to save GA4 connection and complete onboarding
-      // Redirect to dashboard on success
-      router.push('/dashboard');
+      const response = await fetch('/api/agencies/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agencyName,
+          clientName,
+          clientWebsite,
+          ga4PropertyId
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to complete setup');
+      }
+
+      setStep('success');
+      toast.success('Workspace created! Ready for lift-off 🚀');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'An error occurred';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleSkip = () => {
-    router.push('/dashboard');
-  };
-
-  const handleBack = () => {
-    if (step === 'agency') {
-      router.push('/login');
-    } else if (step === 'client') {
-      setStep('agency');
-    } else {
-      setStep('client');
-    }
+  const cardVariants = {
+    initial: { opacity: 0, x: 20 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -20 },
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      {/* Progress Indicator */}
-      <div className="flex gap-2">
-        {(['agency', 'client', 'ga4'] as const).map((s) => (
-          <div
-            key={s}
-            className={`h-1 flex-1 rounded-full transition-colors ${
-              s === step
-                ? 'bg-slate-900 dark:bg-white'
-                : ['agency', 'client', 'ga4'].indexOf(s) < ['agency', 'client', 'ga4'].indexOf(step)
-                  ? 'bg-slate-400 dark:bg-slate-600'
-                  : 'bg-slate-200 dark:bg-slate-800'
-            }`}
-          />
-        ))}
-      </div>
+    <div className="mx-auto max-w-xl">
+      {/* Progress Stepper */}
+      {step !== 'success' && (
+        <div className="mb-12 flex items-center justify-between px-2">
+          {steps.map((s, i) => {
+            const Icon = s.icon;
+            const isActive = s.id === step;
+            const isCompleted = steps.findIndex(st => st.id === step) > i;
 
-      {/* Step 1: Agency Name */}
-      {step === 'agency' && (
-        <form onSubmit={handleAgencyNext} className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Your Agency Name</h1>
-            <p className="mt-1 text-slate-600 dark:text-slate-400">
-              Give your agency an identity. You can change this anytime.
-            </p>
-          </div>
+            return (
+              <div key={s.id} className="relative flex flex-col items-center flex-1">
+                {/* Connector Line */}
+                {i < steps.length - 1 && (
+                  <div className={`absolute top-5 left-1/2 w-full h-[2px] ${isCompleted ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-800'}`} />
+                )}
+                
+                <div className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-xl border-2 transition-all duration-300 ${
+                  isActive ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-500/20 scale-110' :
+                  isCompleted ? 'border-blue-600 bg-blue-600 text-white' :
+                  'border-slate-200 bg-white text-slate-400 dark:border-slate-800 dark:bg-slate-900'
+                }`}>
+                  {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                </div>
+                <span className={`mt-3 text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                  {s.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-          <div className="space-y-2">
-            <label htmlFor="agency-name" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
-              Agency Name
-            </label>
-            <Input
-              id="agency-name"
-              type="text"
-              placeholder="Acme Digital Agency"
-              value={agencyName}
-              onChange={(e) => setAgencyName(e.target.value)}
-              className="w-full"
-              required
-            />
-          </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          variants={cardVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-800 dark:bg-slate-900/50 dark:backdrop-blur-xl"
+        >
+          {step === 'agency' && (
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/10">
+                  <Building2 className="h-6 w-6" />
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Define your identity</h2>
+                <p className="text-slate-500 dark:text-slate-400">First, what's the name of your agency?</p>
+              </div>
 
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
-              {error}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Agency Name</label>
+                  <Input
+                    placeholder="e.g. Skyline Digital"
+                    value={agencyName}
+                    onChange={(e) => setAgencyName(e.target.value)}
+                    className="h-12 text-lg focus:ring-blue-500"
+                  />
+                </div>
+                {error && <p className="text-sm font-medium text-rose-500">{error}</p>}
+                <Button onClick={handleNext} className="w-full h-12 text-base font-semibold group bg-blue-600 hover:bg-blue-700">
+                  Continue
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </div>
             </div>
           )}
 
-          <div className="flex gap-3">
-            <Button variant="outline" type="button" onClick={handleSkip}>
-              Skip
-            </Button>
-            <Button type="submit" className="flex-1">
-              Next
-            </Button>
-          </div>
-        </form>
-      )}
+          {step === 'client' && (
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10">
+                  <Users className="h-6 w-6" />
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Add your first project</h2>
+                <p className="text-slate-500 dark:text-slate-400">Who are we tracking analytics for today?</p>
+              </div>
 
-      {/* Step 2: Add Client */}
-      {step === 'client' && (
-        <form onSubmit={handleClientNext} className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Add Your First Client</h1>
-            <p className="mt-1 text-slate-600 dark:text-slate-400">
-              Create a client to track analytics for. You can add more clients later.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="client-name" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
-              Client Name
-            </label>
-            <Input
-              id="client-name"
-              type="text"
-              placeholder="Acme Corporation"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              className="w-full"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="client-website" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
-              Website URL
-            </label>
-            <Input
-              id="client-website"
-              type="url"
-              placeholder="https://acme.com"
-              value={clientWebsite}
-              onChange={(e) => setClientWebsite(e.target.value)}
-              className="w-full"
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
-              {error}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Client Name</label>
+                    <Input
+                      placeholder="e.g. Acme Corp"
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      className="h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Website URL</label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-3.5 h-5 w-5 text-slate-400" />
+                      <Input
+                        placeholder="acme.com"
+                        value={clientWebsite}
+                        onChange={(e) => setClientWebsite(e.target.value)}
+                        className="h-12 pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {error && <p className="text-sm font-medium text-rose-500">{error}</p>}
+                <div className="flex gap-3 pt-2">
+                  <Button variant="ghost" onClick={handleBack} className="h-12 px-6">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                  <Button onClick={handleNext} className="flex-1 h-12 text-base font-semibold group bg-blue-600 hover:bg-blue-700">
+                    Next Step
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="flex gap-3">
-            <Button variant="outline" type="button" onClick={handleBack}>
-              Back
-            </Button>
-            <Button type="submit" className="flex-1">
-              Next
-            </Button>
-          </div>
-        </form>
-      )}
+          {step === 'ga4' && (
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="space-y-2">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">
+                  <BarChart3 className="h-6 w-6" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Connect GA4</h2>
+                  <Sparkles className="h-5 w-5 text-amber-500 fill-amber-500" />
+                </div>
+                <p className="text-slate-500 dark:text-slate-400">Sync your property ID to enable AI insights.</p>
+              </div>
 
-      {/* Step 3: GA4 Connection */}
-      {step === 'ga4' && (
-        <form onSubmit={handleGA4Submit} className="space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Connect Google Analytics</h1>
-            <p className="mt-1 text-slate-600 dark:text-slate-400">
-              Enter your Google Analytics 4 property ID to start tracking data.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="ga4-id" className="block text-sm font-medium text-slate-900 dark:text-slate-50">
-              GA4 Property ID
-            </label>
-            <Input
-              id="ga4-id"
-              type="text"
-              placeholder="123456789"
-              value={ga4PropertyId}
-              onChange={(e) => setGa4PropertyId(e.target.value)}
-              className="w-full"
-              required
-            />
-            <p className="text-xs text-slate-600 dark:text-slate-400">
-              Find this in Google Analytics: Admin → Property Settings → Property ID
-            </p>
-          </div>
-
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
-              {error}
-            </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">GA4 Property ID</label>
+                  <Input
+                    placeholder="123456789"
+                    value={ga4PropertyId}
+                    onChange={(e) => setGa4PropertyId(e.target.value)}
+                    className="h-12"
+                    required
+                  />
+                  <p className="text-[10px] text-slate-400 italic">Found in Admin → Property Settings → Property ID</p>
+                </div>
+                {error && <p className="text-sm font-medium text-rose-500">{error}</p>}
+                <div className="flex gap-3 pt-2">
+                  <Button variant="ghost" onClick={handleBack} disabled={loading} className="h-12 px-6">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                  <Button type="submit" disabled={loading} className="flex-1 h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700">
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Initializing...
+                      </>
+                    ) : (
+                      'Finish Setup'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </form>
           )}
 
-          <div className="flex gap-3">
-            <Button variant="outline" type="button" onClick={handleBack} disabled={loading}>
-              Back
-            </Button>
-            <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? 'Completing setup...' : 'Complete Setup'}
-            </Button>
-          </div>
-        </form>
-      )}
+          {step === 'success' && (
+            <div className="py-12 text-center space-y-8">
+              <div className="relative inline-flex">
+                <div className="absolute inset-0 blur-2xl opacity-20 bg-emerald-500 rounded-full animate-pulse" />
+                <div className="relative h-24 w-24 rounded-full bg-emerald-50 flex items-center justify-center dark:bg-emerald-500/10">
+                  <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-3xl font-black text-slate-900 dark:text-white">You're all set, {agencyName}!</h2>
+                <p className="text-slate-500 dark:text-slate-400">Your workspace is ready and secured. Welcome to the future of reporting.</p>
+              </div>
+
+              <Button 
+                onClick={() => router.push('/dashboard')}
+                className="w-full h-14 text-lg font-bold bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              >
+                Enter Dashboard
+              </Button>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+      
+      <p className="mt-8 text-center text-xs text-slate-400 font-medium opacity-50">
+        Trusted by 500+ agencies worldwide.
+      </p>
     </div>
   );
 }

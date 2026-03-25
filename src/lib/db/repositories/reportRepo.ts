@@ -37,8 +37,13 @@ export async function getReportById(reportId: string, agencyId: string): Promise
     .eq('id', reportId)
     .eq('clients.agency_id', agencyId)
     .maybeSingle();
-  if (error) return null;
-  return data as Report | null;
+
+  if (error || !data) return null;
+
+  return {
+    ...(data as any),
+    month: new Date((data as any).period_start).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  } as Report;
 }
 
 export async function getReportsByClient(
@@ -55,19 +60,30 @@ export async function getReportsByClient(
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) handleDbError(error, 'getReportsByClient');
-  return (data ?? []) as Report[];
+  return (data ?? []).map(r => ({
+    ...r,
+    month: new Date(r.period_start).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  })) as Report[];
 }
 
-export async function getReportsByAgency(agencyId: string, limit = 50): Promise<Report[]> {
+export async function getReportsByAgency(
+  agencyId: string, 
+  limit = 50,
+  offset = 0
+): Promise<Report[]> {
   const db = createSupabaseServiceClient();
   const { data, error } = await db
     .from('reports')
     .select('*, clients!inner(name, agency_id)')
     .eq('clients.agency_id', agencyId)
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (error) handleDbError(error, 'getReportsByAgency');
-  return (data ?? []) as unknown as Report[];
+  
+  return (data ?? []).map(r => ({
+    ...r,
+    month: new Date(r.period_start).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  })) as unknown as Report[];
 }
 
 export async function updateReportStatus(
@@ -75,7 +91,7 @@ export async function updateReportStatus(
   agencyId: string, // Enforce agency scoping
   status: ReportStatus,
   extra?: Partial<
-    Pick<Report, 'generation_started_at' | 'approved_at' | 'approved_by' | 'sent_at' | 'cancelled_reason'>
+    Pick<Report, 'generation_started_at' | 'approved_at' | 'approved_by' | 'sent_at' | 'cancelled_reason' | 'error_reason'>
   >
 ): Promise<void> {
   const db = createSupabaseServiceClient();

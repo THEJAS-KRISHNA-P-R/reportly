@@ -67,8 +67,8 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
 
     async function fetchReport(isSilent = false) {
       try {
-        if (!isSilent) setLoading(true);
-        const res = await fetch(`/api/reports/${id}`);
+        if (!isSilent && !report) setLoading(true); // ONLY set loading true if we don't have local data yet
+        const res = await fetch(`/api/reports/${id}`, { cache: 'no-store' });
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.error || 'Failed to load report');
@@ -99,14 +99,15 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
     if (reportStatus === 'generating' || reportStatus === 'pending') {
       pollInterval = setInterval(() => {
         fetchReport(true);
-      }, 3000);
+      }, 5000);
     }
 
     return () => {
       isMounted = false;
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [id, editor, reportStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, reportStatus]); // Excluded 'editor' to prevent excessive teardowns
 
   async function saveDraft() {
     if (!report) return;
@@ -130,7 +131,10 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
   async function regenerateNarrative() {
     setRegenerating(true);
     try {
-      const res = await fetch(`/api/reports/${id}/regenerate`, { method: 'POST' });
+      const res = await fetch(`/api/reports/${id}/regenerate`, { 
+        method: 'POST',
+        cache: 'no-store'
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || 'AI regenerate failed');
       const content = data.data.content || '';
@@ -340,12 +344,25 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
             </button>
             
             <button
-              onClick={handleExport}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all"
-            >
-              <Download size={14} />
-              Export Data
-            </button>
+               onClick={handleExport}
+               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all"
+             >
+               <BarChart3 size={14} />
+               Export CSV
+             </button>
+
+             {report.pdf_url && (
+               <a
+                 href={report.pdf_url}
+                 download={`Report_${report.clients?.name || 'Client'}.pdf`}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-all"
+               >
+                 <Download size={14} />
+                 Download PDF
+               </a>
+             )}
 
             <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block" />
 

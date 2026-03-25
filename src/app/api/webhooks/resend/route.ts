@@ -14,24 +14,30 @@ export async function POST(request: Request) {
       { cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} } }
     );
 
-    if (!data?.to?.[0]) {
-      return apiOk({ received: true, skip: 'No recipient data' });
-    }
-
-    const recipient = data.to[0];
-
-    if (type === 'email.delivered' || type === 'email.bounced') {
+    if (type === 'email.delivered' || type === 'email.bounced' || type === 'email.delivery_delayed') {
       const newStatus = type === 'email.delivered' ? 'delivered' : 'failed';
-      
-      // Find the client with this email
-      const { data: client } = await supabase.from('clients').select('id').ilike('email', recipient).single();
+      const emailId = data.email_id;
 
-      if (client) {
-         // Update the most recent 'sent' report for this client
-         await supabase.from('reports')
-            .update({ status: newStatus })
-            .eq('client_id', client.id)
-            .eq('status', 'sent');
+      if (!emailId) {
+        return apiOk({ received: true, skip: 'No email_id in payload' });
+      }
+
+      // 1. Update the report_emails row directly via resend_id
+      const { data: emailRecord } = await supabase
+        .from('report_emails')
+        .update({ status: newStatus })
+        .eq('resend_id', emailId)
+        .select('report_id')
+        .single();
+
+      // 2. Cascade back to the primary report if found
+      if (emailRecord?.report_id) {
+        // Only update if it's currently 'sent', so we don't accidentally overwrite 'failed' with another event
+        await supabase
+          .from('reports')
+          .update({ status: newStatus })
+          .eq('id', emailRecord.report_id)
+          .eq('status', 'sent');
       }
     }
 

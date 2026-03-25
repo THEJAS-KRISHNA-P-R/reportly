@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +39,11 @@ export async function POST(request: Request) {
 
     // Retrieve branding settings
     const { data: brand } = await supabase.from('agency_branding').select('report_layout').eq('agency_id', agencyId).single();
+
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json({ error: 'Email service not configured (missing key)' }, { status: 500 });
+    }
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { error } = await resend.emails.send({
       from: 'Reportly App <noreply@resend.dev>', // Needs custom domain verified in prod

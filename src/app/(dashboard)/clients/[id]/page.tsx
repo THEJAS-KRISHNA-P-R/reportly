@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Settings, Activity, FileText, Blocks, 
-  ChevronRight, Mail, Calendar, MapPin
+  ChevronRight, Mail, Calendar, MapPin, Save, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -18,6 +18,8 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
   const [activeTab, setActiveTab] = useState('overview');
   const [properties, setProperties] = useState<any[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
+  const [formData, setFormData] = useState({ name: '', contact_email: '', schedule_day: 1, timezone: 'UTC' });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     async function fetchClient() {
@@ -26,6 +28,12 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
         if (res.ok) {
           const data = await res.json();
           setClient(data.data);
+          setFormData({
+            name: data.data.name || '',
+            contact_email: data.data.contact_email || '',
+            schedule_day: data.data.schedule_day || 1,
+            timezone: data.data.timezone || 'UTC'
+          });
         } else {
           router.push('/clients');
         }
@@ -48,6 +56,27 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
       }
     } catch {
       toast.error('Error deleting client');
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    const tid = toast.loading('Updating client profile...');
+    try {
+      const res = await fetch(`/api/clients/${resolvedParams.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setClient(data.data);
+      toast.success('Client updated successfully', { id: tid });
+    } catch {
+      toast.error('Failed to update client', { id: tid });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -355,7 +384,44 @@ export default function ClientDetailsPage({ params }: { params: Promise<{ id: st
           )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-2xl">
+            <div className="max-w-2xl space-y-8">
+               <div className="bg-white rounded-2xl border border-slate-200 p-8 md:p-10 shadow-sm">
+                 <h3 className="text-xl font-bold text-slate-900 mb-6">Property Profile</h3>
+                 <form onSubmit={handleUpdate} className="space-y-5">
+                   <div>
+                     <label className="block text-[13px] font-bold text-slate-700 mb-2">Display Name</label>
+                     <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" required />
+                   </div>
+                   <div>
+                     <label className="block text-[13px] font-bold text-slate-700 mb-2">Primary Contact Email</label>
+                     <input type="email" value={formData.contact_email} onChange={e => setFormData({...formData, contact_email: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" required />
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <label className="block text-[13px] font-bold text-slate-700 mb-2">Reporting Day</label>
+                       <select value={formData.schedule_day} onChange={e => setFormData({...formData, schedule_day: parseInt(e.target.value)})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                         {[...Array(28)].map((_, i) => <option key={i+1} value={i+1}>Day {i+1}</option>)}
+                       </select>
+                     </div>
+                     <div>
+                       <label className="block text-[13px] font-bold text-slate-700 mb-2">Timezone</label>
+                       <select value={formData.timezone} onChange={e => setFormData({...formData, timezone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                         <option value="UTC">UTC</option>
+                         <option value="America/New_York">Eastern Time</option>
+                         <option value="America/Los_Angeles">Pacific Time</option>
+                         <option value="Europe/London">London (GMT)</option>
+                       </select>
+                     </div>
+                   </div>
+                   <div className="pt-4 flex justify-end">
+                     <button type="submit" disabled={isUpdating} className="px-6 h-11 rounded-xl bg-indigo-600 text-white text-[13px] font-bold flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50">
+                       {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                       Save Changes
+                     </button>
+                   </div>
+                 </form>
+               </div>
+
               <div className="bg-white rounded-2xl border border-rose-100 p-10 shadow-sm">
                 <h3 className="text-xl font-bold text-rose-600 mb-4 italic">Security & Termination</h3>
                 <p className="text-[15px] font-medium text-slate-500 mb-10">

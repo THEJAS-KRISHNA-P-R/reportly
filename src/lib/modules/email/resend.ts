@@ -2,7 +2,6 @@ import { Resend } from 'resend';
 import { withRetry } from '@/lib/utils/retry';
 import { CircuitBreaker } from '@/lib/utils/circuitBreaker';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_DOMAIN = process.env.RESEND_FROM_DOMAIN || 'reports.reportly.app';
 
 export async function sendReportEmail(
@@ -11,6 +10,11 @@ export async function sendReportEmail(
   html: string,
   agencyName: string
 ) {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   return await CircuitBreaker.execute('email', async () => {
     return await withRetry(async () => {
       const { data, error } = await resend.emails.send({

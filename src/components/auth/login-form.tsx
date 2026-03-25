@@ -96,7 +96,7 @@ export function LoginForm() {
 
       <button
         type="button"
-        onClick={() => { clearError(); loginWithGoogle(); }}
+        onClick={loginWithGoogle}
         disabled={loading}
         className="w-full h-10 rounded-md text-sm font-medium flex items-center justify-center gap-2 border transition-colors hover:bg-gray-50 disabled:opacity-50"
         style={{ borderColor: '#E5E5E5', background: '#FFFFFF', color: '#000000' }}

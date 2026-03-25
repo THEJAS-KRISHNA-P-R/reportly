@@ -335,3 +335,49 @@ export async function resolveDLQEntry(entryId: string, resolvedBy: string, note?
     .eq('id', entryId);
   if (error) handleDbError(error, 'resolveDLQEntry');
 }
+
+export async function retryJobFromDLQ(entryId: string, resolvedBy: string): Promise<void> {
+  const db = createSupabaseServiceClient();
+  
+  // 1. Get DLQ entry
+  const { data: entry, error: entryError } = await db
+    .from('dead_letter_queue')
+    .select('*, job_queue(*)')
+    .eq('id', entryId)
+    .single();
+  
+  if (entryError || !entry) {
+    throw new Error('DLQ entry not found');
+  }
+
+  const job = entry.job_queue;
+  if (!job) {
+    throw new Error('Associated job not found in queue');
+  }
+
+  // 2. Push to BullMQ
+  const { reportQueue } = await import('@/lib/queue/client');
+  const runKey = `retry-${Date.now()}`;
+  
+  await reportQueue.add('generate-report', {
+    jobId: job.id,
+    clientId: job.client_id,
+    agencyId: job.agency_id,
+    reportId: job.report_id,
+    payload: {
+      ...job.payload,
+      runKey,
+      retry_from_dlq: true,
+    },
+  }, {
+    jobId: `report-retry-${job.report_id}-${runKey}`,
+  });
+
+  // 3. Update Job and and and DLQ entry
+  await updateJobStatus(job.id, 'queued', {
+    attempts: 0, // Reset attempts for new lifecycle
+    last_error: null,
+  });
+
+  await resolveDLQEntry(entryId, resolvedBy, `Retried via Admin Control Plane (${runKey})`);
+}

@@ -1,23 +1,47 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { apiError, apiOk } from '@/lib/api-contract';
+import { requireSuperAdmin } from '@/lib/security/superAdmin';
+import { getAllFeatureFlags, updateFeatureFlag } from '@/lib/db/repositories/featureFlagRepo';
+import { logger } from '@/lib/utils/logger';
+import { apiError, apiOk, fromUnknownError, parseJsonBody } from '@/lib/api-contract';
+import { z } from 'zod';
+import { createSupabaseServerClient } from '@/lib/db/client';
 
+const toggleSchema = z.object({
+  flagName: z.string(),
+  enabled: z.boolean(),
+});
+
+/**
+ * SuperAdmin GET: List all feature flags.
+ */
 export async function GET() {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} }
-  });
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== process.env.SUPER_ADMIN_EMAIL) {
-    return apiError('FORBIDDEN', 'Forbidden', 403);
+  try {
+    await requireSuperAdmin();
+    const flags = await getAllFeatureFlags();
+    return apiOk({ flags });
+  } catch (error: any) {
+    if (error?.status === 403) return apiError('FORBIDDEN', 'Access denied', 403);
+    return fromUnknownError(error, 'Failed to fetch feature flags');
   }
+}
 
-  // Placeholder for global feature flags managed by superadmin
-  return apiOk({
-    flags: {
-      enable_ai_narrative: true,
-      enable_pdf_export: true,
-      maintenance_mode: false,
-    }
-  });
+/**
+ * SuperAdmin PATCH: Toggle a feature flag.
+ */
+export async function PATCH(request: Request) {
+  try {
+    await requireSuperAdmin();
+    const db = await createSupabaseServerClient();
+    const { data: { user } } = await db.auth.getUser();
+
+    const { flagName, enabled } = await parseJsonBody(request, toggleSchema);
+
+    logger.warn({ flagName, enabled, admin: user?.email }, 'Admin: Toggling feature flag');
+    await updateFeatureFlag(flagName, enabled, user?.id || '');
+
+    return apiOk({ success: true, message: `Flag ${flagName} updated to ${enabled}` });
+  } catch (error: any) {
+    if (error?.status === 403) return apiError('FORBIDDEN', 'Access denied', 403);
+    logger.error({ err: error.message }, 'Admin: Flag toggle failed');
+    return fromUnknownError(error, 'Failed to update feature flag');
+  }
 }

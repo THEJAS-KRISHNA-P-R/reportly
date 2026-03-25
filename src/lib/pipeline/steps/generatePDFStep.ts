@@ -78,6 +78,6 @@ export async function generatePDFStep(context: PipelineContext): Promise<void> {
     logger.info({ reportId: context.reportId }, 'PDF Generated and Uploaded Successfully');
   } catch (error: any) {
     logger.error({ err: error.message, reportId: context.reportId }, 'PDF Generation Step Failed');
-    // Non-critical path
+    throw error;
   }
 }

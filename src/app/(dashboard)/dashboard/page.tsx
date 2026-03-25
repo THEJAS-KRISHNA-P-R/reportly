@@ -41,9 +41,11 @@ export default function DashboardPage() {
           
           // 2. Fetch Reports for additional status counts
           const reportsRes = await fetch('/api/reports');
-           const reportsPayload = reportsRes.ok ? await reportsRes.json() : [];
-           const reportsData = unwrapData<any[]>(reportsPayload, []);
-          setRecentReports(reportsData.slice(0, 5).map((r: any) => ({
+          const reportsPayload = reportsRes.ok ? await reportsRes.json() : { ok: false, data: { reports: [] } };
+          const reportsEnvelope = unwrapData<{ reports: any[]; pagination?: any }>(reportsPayload, { reports: [] });
+          const reports = reportsEnvelope.reports || [];
+
+          setRecentReports(reports.slice(0, 5).map((r: any) => ({
              id: r.id,
              client_name: r.clients?.name || 'Unknown',
              period: r.month,
@@ -52,8 +54,8 @@ export default function DashboardPage() {
           })));
 
           // Calculate counts from reports
-          const sentThisMonth = reportsData.filter((r: any) => r.status === 'sent').length;
-          const pendingReview = reportsData.filter((r: any) => r.status === 'ready' || r.status === 'draft').length;
+          const sentThisMonth = reports.filter((r: any) => r.status === 'sent').length;
+          const pendingReview = reports.filter((r: any) => r.status === 'ready' || r.status === 'draft').length;
 
           setStats({
             total_clients: agencyData.clients_count || 0,

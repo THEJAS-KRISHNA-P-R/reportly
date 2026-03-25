@@ -19,19 +19,7 @@ describe('AI Orchestrator', () => {
     jest.clearAllMocks();
   });
 
-  it('completes via Claude if successful and valid', async () => {
-    (generateNarrativeClaude as jest.Mock).mockResolvedValue('Claude analysis text');
-    const validated = validateMetrics(mockGA4Response, null);
-    const result = await generateNarrative(validated);
-    
-    expect(result.source).toBe('claude');
-    expect(result.content).toBe('Claude analysis text');
-    expect(generateNarrativeClaude).toHaveBeenCalled();
-    expect(generateNarrativeGemini).not.toHaveBeenCalled();
-  });
-
-  it('falls back to Gemini if Claude fails', async () => {
-    (generateNarrativeClaude as jest.Mock).mockRejectedValue(new Error('Claude down'));
+  it('completes via Gemini if successful and valid', async () => {
     (generateNarrativeGemini as jest.Mock).mockResolvedValue('Gemini analysis text');
     const validated = validateMetrics(mockGA4Response, null);
     const result = await generateNarrative(validated);
@@ -39,16 +27,28 @@ describe('AI Orchestrator', () => {
     expect(result.source).toBe('gemini');
     expect(result.content).toBe('Gemini analysis text');
     expect(generateNarrativeGemini).toHaveBeenCalled();
+    expect(generateNarrativeClaude).not.toHaveBeenCalled();
   });
 
-  it('falls back to Gemini if Claude output is invalid', async () => {
-    (generateNarrativeClaude as jest.Mock).mockResolvedValue('It is probably because of data.'); // "probably" is flagged
-    (generateNarrativeGemini as jest.Mock).mockResolvedValue('Gemini clean output');
+  it('falls back to Claude if Gemini fails', async () => {
+    (generateNarrativeGemini as jest.Mock).mockRejectedValue(new Error('Gemini down'));
+    (generateNarrativeClaude as jest.Mock).mockResolvedValue('Claude analysis text');
     const validated = validateMetrics(mockGA4Response, null);
     const result = await generateNarrative(validated);
     
-    expect(result.source).toBe('gemini');
-    expect(result.content).toBe('Gemini clean output');
+    expect(result.source).toBe('claude');
+    expect(result.content).toBe('Claude analysis text');
+    expect(generateNarrativeClaude).toHaveBeenCalled();
+  });
+
+  it('falls back to Claude if Gemini output is invalid', async () => {
+    (generateNarrativeGemini as jest.Mock).mockResolvedValue("It's possible that data was corrupted."); // Flagged by speculative validator
+    (generateNarrativeClaude as jest.Mock).mockResolvedValue('Claude clean output');
+    const validated = validateMetrics(mockGA4Response, null);
+    const result = await generateNarrative(validated);
+    
+    expect(result.source).toBe('claude');
+    expect(result.content).toBe('Claude clean output');
   });
 
   it('falls back to Rule-based if all AI fails', async () => {
@@ -58,6 +58,6 @@ describe('AI Orchestrator', () => {
     const result = await generateNarrative(validated);
     
     expect(result.source).toBe('rule_based');
-    expect(result.content).toContain('Overall performance');
+    expect(result.content).toContain('During this reporting period');
   });
 });

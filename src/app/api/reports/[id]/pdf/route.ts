@@ -1,7 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/db/client';
+import { NextRequest } from 'next/server';
+import { createSupabaseServiceClient } from '@/lib/db/client';
 import { generatePDFStep } from '@/lib/pipeline/steps/generatePDFStep';
 import { PipelineContext } from '@/lib/pipeline/pipeline';
+import { getAuthenticatedAgency } from '@/lib/security/authGuard';
+import { getReportById } from '@/lib/db/repositories/reportRepo';
+import { apiError, apiOk } from '@/lib/api-contract';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Manually trigger PDF generation for a report.
@@ -13,33 +17,48 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
-
+  
   try {
-    // 1. Fetch report to verify permissions and get metadata
-    // Note: We use the service role repo for the actual step, but verify access here
-    const { data: report, error: reportError } = await supabase
-      .from('reports')
-      .select('client_id, agency_id, status, snapshot_id, final_narrative, confidence_summary')
-      .eq('id', id)
-      .single();
+    // 1. Verify Authentication & Agency Identity
+    const { agencyId } = await getAuthenticatedAgency(req);
 
-    if (reportError || !report) {
-      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+    // 2. Fetch report via Service Role Repository (bypassing RLS with agency validation)
+    const report = await getReportById(id, agencyId);
+
+    if (!report) {
+      return apiError('NOT_FOUND', 'Report not found or unauthorized', 404);
     }
 
-    // 2. Fetch the snapshot too (required for PDF templates)
-    const { data: snapshot, error: snapError } = await supabase
-      .from('metric_snapshots')
-      .select('validated_metrics, freshness_status')
-      .eq('id', report.snapshot_id)
-      .single();
+    const supabase = createSupabaseServiceClient();
 
-    if (snapError || !snapshot) {
-       return NextResponse.json({ error: 'No validated metrics found for this report. Please run/regenerate report first.' }, { status: 400 });
+    // 3. Resolve Snapshot. Prioritize linked snapshot_id, fallback to latest for client if missing.
+    let snapshotResult: any = null;
+    
+    if (report.snapshot_id) {
+       const { data: linkedSnap, error: snapError } = await supabase
+        .from('metric_snapshots')
+        .select('validated_metrics, freshness_status')
+        .eq('id', report.snapshot_id)
+        .single();
+       if (!snapError) snapshotResult = linkedSnap;
     }
 
-    // 3. Construct manual PipelineContext
+    if (!snapshotResult) {
+       const { data: fallbackSnap } = await supabase
+        .from('metric_snapshots')
+        .select('validated_metrics, freshness_status')
+        .eq('client_id', report.client_id)
+        .order('data_retrieved_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+       snapshotResult = fallbackSnap;
+    }
+
+    if (!snapshotResult) {
+       return apiError('BAD_REQUEST', 'No validated metrics snapshots found for this client. Please run/sync report data first.', 400);
+    }
+
+    // 4. Construct manual PipelineContext
     const context: PipelineContext = {
       clientId: report.client_id,
       agencyId: report.agency_id,
@@ -50,8 +69,8 @@ export async function POST(
          periodStart: new Date(),
          periodEnd: new Date(),
          retrievedAt: new Date(),
-         validated: snapshot.validated_metrics,
-         freshnessStatus: snapshot.freshness_status,
+         validated: snapshotResult.validated_metrics,
+         freshnessStatus: snapshotResult.freshness_status,
          confidence: report.confidence_summary || { overall: 'high', perMetric: {} },
          warnings: [],
          passedValidation: true
@@ -59,27 +78,25 @@ export async function POST(
       narrativeResult: {
         content: report.final_narrative || '',
         rawAiOutput: '',
-        source: 'gemini'
+        source: 'gemini',
+        confidenceScore: 100 // Pre-approved PDF override
       }
     };
 
-    // 4. Run the PDF Step directly (it handles upload and DB update)
+    // 5. Run the PDF Step directly (it handles upload and DB update)
+    logger.info({ reportId: id, agencyId }, 'Manually triggering PDF generation via API');
     await generatePDFStep(context);
 
-    // 5. Refetch to get updated URL
-    const { data: updatedReport } = await supabase
-      .from('reports')
-      .select('pdf_url')
-      .eq('id', id)
-      .single();
+    // 6. Refetch updated report via Service Role
+    const updatedReport = await getReportById(id, agencyId);
 
-    return NextResponse.json({ 
+    return apiOk({ 
       success: true, 
       pdf_url: updatedReport?.pdf_url 
     });
 
   } catch (error: any) {
-    console.error('[API] Manual PDF Generation Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    logger.error({ err: error.message, reportId: id }, 'Manual PDF Generation Error');
+    return apiError('INTERNAL_ERROR', error.message, 500);
   }
 }

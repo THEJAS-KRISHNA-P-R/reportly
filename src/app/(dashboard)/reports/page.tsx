@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, FileText, Search, Eye, Download, X, Check } from 'lucide-react';
+import { Plus, FileText, Search, Eye, Download, X, Check, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PageLoader } from '@/components/ui/page-loader';
+import { ReportProgressCard } from '@/components/reports/report-progress-card';
 
 type ReportListResponse =
   | any[]
@@ -127,9 +129,7 @@ export default function ReportsPage() {
       {/* Main Content Area */}
       <div className="flex flex-col gap-8">
         {loading ? (
-          <div className="p-20 text-center rounded-2xl bg-slate-50 border border-dashed border-slate-200">
-             <p className="text-[12px] font-bold uppercase tracking-widest text-slate-400 animate-pulse">Synchronizing Intelligence...</p>
-          </div>
+          <PageLoader rows={3} />
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl bg-white border border-slate-200 flex flex-col items-center justify-center p-20 text-center shadow-sm">
             <div className="w-20 h-20 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 text-slate-300 border border-slate-100">
@@ -178,12 +178,17 @@ export default function ReportsPage() {
                          if (report.pdf_url) {
                            setPreviewUrl(report.pdf_url);
                          } else {
-                           toast.info('PDF is being generated...');
+                           toast.info('PDF is still being processed. Please wait.');
                          }
                        }}
-                       className="flex items-center justify-center gap-2 h-10 rounded-xl bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 text-[12px] font-bold transition-all"
+                       disabled={report.status === 'generating'}
+                       className={`flex items-center justify-center gap-2 h-10 rounded-xl text-[12px] font-bold transition-all ${
+                         report.pdf_url 
+                          ? 'bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600' 
+                          : 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                       }`}
                      >
-                       <Eye size={14} /> Preview
+                       <Eye size={14} /> View PDF
                      </button>
                      <button 
                        onClick={(e) => {
@@ -192,9 +197,33 @@ export default function ReportsPage() {
                        }}
                        className="flex items-center justify-center gap-2 h-10 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 text-[12px] font-bold transition-all"
                      >
-                       <Download size={14} /> Export
+                       <Download size={14} /> Export CSV
                      </button>
                   </div>
+
+                   {/* Live Progress Indicator for generating/queued reports */}
+                   {(report.status === 'generating' || report.status === 'queued') && (
+                     <div className="mt-3">
+                       <ReportProgressCard
+                         reportId={report.id}
+                         initialStatus={report.status}
+                         initialStep={report.current_step}
+                       />
+                     </div>
+                   )}
+
+                   {/* Failure Visibility */}
+                   {report.status === 'failed' && report.error_reason && (
+                     <div className="mt-3 rounded-xl bg-red-50 p-3 border border-red-100 flex items-start gap-2">
+                       <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                       <div className="text-xs text-red-700">
+                         <p className="font-bold">Generation Failed</p>
+                         <p className="mt-0.5 opacity-90 break-words line-clamp-2" title={report.error_reason}>
+                           {report.error_reason}
+                         </p>
+                       </div>
+                     </div>
+                   )}
 
                 </div>
               )

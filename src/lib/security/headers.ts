@@ -7,7 +7,8 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 export const securityHeaders: Record<string, string> = {
   // Prevent framing (clickjacking)
-  'X-Frame-Options': 'DENY',
+  // Allow same-site iframes (for previews)
+  'X-Frame-Options': 'SAMEORIGIN',
   // Prevent MIME sniffing
   'X-Content-Type-Options': 'nosniff',
   // XSS filter for legacy browsers
@@ -25,9 +26,10 @@ export const securityHeaders: Record<string, string> = {
     "style-src 'self' 'unsafe-inline'", // inline styles needed for Next.js + Tailwind
     "img-src 'self' data: https:", // data: for base64 logos
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com",
-    "frame-ancestors 'none'",
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com ${isDev ? 'ws://lvh.me:3000 ws://*.lvh.me:3000 ws://localhost:3000 http://lvh.me:3000 http://*.lvh.me:3000' : ''}`.trim(),
+    "frame-src 'self' https://*.supabase.co",
+    "frame-ancestors 'self'",
     "base-uri 'self'",
-    "form-action 'self'",
+    "form-action 'self' https://*.supabase.co",
   ].join('; '),
 };

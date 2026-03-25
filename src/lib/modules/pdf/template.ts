@@ -15,9 +15,16 @@ export function getReportHtml(
   const reportFont = agency.report_font || 'Inter';
   const activeSections = agency.pdf_sections || ['cover', 'summary', 'google_ads', 'meta_ads', 'ga4', 'conclusion'];
   
-  // High-performance Google Fonts (OFL - Legal & Royalty-Free)
   const fontImport = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Roboto+Mono:wght@400;700&family=Playfair+Display:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Roboto+Mono:wght@400;700&display=swap');
+    
+    @font-face {
+      font-family: 'Inter';
+      font-style: normal;
+      font-weight: 400 900;
+      font-display: swap;
+      src: local('Inter'), local('Inter-Regular'), local('Arial');
+    }
   `;
 
   const metricRows = Object.entries(metrics.validated).map(([key, mv]) => `
@@ -112,7 +119,12 @@ export function getReportHtml(
             'bottom: 40px; right: 60px;'}
         }
         
-        .logo-img { height: 48px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+        .logo-img { 
+          max-height: 64px; 
+          max-width: 240px; 
+          object-fit: contain;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); 
+        }
         
         .report-meta { margin-top: 120px; }
         .type-label { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.25em; opacity: 0.7; margin-bottom: 8px; }

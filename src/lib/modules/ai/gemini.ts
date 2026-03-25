@@ -4,12 +4,12 @@ import { CircuitBreaker } from '@/lib/utils/circuitBreaker';
 import { ReportlyError } from '@/types/errors';
 import { REPORT } from '@/lib/constants';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 export async function generateNarrativeGemini(prompt: string): Promise<string> {
   if (!process.env.GEMINI_API_KEY) {
     throw new ReportlyError('AI_FAILED', 'Gemini API key missing', 'Analysis engine configuration error.', 500);
   }
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
   return await CircuitBreaker.execute('ai', async () => {
     return await withRetry(async () => {

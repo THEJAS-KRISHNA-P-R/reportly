@@ -1,232 +1,203 @@
-import {
-  claimQueuedJobForProcessing,
-  getJobsByStatus,
-  heartbeatProcessingLease,
-  moveToDLQ,
-  requeueStaleProcessingJobs,
-  updateJobStatus,
-} from '@/lib/db/repositories/jobRepo';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+dotenv.config();
+
+import { Worker, Job } from 'bullmq';
+import { redis } from '@/lib/redis';
+import { REPORT_QUEUE_NAME } from '@/lib/queue/client';
 import { runReportGeneration } from '@/lib/services/reportService';
 import { logger } from '@/lib/utils/logger';
-import type { ReportPeriod } from '@/types/adapters';
-import { randomUUID } from 'crypto';
+import { updateJobStatus, moveToDLQ } from '@/lib/db/repositories/jobRepo';
+import { updateReportStatus } from '@/lib/db/repositories/reportRepo';
 import { buildSystemCorrelationId, getPayloadCorrelationId } from '@/lib/observability/correlation';
+import { closeBrowser } from '@/lib/modules/pdf/generator';
+import type { ReportPeriod } from '@/types/adapters';
 
-const WORKER_LEASE_TIMEOUT_MS = Math.max(60_000, Number(process.env.WORKER_LEASE_TIMEOUT_MS ?? 10 * 60_000));
-const WORKER_HEARTBEAT_MS = Math.max(10_000, Number(process.env.WORKER_HEARTBEAT_MS ?? Math.floor(WORKER_LEASE_TIMEOUT_MS / 3)));
+// ── Concurrency: NEVER exceed 2 for Puppeteer safety ───────────────
+const CONCURRENCY = Math.min(
+  2,
+  Math.max(1, Number(process.env.WORKER_CONCURRENCY ?? 2))
+);
 
-function computeRetryDelayMs(attemptNumber: number): number {
-  const baseDelayMs = 30_000;
-  const maxDelayMs = 5 * 60_000;
-  return Math.min(maxDelayMs, baseDelayMs * Math.pow(2, Math.max(0, attemptNumber - 1)));
+// ── Memory-Aware Circuit Breaker ────────────────────────────────────
+const MEMORY_THRESHOLD_MB = 900; // Pause queue if RSS exceeds this
+let isPaused = false;
+
+function checkMemoryPressure() {
+  const rss = process.memoryUsage().rss / 1024 / 1024;
+  
+  if (rss > MEMORY_THRESHOLD_MB && !isPaused) {
+    logger.warn({ rssMB: Math.round(rss) }, 'Memory threshold exceeded. Pausing worker.');
+    worker.pause();
+    isPaused = true;
+    
+    // Auto-resume after 30s cooldown
+    setTimeout(async () => {
+      const currentRss = process.memoryUsage().rss / 1024 / 1024;
+      if (currentRss < MEMORY_THRESHOLD_MB * 0.8) {
+        logger.info({ rssMB: Math.round(currentRss) }, 'Memory recovered. Resuming worker.');
+        await worker.resume();
+        isPaused = false;
+      } else {
+        logger.warn({ rssMB: Math.round(currentRss) }, 'Memory still high after cooldown. Forcing GC and retrying.');
+        if (global.gc) global.gc();
+        await worker.resume();
+        isPaused = false;
+      }
+    }, 30_000);
+  }
 }
 
-function parseReportPeriod(payload: Record<string, unknown>): ReportPeriod {
-  const periodStart = payload.periodStart;
-  const periodEnd = payload.periodEnd;
-  const label = typeof payload.label === 'string' ? payload.label : 'Custom';
-
-  if (typeof periodStart !== 'string' || typeof periodEnd !== 'string') {
+function parseReportPeriod(payload: any): ReportPeriod {
+  const { periodStart, periodEnd, label = 'Custom' } = payload;
+  if (!periodStart || !periodEnd) {
     throw new Error('Job payload missing periodStart/periodEnd');
   }
-
-  const start = new Date(periodStart);
-  const end = new Date(periodEnd);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    throw new Error('Job payload has invalid date range');
-  }
-
-  return { start, end, label };
+  return { 
+    start: new Date(periodStart), 
+    end: new Date(periodEnd), 
+    label 
+  };
 }
-
-// Graceful Shutdown Flag
-let isShuttingDown = false;
 
 /**
- * Poor man's worker: Polls the job_queue for 'queued' jobs and processes them.
+ * Process a report generation job from BullMQ.
  */
-export async function pollAndProcessJobs() {
-  if (isShuttingDown) return;
+async function processReportJob(job: Job) {
+  // Memory circuit breaker check before processing
+  checkMemoryPressure();
+
+  const { jobId: dbJobId, clientId, agencyId, reportId, payload } = job.data;
+  const correlationId = getPayloadCorrelationId(payload) || buildSystemCorrelationId(`bull.${job.id}`);
+  
+  logger.info({ 
+    jobId: job.id, 
+    dbJobId, 
+    reportId, 
+    attempt: job.attemptsMade + 1,
+    correlationId,
+    rssMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+  }, 'Worker: Starting report generation');
 
   try {
-    const concurrency = Math.max(1, Number(process.env.WORKER_CONCURRENCY ?? 5));
+    // 1. Update DB status to 'processing'
+    await updateJobStatus(dbJobId, 'processing', {
+      started_at: new Date().toISOString(),
+      attempts: job.attemptsMade + 1,
+      bull_job_id: job.id,
+    });
 
-    const recoveredStaleJobs = await requeueStaleProcessingJobs(WORKER_LEASE_TIMEOUT_MS, concurrency * 4);
-    if (recoveredStaleJobs > 0) {
-      logger.warn({ recoveredStaleJobs }, 'Worker: Requeued stale processing jobs after lease timeout');
+    const period = parseReportPeriod(payload);
+
+    // 2. Run the actual pipeline
+    await runReportGeneration(
+      clientId,
+      agencyId,
+      period,
+      reportId,
+      dbJobId,
+      {
+        attempt: job.attemptsMade + 1,
+        correlationId,
+        runKey: payload.runKey,
+        idempotencyKey: payload.idempotencyKey,
+        maxAttempts: job.opts.attempts || 3,
+        mock: payload.mock === true,
+      }
+    );
+
+    // 3. Update DB to 'completed'
+    await updateJobStatus(dbJobId, 'completed', {
+      completed_at: new Date().toISOString(),
+    });
+
+    logger.info({ 
+      jobId: job.id, 
+      dbJobId, 
+      reportId,
+      rssMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    }, 'Worker: Job completed successfully');
+    
+    // Manual GC trigger to prevent leak creep
+    if (global.gc) {
+      global.gc();
+    }
+  } catch (error: any) {
+    const errorMessage = error?.message || 'Unknown error';
+
+    logger.error({ 
+      jobId: job.id, 
+      dbJobId, 
+      err: errorMessage,
+      attempt: job.attemptsMade + 1,
+      rssMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+    }, 'Worker: Job processing failed');
+
+    const maxAttempts = job.opts.attempts || 3;
+    const isFinalAttempt = (job.attemptsMade + 1) >= maxAttempts;
+
+    if (isFinalAttempt) {
+      // Mark report as definitively failed
+      await updateReportStatus(reportId, agencyId, 'failed', { error_reason: errorMessage });
+      
+      // Update job to completed to prevent BullMQ from locking, but marked as failed in DB
+      await updateJobStatus(dbJobId, 'failed', {
+        last_error: errorMessage,
+        attempts: job.attemptsMade + 1,
+      });
+    } else {
+      // Sync intermediate failure back to DB 
+      await updateJobStatus(dbJobId, 'queued', {
+        last_error: errorMessage,
+        attempts: job.attemptsMade + 1,
+      });
     }
 
-    const jobs = await getJobsByStatus('queued', concurrency);
-    
-    if (jobs.length === 0) return;
-
-    logger.info({ count: jobs.length }, 'Worker: Picking up jobs');
-
-    await Promise.all(jobs.map(async (job) => {
-      if (job.job_type !== 'generate_report') return;
-
-      const attemptNumber = Math.max(1, (job.attempts ?? 0) + 1);
-      const maxAttempts = Math.max(1, job.max_attempts ?? 3);
-      const startedAt = new Date().toISOString();
-      const leaseOwnerToken = `worker:${process.pid}:${randomUUID()}`;
-
-      const claimed = await claimQueuedJobForProcessing(job.id, attemptNumber, startedAt, leaseOwnerToken);
-      if (!claimed) {
-        logger.info({ jobId: job.id }, 'Worker: Job already claimed by another worker');
-        return;
-      }
-
-      let leaseLost = false;
-      let heartbeatInFlight = false;
-      const heartbeatTimer = setInterval(async () => {
-        if (heartbeatInFlight || leaseLost) {
-          return;
-        }
-
-        heartbeatInFlight = true;
-        try {
-          const renewed = await heartbeatProcessingLease(job.id, leaseOwnerToken, new Date().toISOString());
-          if (!renewed) {
-            leaseLost = true;
-            logger.error({ jobId: job.id }, 'Worker: Lease heartbeat failed, ownership lost');
-          }
-        } catch (heartbeatError: any) {
-          logger.error({ jobId: job.id, err: heartbeatError?.message ?? 'unknown' }, 'Worker: Lease heartbeat error');
-        } finally {
-          heartbeatInFlight = false;
-        }
-      }, WORKER_HEARTBEAT_MS);
-
-      try {
-        if (!job.client_id || !job.report_id) {
-          throw new Error('Generate-report job is missing client_id or report_id');
-        }
-
-        const payload = (job.payload ?? {}) as Record<string, unknown>;
-        const period = parseReportPeriod(payload);
-        const runKey = typeof payload.runKey === 'string' ? payload.runKey : undefined;
-        const idempotencyKey = typeof payload.idempotencyKey === 'string' ? payload.idempotencyKey : undefined;
-        const correlationId = getPayloadCorrelationId(payload) ?? buildSystemCorrelationId(`job.${job.id}`);
-        
-        await runReportGeneration(
-          job.client_id,
-          job.agency_id,
-          period,
-          job.report_id,
-          job.id,
-          {
-            attempt: attemptNumber,
-            runKey,
-            idempotencyKey,
-            jobLeaseOwnerToken: leaseOwnerToken,
-            correlationId,
-            maxAttempts,
-          }
-        );
-
-        if (leaseLost) {
-          throw new Error('Lease ownership lost before completion acknowledgement');
-        }
-
-        logger.info(
-          { jobId: job.id, reportId: job.report_id, attempt: attemptNumber, correlationId },
-          'Worker: Job completed'
-        );
-      } catch (error: any) {
-        const errorMessage = error?.message ?? 'Unknown worker error';
-        const stackTrace = error?.stack ? String(error.stack) : undefined;
-        const correlationId = getPayloadCorrelationId((job.payload ?? {}) as Record<string, unknown>);
-
-        if (leaseLost) {
-          logger.warn(
-            { jobId: job.id, attempt: attemptNumber, correlationId, err: errorMessage },
-            'Worker: Lease lost during processing; skipping retry/DLQ mutation'
-          );
-          return;
-        }
-
-        if (attemptNumber < maxAttempts) {
-          const retryAt = new Date(Date.now() + computeRetryDelayMs(attemptNumber));
-
-          await updateJobStatus(job.id, 'queued', {
-            attempts: attemptNumber,
-            last_error: errorMessage,
-            started_at: null,
-            completed_at: null,
-            bull_job_id: null,
-            scheduled_for: retryAt.toISOString(),
-          }, {
-            leaseOwnerToken,
-            expectedCurrentStatus: 'processing',
-          });
-
-          logger.warn(
-            {
-              jobId: job.id,
-              attempt: attemptNumber,
-              maxAttempts,
-              retryAt: retryAt.toISOString(),
-              correlationId,
-              err: errorMessage,
-            },
-            'Worker: Job failed and was re-queued'
-          );
-          return;
-        }
-
-        await moveToDLQ(job.id, job.agency_id, errorMessage, stackTrace, {
-          reportId: job.report_id,
-          attempts: attemptNumber,
-          maxAttempts,
-          jobType: job.job_type,
-        });
-
-        logger.error(
-          { jobId: job.id, attempt: attemptNumber, maxAttempts, correlationId, err: errorMessage },
-          'Worker: Job exhausted retries and was moved to DLQ'
-        );
-      } finally {
-        clearInterval(heartbeatTimer);
-      }
-    }));
-  } catch (error: any) {
-    logger.error({ err: error.message }, 'Worker: Polling Error');
+    throw error; // Let BullMQ handle retry
   }
 }
 
-// Handle signals for graceful shutdown
-if (typeof process !== 'undefined') {
-  const shutdown = (signal: string) => {
-    logger.info({ signal }, `Worker: Received ${signal}, initiating graceful shutdown`);
-    isShuttingDown = true;
-    // Allow 10s for in-flight jobs to complete or at least update heartbeat
-    setTimeout(() => {
-      logger.info('Worker: Shutdown timer exhausted, exiting');
-      process.exit(0);
-    }, 10_000);
-  };
+// ── Initialize the Worker ───────────────────────────────────────────
+const worker = new Worker(REPORT_QUEUE_NAME, processReportJob, {
+  connection: redis as any,
+  concurrency: CONCURRENCY,
+  lockDuration: 300_000, // 5min — safe ceiling for AI + PDF gen
+});
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+worker.on('failed', async (job, err) => {
+  if (job && job.attemptsMade >= (job.opts.attempts || 3)) {
+    const { jobId: dbJobId, agencyId, reportId } = job.data;
+    
+    logger.error({ jobId: job.id, dbJobId, err: err.message }, 'Worker: Job permanently failed');
 
-  process.on('unhandledRejection', (reason, promise) => {
-    logger.error({ reason, promise }, 'Worker: Unhandled Promise Rejection');
-  });
+    try {
+      await moveToDLQ(dbJobId, agencyId, err.message, err.stack, {
+        reportId,
+        jobType: 'generate_report',
+        attempts: job.attemptsMade,
+      });
+    } catch (dlqErr: any) {
+      logger.error({ dlqErr: dlqErr.message }, 'Worker: Failed to move job to DLQ');
+    }
+  }
+});
 
-  process.on('uncaughtException', (error) => {
-    logger.error({ err: error.message, stack: error.stack }, 'Worker: Uncaught Exception');
-    // For uncaught exceptions, we should probably exit and let the orchestrator restart us.
-    // The shutdown() call above handles the delay.
-    shutdown('UNCAUGHT_EXCEPTION');
-  });
-}
+logger.info({ 
+  concurrency: CONCURRENCY,
+  queue: REPORT_QUEUE_NAME,
+  memoryThresholdMB: MEMORY_THRESHOLD_MB,
+}, 'Worker: BullMQ worker daemon started');
 
-// If run via CLI
-if (require.main === module) {
-  logger.info('Worker: Starting manual poll cycle');
-  pollAndProcessJobs().then(() => {
-    logger.info('Worker: Cycle finished');
-    // Don't exit immediately if we want to keep polling, but for manual test it's fine
-    if (!isShuttingDown) process.exit(0);
-  });
-}
+// ── Graceful Shutdown ───────────────────────────────────────────────
+const shutdown = async (signal: string) => {
+  logger.info({ signal }, `Worker: Received ${signal}, closing worker pool...`);
+  await worker.close();
+  await closeBrowser(); // Close the Puppeteer singleton to prevent orphaned Chrome
+  logger.info('Worker: Pool + browser closed, exiting');
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('unhandledRejection', (reason) => logger.error({ reason }, 'Worker: Unhandled Rejection'));
+process.on('uncaughtException', (err) => logger.error({ err }, 'Worker: Uncaught Exception'));

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/db/client';
+import { createSupabaseServiceClient } from '@/lib/db/client';
 import { getAuthenticatedAgency } from '@/lib/security/authGuard';
 import { sanitizeText } from '@/lib/security/sanitizer';
+import { LAYOUT_MAP, REVERSE_LAYOUT_MAP, type DbLayout, type FrontendLayout } from '@/lib/constants/branding';
 
 export async function GET(request: NextRequest) {
   try {
     const { agencyId } = await getAuthenticatedAgency(request);
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServiceClient();
 
     // Fetch existing or seed default
     const { data, error } = await supabase
@@ -16,6 +17,12 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (error) throw error;
+
+    if (data) {
+      // Map database enums back to frontend IDs using central config
+      const dbLayout = (data.report_layout as DbLayout) || 'modern';
+      data.report_layout = REVERSE_LAYOUT_MAP[dbLayout] || 'compact';
+    }
 
     return NextResponse.json(data || {});
   } catch (err: any) {
@@ -32,7 +39,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admin role required' }, { status: 403 });
     }
 
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseServiceClient();
 
     const body = await request.json();
     
@@ -51,6 +58,10 @@ export async function PATCH(request: NextRequest) {
       metric_density:     body.metric_density ? sanitizeText(body.metric_density, 20) : null,
     };
 
+    // Map frontend IDs to database enums using central config
+    const rawLayout = (sanitizedBody.report_layout as FrontendLayout) || 'compact';
+    const dbLayout = LAYOUT_MAP[rawLayout] || 'modern';
+
     const { data: updated, error } = await supabase
       .from('agency_branding')
       .upsert({
@@ -59,7 +70,7 @@ export async function PATCH(request: NextRequest) {
         secondary_color:    sanitizedBody.secondary_color,
         accent_color:       sanitizedBody.accent_color,
         report_font:        sanitizedBody.report_font,
-        report_layout:      sanitizedBody.report_layout,
+        report_layout:      dbLayout,
         show_powered_by:    body.show_powered_by, // boolean - safe
         logo_url:           sanitizedBody.logo_url,
         logo_position:      sanitizedBody.logo_position,
@@ -78,6 +89,12 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) throw error;
+    
+    if (updated) {
+      // Map back for frontend consistency using central config
+      const finalDbLayout = (updated.report_layout as DbLayout) || 'modern';
+      updated.report_layout = REVERSE_LAYOUT_MAP[finalDbLayout] || 'compact';
+    }
     
     return NextResponse.json(updated);
   } catch (err: any) {

@@ -49,7 +49,7 @@ export function Beams({
 
     // Create beams
     const beams: THREE.Mesh[] = [];
-    const clock = new THREE.Clock();
+    const startTime = performance.now();
 
     for (let i = 0; i < beamNumber; i++) {
       const geo = new THREE.PlaneGeometry(beamWidth, beamHeight * h);
@@ -78,7 +78,7 @@ export function Beams({
 
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
+      const t = (performance.now() - startTime) / 1000;
 
       beams.forEach((beam) => {
         const { baseX, phase, freq, amp } = beam.userData;

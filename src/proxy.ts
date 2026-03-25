@@ -6,7 +6,12 @@ import { getPolicyDecision, getRouteGroup, resolveUserRole } from '@/lib/securit
 
 const CRON_PATHS  = ['/api/cron'];
 
-function applySecurityHeaders(res: NextResponse): NextResponse {
+function applySecurityHeaders(res: NextResponse, hostname: string = ''): NextResponse {
+  // Disable security headers on lvh.me in development to avoid HMR/Hydration issues
+  if (process.env.NODE_ENV !== 'production' && (hostname.includes('lvh.me') || hostname.includes('localhost'))) {
+    return res;
+  }
+  
   Object.entries(securityHeaders).forEach(([key, value]) => {
     res.headers.set(key, value);
   });
@@ -35,9 +40,65 @@ function isValidOrigin(request: Request): boolean {
   return true;
 }
 
+let upstashRedis: any = null;
+
+async function getUpstashRedis() {
+  if (!upstashRedis) {
+    const { Redis } = await import('@upstash/redis');
+    upstashRedis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+  }
+  return upstashRedis;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const method = request.method;
+  const hostname = request.headers.get('host') || '';
+
+  // --- SUBDOMAIN MULTITENANCY (SOTA) ---
+  let subdomain = '';
+  if (hostname.includes('lvh.me')) {
+    const parts = hostname.split('.');
+    if (parts.length > 2) subdomain = parts[0];
+  } else if (!hostname.includes('localhost')) {
+    const parts = hostname.split('.');
+    if (parts.length > 2 && parts[0] !== 'www') {
+      subdomain = parts[0];
+    }
+  }
+
+  let agencyIdBySubdomain: string | null = null;
+  if (subdomain && subdomain !== 'www') {
+    const redis = await getUpstashRedis();
+    const cacheKey = `subdomain:${subdomain}`;
+    agencyIdBySubdomain = await redis.get(cacheKey);
+
+    if (!agencyIdBySubdomain) {
+      // Background Supabase client (using service role for verification)
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
+      const { data, error } = await supabaseAdmin
+        .from('agencies')
+        .select('id')
+        .eq('subdomain', subdomain)
+        .maybeSingle();
+
+      if (error || !data) {
+        console.warn(`[Proxy] Invalid subdomain: ${subdomain}`);
+        return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)), hostname);
+      }
+
+      agencyIdBySubdomain = data.id;
+      await redis.set(cacheKey, agencyIdBySubdomain, { ex: 3600 });
+    }
+  }
 
   // CSRF Protection for API Writes
   if (pathname.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
@@ -57,26 +118,28 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Static assets — pass through immediately
+  // Static assets and dev resources — pass through immediately without proxy overhead or tight CSP
   if (
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon') ||
+    pathname.startsWith('/images/') ||
+    pathname.startsWith('/assets/') ||
     pathname === '/robots.txt' ||
-    pathname === '/sitemap.xml'
+    pathname === '/sitemap.xml' ||
+    pathname === '/icon.svg' ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.ico')
   ) {
-    return applySecurityHeaders(NextResponse.next());
+    return NextResponse.next();
   }
 
   // Public APIs are always allowed and should not incur auth lookup latency.
   if (routeGroup === 'public-api') {
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(NextResponse.next(), hostname);
   }
 
   // Initialize Supabase to grab the current user state
-  const response = NextResponse.next({
-    request: { headers: request.headers },
-  });
-
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -85,28 +148,65 @@ export async function proxy(request: NextRequest) {
       cookies: {
         getAll: () => cookieStore.getAll(),
         setAll: (toSet) => {
+          const isLvh = hostname.includes('lvh.me');
+          const domain = isLvh ? '.lvh.me' : `.${hostname.split('.').slice(-2).join('.')}`;
+          
           toSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            cookieStore.set(name, value, { ...options, domain })
           );
         },
       },
     }
   );
 
+  let user: any = null;
   let userEmail: string | null = null;
+
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // --- REDIS CACHE INTEGRATION (SOTA OPTIMIZATION) ---
+    const cacheKey = `sess:${cookieStore.get('sb-qaobenwaagtuxxhpbiuk-auth-token')?.value?.slice(-20) || 'anon'}`;
+    const redis = await getUpstashRedis();
+
+    if (method === 'GET' && cacheKey !== 'sess:anon') {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        user = cached;
+        // console.log('[Middleware] Cache Hit:', cacheKey);
+      }
+    }
+
+    if (!user) {
+      // Optimization: Use getSession for GET requests to avoid network round-trip to Supabase
+      // for every polling request. Use getUser for state-changing methods for security.
+      if (method === 'GET') {
+        const { data: { session } } = await supabase.auth.getSession();
+        user = session?.user ?? null;
+        
+        // Cache session for 60 seconds to prevent auth spam (30+ requests/min fix)
+        if (user && cacheKey !== 'sess:anon') {
+          await redis.set(cacheKey, user, { ex: 60 });
+        }
+      } else {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        user = authUser;
+        // Invalidate cache on write for safety
+        if (cacheKey !== 'sess:anon') await redis.del(cacheKey);
+      }
+    }
+    
     userEmail = user?.email ?? null;
-  } catch {
+  } catch (err) {
+    console.error('[Middleware] Auth check failed:', err);
+  }
+
+  if (!user) {
     // Fail-safe behavior: allow public/auth pages, protect everything else.
     if (routeGroup === 'public-page' || routeGroup === 'auth-page') {
-      return applySecurityHeaders(response);
+      return applySecurityHeaders(NextResponse.next());
     }
     const url = new URL('/login', request.url);
     url.searchParams.set('redirect', pathname);
-    return applySecurityHeaders(NextResponse.redirect(url));
+    return applySecurityHeaders(NextResponse.redirect(url), hostname);
   }
 
   const role = resolveUserRole(userEmail, process.env.SUPER_ADMIN_EMAIL);
@@ -125,7 +225,18 @@ export async function proxy(request: NextRequest) {
   const decision = getPolicyDecision(pathname, role);
 
   if (decision.action === 'allow') {
-    return applySecurityHeaders(response);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-user-id', user.id);
+    requestHeaders.set('x-user-email', user.email || '');
+    
+    if (subdomain) requestHeaders.set('x-agency-subdomain', subdomain);
+    if (agencyIdBySubdomain) requestHeaders.set('x-agency-id', agencyIdBySubdomain);
+
+    return applySecurityHeaders(NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    }), hostname);
   }
 
   if (decision.action === 'forbidden') {
@@ -136,7 +247,7 @@ export async function proxy(request: NextRequest) {
   if (decision.includeRedirectParam) {
     url.searchParams.set('redirect', pathname);
   }
-  return applySecurityHeaders(NextResponse.redirect(url));
+  return applySecurityHeaders(NextResponse.redirect(url), hostname);
 }
 
 export const config = {

@@ -29,7 +29,7 @@ export function validateMetrics(current: RawMetricSet, prior: RawMetricSet | nul
       retrievedAt: current.retrievedAt,
       validated: {},
       freshnessStatus,
-      confidence: { overall: 'unverified', perMetric: {} },
+      confidence: { overall: 'unverified', score: 0, perMetric: {} },
       warnings: ['No metrics provided in RawMetricSet'],
       passedValidation: false
     };
@@ -108,7 +108,11 @@ export function validateMetrics(current: RawMetricSet, prior: RawMetricSet | nul
     retrievedAt: current.retrievedAt,
     validated,
     freshnessStatus,
-    confidence: { overall, perMetric },
+    confidence: { 
+      overall, 
+      score: Math.round(((allKeys.length - failedCount) / allKeys.length) * 100), 
+      perMetric 
+    },
     warnings: globalWarnings,
     passedValidation: passed
   };

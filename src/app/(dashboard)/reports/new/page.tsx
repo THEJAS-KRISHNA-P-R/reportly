@@ -12,6 +12,7 @@ function NewReportForm() {
   const clientId = searchParams.get('client');
   
   const [loading, setLoading] = useState(false);
+  const [useMock, setUseMock] = useState(false);
   const [client, setClient] = useState<any>(null);
   
   // Default to current month minus 1 (reporting usually happens for the previous full month)
@@ -55,7 +56,8 @@ function NewReportForm() {
         body: JSON.stringify({
           clientId,
           periodStart,
-          periodEnd
+          periodEnd,
+          mock: useMock
         })
       });
 
@@ -107,8 +109,23 @@ function NewReportForm() {
               value={month}
               onChange={(e) => setMonth(e.target.value)}
               className="w-full h-11 px-4 border rounded-xl outline-none focus:border-black transition-colors"
-              style={{ borderColor: '#E5E5E5' }}
             />
+          </div>
+          
+          <div className="flex items-center gap-3 p-4 rounded-xl border border-blue-100 bg-blue-50/50">
+            <input 
+              type="checkbox"
+              id="mock-mode"
+              checked={useMock}
+              onChange={(e) => setUseMock(e.target.checked)}
+              className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="mock-mode" className="text-sm font-medium text-blue-900 select-none cursor-pointer">
+              Use Sample Data (Mock Mode)
+              <span className="block text-xs font-normal text-blue-700 mt-0.5">
+                Bypass GA4 latency. Perfect for testing layouts while data is warming up.
+              </span>
+            </label>
           </div>
 
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-8">

@@ -9,6 +9,8 @@ export function validateAiOutput(narrative: string): { isValid: boolean; flagged
     /disclaimer: i (am|cannot|don't)/i,
     /as an ai/i,
     /i don't have access to/i,
+    /it's possible that/i,
+    /is possible that/i,
   ];
 
   const flaggedPhrases: string[] = [];

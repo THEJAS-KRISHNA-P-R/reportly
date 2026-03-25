@@ -44,7 +44,10 @@ export async function generateNarrativeStep(context: PipelineContext): Promise<v
       result.source,
       result.rawAiOutput || '',
       result.source === 'rule_based' ? result.content : null,
-      context.validationResult.confidence
+      {
+        ...context.validationResult.confidence,
+        score: result.confidenceScore // Persist the calculated fidelity score
+      }
     );
   }
 }

@@ -171,12 +171,19 @@ export interface Report {
   approved_by: string | null;
   sent_at: string | null;
   cancelled_reason: string | null;
+  error_reason: string | null;
   created_at: string;
   updated_at: string;
   // Joined fields
   clients?: { name: string };
   month?: string;
   snapshot_id?: string | null;
+  current_step?: {
+    name: string;
+    percentage: number;
+    status: 'in_progress' | 'success' | 'error';
+    updatedAt: string;
+  } | null;
 }
 
 

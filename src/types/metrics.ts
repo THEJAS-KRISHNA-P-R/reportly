@@ -57,5 +57,6 @@ export interface GA4Metrics {
 
 export interface ConfidenceSummary {
   overall: ConfidenceLevel;
+  score: number; // 0-100 reliability score
   perMetric: Record<string, ConfidenceLevel>;
 }

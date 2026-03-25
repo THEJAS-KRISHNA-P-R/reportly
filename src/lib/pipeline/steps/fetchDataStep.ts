@@ -51,8 +51,14 @@ export async function fetchDataStep(context: PipelineContext): Promise<void> {
     }
 
     const freshAccessToken = await refreshGA4Token(context.clientId);
+    if (context.reportId) {
+      await updateReportProgress(context.reportId, context.agencyId, 'GA4 Authorization Refreshed', 10);
+    }
     logger.info({ clientId: context.clientId, reportId: context.reportId, correlationId: context.correlationId }, 'GA4 token refreshed successfully for pipeline');
 
+    if (context.reportId) {
+      await updateReportProgress(context.reportId, context.agencyId, 'Querying Core Metrics...', 12);
+    }
     const adapter = analyticsRegistry.getAdapter('ga4');
     const fetchResult = await adapter.fetch(
       context.clientId, 
@@ -60,6 +66,9 @@ export async function fetchDataStep(context: PipelineContext): Promise<void> {
       freshAccessToken
     );
     context.fetchResult = fetchResult;
+    if (context.reportId) {
+      await updateReportProgress(context.reportId, context.agencyId, 'Metrical Payload Retrieved', 15);
+    }
 
     if (context.reportId) {
        await createAuditLog(

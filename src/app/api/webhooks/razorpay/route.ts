@@ -1,7 +1,8 @@
-import { createServerClient } from '@supabase/ssr';
+import { createSupabaseServiceClient } from '@/lib/db/client';
 import { verifyWebhookSignature } from '@/lib/payments/razorpay';
-import { cookies } from 'next/headers';
 import { apiError, apiOk, fromUnknownError } from '@/lib/api-contract';
+import { redis } from '@/lib/redis';
+import { logger } from '@/lib/utils/logger';
 
 export async function POST(request: Request) {
   try {
@@ -13,33 +14,60 @@ export async function POST(request: Request) {
     }
 
     const payload = JSON.parse(rawBody);
+    const eventId = payload.account_id + '_' + payload.created_at + '_' + payload.event; // SOTA: Better use account-level event IDs if available
     const event = payload.event;
     
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} } }
-    );
+    // 1. Idempotency Check (Redis)
+    const exists = await redis.get(`webhook:rzp:${eventId}`);
+    if (exists) {
+      logger.info({ eventId, event }, 'Webhook already processed. Skipping.');
+      return apiOk({ received: true, duplicate: true });
+    }
+
+    const supabase = createSupabaseServiceClient(); // Use Service Role for backend writes
+
+    logger.info({ event, id: payload.payload?.subscription?.entity?.id }, 'Processing Razorpay Webhook');
 
     if (event === 'subscription.charged') {
+      const sub_id = payload.payload.payment.entity.subscription_id;
+      await supabase.from('agency_billing').update({ 
+        billing_status: 'active',
+        last_payment_at: new Date().toISOString()
+      }).eq('razorpay_sub_id', sub_id);
+    } 
+    else if (event === 'payment.failed') {
+      const sub_id = payload.payload.payment.entity.subscription_id;
+      if (sub_id) {
+        await supabase.from('agency_billing').update({ 
+          billing_status: 'past_due' 
+        }).eq('razorpay_sub_id', sub_id);
+      }
+    }
+    else if (event === 'subscription.cancelled' || event === 'subscription.halted') {
       const sub_id = payload.payload.subscription.entity.id;
-      // Mark active
-      await supabase.from('agency_billing').update({ billing_status: 'active' }).eq('razorpay_sub_id', sub_id);
-    } else if (event === 'subscription.cancelled' || event === 'subscription.halted') {
-      const sub_id = payload.payload.subscription.entity.id;
-      // Mark cancelled
-      await supabase.from('agency_billing').update({ billing_status: 'cancelled', plan_id: 'free' }).eq('razorpay_sub_id', sub_id);
       
-      // We would also downgrade the agency limits here by fetching the agency_id via the billing record
-      const { data: billing } = await supabase.from('agency_billing').select('agency_id').eq('razorpay_sub_id', sub_id).single();
+      // Downgrade workflow
+      const { data: billing } = await supabase
+        .from('agency_billing')
+        .update({ billing_status: 'cancelled', plan_id: 'free' })
+        .eq('razorpay_sub_id', sub_id)
+        .select('agency_id')
+        .single();
+
       if (billing?.agency_id) {
-        await supabase.from('agencies').update({ plan_report_limit: 2 }).eq('id', billing.agency_id);
+        await supabase.from('agencies').update({ 
+          plan_report_limit: 2, // Reset to baseline MVP limit
+          is_active: event === 'subscription.halted' ? false : true // Halt blocks all access
+        }).eq('id', billing.agency_id);
       }
     }
 
+    // 2. Mark as processed for 24h
+    await redis.set(`webhook:rzp:${eventId}`, 'processed', 'EX', 86400);
+
     return apiOk({ received: true });
   } catch (err: any) {
+    logger.error({ err: err.message }, 'Razorpay Webhook critical failure');
     return fromUnknownError(err, 'Webhook Handler Failed');
   }
 }

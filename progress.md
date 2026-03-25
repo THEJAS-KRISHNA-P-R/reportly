@@ -157,5 +157,13 @@ Resolved the unresponsive "Sign out" button issue in both Admin and Superuser pa
 2.  **Eliminated Provider Fragmentation**: Removed redundant `AuthProvider` instances from `AdminLayout`, `LoginPage`, `RegisterPage`, and `OnboardingPage`. The entire application now consistently consumes the root `AuthProvider` defined in `RootLayout`.
 3.  **Domain Persistence**: Verified that sign-out correctly redirects to the root `lvh.me:3000/login` to ensure any subdomain-specific state is wiped and the user lands on a clean, secure entry point.
 
+### Local Origin Sanitization (0.0.0.0 Redirect Fix)
+
+Resolved the issue where new users were redirected to the unbrowseable bind address `http://0.0.0.0:3000/onboarding` instead of `localhost`.
+
+- **On-the-Fly Origin Sanitization**: The `src/app/api/auth/callback/route.ts` now identifies if the incoming request origin contains `0.0.0.0` and automatically replaces it with `localhost` before performing any redirects.
+- **Environment Consistency**: Updated the `AuthContext` to explicitly recognize `0.0.0.0` as a local environment origin. This ensures that even if the dev server is bound to all interfaces, the browser-side logic correctly routes the user to `localhost:3000`.
+- **Seamless New-User Onboarding**: Verified that new account sign-ins now correctly land on the `localhost:3000/onboarding` flow, preserving the "human-first" experience without manual URL intervention.
+
 ---
 *Last Updated: 2026-03-25*

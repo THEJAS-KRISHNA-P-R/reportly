@@ -30,6 +30,8 @@ export function OnboardingWizard() {
   const [clientName, setClientName] = useState('');
   const [clientWebsite, setClientWebsite] = useState('');
   const [ga4PropertyId, setGa4PropertyId] = useState('');
+  const [properties, setProperties] = useState<any[]>([]);
+  const [fetchingProperties, setFetchingProperties] = useState(false);
 
   const steps = [
     { id: 'agency', label: 'Agency', icon: Building2 },
@@ -49,7 +51,7 @@ export function OnboardingWizard() {
         setError('Client details are required');
         return;
       }
-      setStep('ga4');
+      onStepChange('ga4');
     }
     setError('');
   };
@@ -58,6 +60,30 @@ export function OnboardingWizard() {
     if (step === 'client') setStep('agency');
     else if (step === 'ga4') setStep('client');
     setError('');
+  };
+
+  // Auto-fetch properties when reaching GA4 step
+  const fetchGa4Properties = async () => {
+    setFetchingProperties(true);
+    setError('');
+    try {
+      const response = await fetch('/api/ga4/properties');
+      if (!response.ok) throw new Error('Could not fetch properties automatically');
+      const data = await response.json();
+      setProperties(data.properties || []);
+    } catch (err) {
+      console.error('[Onboarding] Fetch error:', err);
+      // Don't set error on screen, just fall back to manual entry
+    } finally {
+      setFetchingProperties(false);
+    }
+  };
+
+  const onStepChange = (newStep: Step) => {
+    if (newStep === 'ga4') {
+      fetchGa4Properties();
+    }
+    setStep(newStep);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -232,16 +258,64 @@ export function OnboardingWizard() {
               </div>
 
               <div className="space-y-4">
+                <div className="space-y-3">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Select Analytics Property</label>
+                  
+                  {fetchingProperties ? (
+                    <div className="flex flex-col items-center justify-center py-8 space-y-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50">
+                      <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+                      <p className="text-sm font-medium text-slate-500">Discovering your properties...</p>
+                    </div>
+                  ) : properties.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                      {properties.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setGa4PropertyId(p.id)}
+                          className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 text-left ${
+                            ga4PropertyId === p.id 
+                              ? 'border-blue-600 bg-blue-50/50 ring-1 ring-blue-600 dark:bg-blue-500/10' 
+                              : 'border-slate-100 bg-white hover:border-blue-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{p.displayName}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">{p.id}</p>
+                          </div>
+                          {ga4PropertyId === p.id && <CheckCircle2 className="h-5 w-5 text-blue-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/30 dark:border-slate-800">
+                      <p className="text-sm text-slate-400">No properties found. Please enter manually below.</p>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <button 
+                      type="button"
+                      onClick={fetchGa4Properties}
+                      className="text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors"
+                    >
+                      Refresh List
+                    </button>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400">GA4 Property ID</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400">GA4 Property ID</label>
+                    <span className="text-[10px] text-slate-400 italic">Found in Admin → Property Settings</span>
+                  </div>
                   <Input
                     placeholder="123456789"
                     value={ga4PropertyId}
                     onChange={(e) => setGa4PropertyId(e.target.value)}
-                    className="h-12"
+                    className="h-12 font-mono text-center tracking-widest"
                     required
                   />
-                  <p className="text-[10px] text-slate-400 italic">Found in Admin → Property Settings → Property ID</p>
                 </div>
                 {error && <p className="text-sm font-medium text-rose-500">{error}</p>}
                 <div className="flex gap-3 pt-2">

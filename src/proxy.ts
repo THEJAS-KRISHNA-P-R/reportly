@@ -27,7 +27,13 @@ function isValidOrigin(request: Request): boolean {
   
   const expectedOrigin = new URL(siteUrl).origin;
   
-  if (origin && origin !== expectedOrigin) return false;
+  if (origin && origin !== expectedOrigin) {
+    // Standardize local origins
+    const isLocal = origin.includes('localhost') || origin.includes('lvh.me') || origin.includes('127.0.0.1');
+    if (isLocal) return true;
+    return false;
+  }
+
   if (!origin && referer) {
     try {
       const refererOrigin = new URL(referer).origin;
@@ -164,7 +170,10 @@ export async function proxy(request: NextRequest) {
 
   try {
     // --- REDIS CACHE INTEGRATION (SOTA OPTIMIZATION) ---
-    const cacheKey = `sess:${cookieStore.get('sb-qaobenwaagtuxxhpbiuk-auth-token')?.value?.slice(-20) || 'anon'}`;
+    // Dynamic cookie lookup: find the first supabase auth token cookie
+    const authCookie = cookieStore.getAll().find(c => c.name.startsWith('sb-') && c.name.endsWith('-auth-token'));
+    const cacheKey = `sess:${authCookie?.value?.slice(-20) || 'anon'}`;
+
     const redis = await getUpstashRedis();
 
     if (method === 'GET' && cacheKey !== 'sess:anon') {

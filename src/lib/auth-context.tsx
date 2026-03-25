@@ -8,7 +8,7 @@ export interface User {
   email: string;
   name: string;
   agency_name?: string;
-  role: 'owner' | 'team_member';
+  role: 'admin' | 'member';
   created_at: string;
 }
 
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: session.user.email!,
             name: profile?.agencies?.name || session.user.user_metadata?.name || '',
             agency_name: profile?.agencies?.name,
-            role: profile?.role || session.user.user_metadata?.role || 'owner',
+            role: profile?.role || session.user.user_metadata?.role || 'admin',
             created_at: session.user.created_at,
           });
         } else {
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: session.user.email!,
           name: profile?.agencies?.name || session.user.user_metadata?.name || '',
           agency_name: profile?.agencies?.name,
-          role: profile?.role || session.user.user_metadata?.role || 'owner',
+          role: profile?.role || session.user.user_metadata?.role || 'admin',
           created_at: session.user.created_at,
         });
       } else {
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: data.user.email!,
           name: profile?.agencies?.name || data.user.user_metadata?.name || '',
           agency_name: profile?.agencies?.name,
-          role: profile?.role || data.user.user_metadata?.role || 'owner',
+          role: profile?.role || data.user.user_metadata?.role || 'admin',
           created_at: data.user.created_at,
         });
       }
@@ -194,6 +194,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         provider: 'google',
         options: {
           redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account consent',
+          },
+          scopes: 'openid email profile https://www.googleapis.com/auth/analytics.readonly',
           skipBrowserRedirect: false,
         },
       });
@@ -241,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: data.user.email!,
           name: profile?.agencies?.name || data.user.user_metadata?.name || name,
           agency_name: profile?.agencies?.name,
-          role: profile?.role || data.user.user_metadata?.role || 'owner',
+          role: profile?.role || data.user.user_metadata?.role || 'admin',
           created_at: data.user.created_at,
         });
       }
@@ -276,7 +281,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Redirect to root domain login to ensure fresh state
       const isLocalhost = typeof window !== 'undefined' && 
-        (window.location.hostname.includes('localhost') || window.location.hostname.includes('lvh.me'));
+        (window.location.hostname.includes('localhost') || 
+         window.location.hostname.includes('lvh.me') || 
+         window.location.hostname === '0.0.0.0');
       
       if (isLocalhost) {
         window.location.href = 'http://lvh.me:3000/login';

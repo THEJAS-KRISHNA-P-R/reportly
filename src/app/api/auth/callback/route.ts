@@ -4,7 +4,11 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams, origin: rawOrigin } = new URL(request.url);
+  
+  // Sanitize origin: replace bind address 0.0.0.0 with localhost for browseable redirects
+  const origin = rawOrigin.includes('0.0.0.0') ? rawOrigin.replace('0.0.0.0', 'localhost') : rawOrigin;
+  
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/dashboard';
   
@@ -40,11 +44,40 @@ export async function GET(request: Request) {
       );
 
       // 3. Find the user's agency subdomain in ONE query (Relational Join)
-      const { data: profile } = await supabaseAdmin
+      let { data: profile } = await supabaseAdmin
         .from('agency_users')
-        .select('agency:agencies(subdomain)')
+        .select('agency:agencies(subdomain, id)')
         .eq('email', session.user.email)
         .maybeSingle();
+
+      // NEW USER PROVISIONING: If no agency link exists, create a shadow/shell agency 
+      // This allows the user to pass security guards (getAuthenticatedAgency) during onboarding.
+      if (!profile) {
+        console.log('[AuthRoute] Provisioning shell agency for new user:', session.user.email);
+        
+        // a. Create the shell agency
+        const { data: newAgency, error: agencyError } = await supabaseAdmin
+          .from('agencies')
+          .insert({ name: 'New Agency' })
+          .select()
+          .single();
+        
+        if (agencyError) throw agencyError;
+
+        // b. Link the user to the agency as 'admin' (standardized role)
+        const { error: linkError } = await supabaseAdmin
+          .from('agency_users')
+          .insert({
+            agency_id: newAgency.id,
+            email: session.user.email,
+            role: 'admin'
+          });
+        
+        if (linkError) throw linkError;
+
+        // Update profile variable for subsequent logic
+        profile = { agency: { subdomain: null, id: newAgency.id } } as any;
+      }
 
       const subdomain = (profile?.agency as any)?.subdomain;
       

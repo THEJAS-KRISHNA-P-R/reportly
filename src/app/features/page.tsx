@@ -13,11 +13,11 @@ export default function FeaturesPage() {
   return (
     <>
       <MarketingNav />
-      <main style={{ paddingTop: 112 }}>
+      <main className="bg-white pt-[112px] pb-24">
         <Features />
 
         <section className="marketing-section pb-16" style={{ background: '#FFFFFF' }}>
-          <div className="marketing-content-shell">
+          <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
                 <h2 className="text-xl font-bold tracking-tight text-slate-900">Capability map</h2>

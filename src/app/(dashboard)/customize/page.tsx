@@ -21,6 +21,10 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { useAgencyStore } from '@/lib/store/agencyStore';
 import { AgencyBranding } from '@/types/report';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 export default function CustomizePage() {
   const [activeTab, setActiveTab] = useState('branding');
@@ -174,28 +178,30 @@ export default function CustomizePage() {
   );
 
   return (
-    <div className="flex flex-col min-h-full xl:flex-row gap-8 pb-10">
+    <div className="flex flex-col min-h-full xl:flex-row gap-8 pb-10 animate-fade-in">
       <div className="flex-1">
         <div className="max-w-4xl mx-auto">
           {/* Header Action Bar */}
-          <div className="flex items-center justify-between mb-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">Customization Command</h1>
-              <p className="text-[13px] font-medium text-slate-500 mt-1">
-                Establish high-density branding protocols across all client nodes.
-              </p>
-            </div>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="h-11 px-6 rounded-xl text-[13px] font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all disabled:opacity-50 shadow-lg shadow-slate-200 flex items-center gap-2"
-            >
-              {saving ? <RotateCcw size={16} className="animate-spin" /> : <Settings2 size={16} />}
-              {saving ? 'Synchronizing...' : 'Save Configuration'}
-            </button>
-          </div>
+          <Card className="mb-8 border-white/5 bg-zinc-900/60 shadow-sm overflow-hidden">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight text-foreground">Customization Command</h1>
+                <p className="text-sm font-medium text-foreground-muted mt-1">
+                  Establish high-density branding protocols across all client nodes.
+                </p>
+              </div>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="h-10 px-6 rounded-lg bg-primary text-sm font-semibold shadow-sm text-primary-foreground transition-all hover:opacity-90 flex items-center gap-2"
+              >
+                {saving ? <RotateCcw size={16} className="animate-spin" /> : <Settings2 size={16} />}
+                {saving ? 'Synchronizing...' : 'Save Configuration'}
+              </Button>
+            </CardContent>
+          </Card>
 
-          <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-8 w-fit overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 p-1.5 bg-zinc-900/80 backdrop-blur-md rounded-xl mb-8 w-fit overflow-x-auto no-scrollbar border border-white/5 shadow-lg">
             {tabs.map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -203,11 +209,14 @@ export default function CustomizePage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 text-[12px] font-bold rounded-lg transition-all whitespace-nowrap ${
-                    isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  className={cn(
+                    "flex items-center gap-2.5 px-5 py-2.5 text-[13px] font-semibold rounded-lg transition-all whitespace-nowrap",
+                    isActive 
+                      ? "bg-white text-black shadow-sm" 
+                      : "text-zinc-400 hover:text-white hover:bg-white/5"
+                  )}
                 >
-                  <Icon size={14} className={isActive ? 'text-indigo-600' : ''} />
+                  <Icon size={14} className={isActive ? 'text-primary' : ''} />
                   {tab.label}
                 </button>
               );
@@ -218,244 +227,254 @@ export default function CustomizePage() {
             {activeTab === 'branding' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/* Logo Section */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
-                       <ImageIcon size={18} className="text-slate-400" />
-                       Agency Signature
-                    </h3>
-                  </div>
-                  <div className="flex flex-col md:flex-row gap-8 items-start">
-                     <div 
-                       className="w-44 h-44 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden relative group cursor-pointer transition-all hover:border-slate-300"
-                       onClick={() => fileInputRef.current?.click()}
-                     >
-                       {brand.logo_url ? (
-                         <Image src={brand.logo_url} alt="Logo" fill className="object-contain p-6" />
-                       ) : (
-                         <div className="flex flex-col items-center text-slate-400">
-                           <Upload size={24} className="mb-2" />
-                           <span className="text-[10px] font-black uppercase tracking-widest">Select Signal</span>
-                         </div>
-                       )}
-                       {uploading && (
-                         <div className="absolute inset-0 bg-white/80 backdrop-blur-md flex items-center justify-center">
-                            <RotateCcw size={20} className="animate-spin text-slate-900" />
-                         </div>
-                       )}
-                     </div>
-                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
+                  <CardContent className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                         <ImageIcon size={18} className="text-zinc-400" />
+                         Agency Signature
+                      </h3>
+                    </div>
+                    <div className="flex flex-col md:flex-row gap-8 items-start">
+                       <div 
+                         className="w-44 h-44 rounded-xl border border-white/5 bg-zinc-900 flex flex-col items-center justify-center overflow-hidden relative group cursor-pointer transition-all hover:bg-zinc-800"
+                         onClick={() => fileInputRef.current?.click()}
+                       >
+                         {brand.logo_url ? (
+                           <Image src={brand.logo_url} alt="Logo" fill className="object-contain p-6" />
+                         ) : (
+                           <div className="flex flex-col items-center text-foreground-muted">
+                             <Upload size={24} className="mb-2" />
+                             <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Select Signal</span>
+                           </div>
+                         )}
+                         {uploading && (
+                           <div className="absolute inset-0 bg-background/80 backdrop-blur-md flex items-center justify-center">
+                              <RotateCcw size={20} className="animate-spin text-foreground" />
+                           </div>
+                         )}
+                       </div>
+                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
 
-                     <div className="flex-1 space-y-6">
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="space-y-3">
-                             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Logo Alignment Grid</label>
-                             <div className="flex flex-wrap gap-2">
-                               {logoPositions.map(pos => (
-                                 <button
-                                   key={pos.id}
-                                   onClick={() => setBrand({ ...brand, logo_position: pos.id })}
-                                   className={`px-4 py-2 text-[11px] font-bold rounded-xl border transition-all ${
-                                     brand.logo_position === pos.id 
-                                       ? 'bg-slate-900 text-white border-slate-900 shadow-md' 
-                                       : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                                   }`}
-                                 >
-                                   {pos.label}
-                                 </button>
-                               ))}
-                             </div>
+                       <div className="flex-1 space-y-6">
+                          <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-3">
+                               <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Logo Alignment Grid</label>
+                               <div className="flex flex-wrap gap-2">
+                                 {logoPositions.map(pos => (
+                                   <button
+                                     key={pos.id}
+                                     onClick={() => setBrand({ ...brand, logo_position: pos.id })}
+                                     className={cn(
+                                       "px-4 py-2 text-[11px] font-bold rounded-lg border transition-all",
+                                       brand.logo_position === pos.id 
+                                         ? "bg-white text-black border-white shadow-sm" 
+                                         : "bg-zinc-900 text-zinc-400 border-transparent hover:border-white/10 hover:bg-zinc-800"
+                                     )}
+                                   >
+                                     {pos.label}
+                                   </button>
+                                 ))}
+                               </div>
+                            </div>
+                            <div className="bg-zinc-900/40 rounded-lg p-4 border border-white/5">
+                               <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-1.5 opacity-60">Specifications</p>
+                               <p className="text-[12px] text-foreground-muted leading-relaxed font-medium">
+                                 SVG or high-resolution PNG is mandatory for enterprise-grade PDF rendering. 
+                                 Recommended maximum height: 80px.
+                               </p>
+                            </div>
                           </div>
-                          <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Specifications</p>
-                             <p className="text-[12px] text-slate-600 leading-relaxed font-medium">
-                               SVG or high-resolution PNG is mandatory for enterprise-grade PDF rendering. 
-                               Recommended maximum height: 80px.
-                             </p>
-                          </div>
-                        </div>
-                     </div>
-                  </div>
-                </div>
+                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Colors Section */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
-                       <Palette size={18} className="text-slate-400" />
-                       Brand Chromatics
-                    </h3>
-                    <button 
-                      onClick={suggestAccent}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 text-[11px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all border border-indigo-100"
-                    >
-                      <Sparkles size={12} />
-                      Magic Contrast
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                      { key: 'primary', label: 'Primary Brand' },
-                      { key: 'secondary', label: 'Contrast Layer' },
-                      { key: 'accent', label: 'Action Highlight' }
-                    ].map(type => (
-                      <div key={type.key} className="space-y-3">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{type.label}</label>
-                        <div className="flex items-center gap-3 p-1.5 pl-4 rounded-xl border border-slate-200 bg-white shadow-sm focus-within:border-slate-900 transition-all">
-                          <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-slate-100">
-                            <input
-                              type="color"
+                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
+                  <CardContent className="p-8">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+                         <Palette size={18} className="text-foreground-muted" />
+                         Brand Chromatics
+                      </h3>
+                      <button 
+                        onClick={suggestAccent}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10"
+                      >
+                        <Sparkles size={12} />
+                        Magic Contrast
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {[
+                        { key: 'primary', label: 'Primary Brand' },
+                        { key: 'secondary', label: 'Contrast Layer' },
+                        { key: 'accent', label: 'Action Highlight' }
+                      ].map(type => (
+                        <div key={type.key} className="space-y-3">
+                          <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">{type.label}</label>
+                          <div className="flex items-center gap-3 p-1.5 pl-4 rounded-lg border border-white/5 bg-zinc-900 focus-within:bg-zinc-800 focus-within:border-white/10 transition-all">
+                            <div className="relative w-8 h-8 rounded border border-white/10 overflow-hidden">
+                              <input
+                                type="color"
+                                value={(brand as any)[`${type.key}_color`] || '#000000'}
+                                onChange={(e) => handleColorChange(type.key as any, e.target.value)}
+                                className="absolute -inset-4 w-[200%] h-[200%] cursor-pointer border-none p-0 bg-transparent"
+                              />
+                            </div>
+                             <input
+                              type="text"
                               value={(brand as any)[`${type.key}_color`] || '#000000'}
-                              onChange={(e) => handleColorChange(type.key as any, e.target.value)}
-                              className="absolute -inset-4 w-[200%] h-[200%] cursor-pointer border-none p-0 bg-transparent"
+                              onChange={(e) => handleColorChange(type.key as any, e.target.value.toUpperCase())}
+                              className="flex-1 bg-transparent border-none text-[13px] font-mono font-bold uppercase focus:ring-0 p-0 text-foreground"
                             />
                           </div>
-                           <input
-                            type="text"
-                            value={(brand as any)[`${type.key}_color`] || '#000000'}
-                            onChange={(e) => handleColorChange(type.key as any, e.target.value.toUpperCase())}
-                            className="flex-1 bg-transparent border-none text-[13px] font-mono font-bold uppercase focus:ring-0 p-0"
-                          />
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
 
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                  <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900 mb-6">
-                     <Type size={18} className="text-slate-400" />
-                     Typography & Standards
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Report Font Engine</label>
-                       <select
-                        value={brand.report_font || 'Inter'}
-                        onChange={(e) => setBrand({ ...brand, report_font: e.target.value })}
-                        className="w-full h-12 px-4 rounded-xl border border-slate-200 text-sm font-bold bg-white focus:border-slate-900 outline-none transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="Inter">Inter (High-Density Baseline)</option>
-                        <option value="Helvetica">Helvetica (Standard Enterprise)</option>
-                        <option value="Georgia">Georgia (Classic Narrative)</option>
-                        <option value="Playfair Display">Playfair (Premium Executive)</option>
-                        <option value="Roboto">Roboto (Technical Grade)</option>
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-5 rounded-xl bg-slate-50 border border-slate-100 self-end">
-                      <div>
-                        <p className="text-[13px] font-bold text-slate-900">White-Label Status</p>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Remove Reportly Attribution</p>
+                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
+                  <CardContent className="p-8">
+                    <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-6">
+                       <Type size={18} className="text-foreground-muted" />
+                       Typography & Standards
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Report Font Engine</label>
+                          <select
+                          value={brand.report_font || 'Inter'}
+                          onChange={(e) => setBrand({ ...brand, report_font: e.target.value })}
+                          className="w-full h-11 px-4 rounded-lg border border-white/5 text-[13px] font-semibold bg-zinc-900 focus:bg-zinc-800 focus:border-white/10 outline-none transition-all appearance-none cursor-pointer text-foreground"
+                        >
+                          <option value="Inter">Inter (High-Density Baseline)</option>
+                          <option value="Helvetica">Helvetica (Standard Enterprise)</option>
+                          <option value="Georgia">Georgia (Classic Narrative)</option>
+                          <option value="Playfair Display">Playfair (Premium Executive)</option>
+                          <option value="Roboto">Roboto (Technical Grade)</option>
+                        </select>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={brand.show_powered_by} onChange={(e) => setBrand({...brand, show_powered_by: e.target.checked})} />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-                      </label>
+                      
+                      <div className="flex items-center justify-between p-5 rounded-lg bg-zinc-900/60 border border-white/5 self-end">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-semibold text-foreground">White-Label Status</p>
+                          <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">Remove Attribution</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" className="sr-only peer" checked={brand.show_powered_by} onChange={(e) => setBrand({...brand, show_powered_by: e.target.checked})} />
+                          <div className="w-10 h-5.5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-950 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-transparent after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-white"></div>
+                        </label>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
             {activeTab === 'watermark' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                   <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900 mb-2">
-                     <Droplets size={18} className="text-slate-400" />
-                     Digital Asset Security
-                  </h3>
-                  <p className="text-[12px] font-medium text-slate-500 mb-8 border-b border-slate-100 pb-4">
-                    Protect enterprise intellectual property with custom watermark overlays.
-                  </p>
+                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
+                  <CardContent className="p-8">
+                     <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-2">
+                       <Droplets size={18} className="text-foreground-muted" />
+                       Digital Asset Security
+                    </h3>
+                    <p className="text-[13px] font-medium text-foreground-muted mb-8 border-b border-white/5 pb-4">
+                      Protect enterprise intellectual property with custom watermark overlays.
+                    </p>
 
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between p-5 rounded-2xl bg-slate-50 border border-slate-100">
-                       <div className="flex items-center gap-3">
-                          <div className="p-2.5 bg-white shadow-sm border border-slate-100 text-slate-900 rounded-xl">
-                             <CheckCircle2 size={18} />
-                          </div>
-                          <div>
-                             <p className="text-[14px] font-bold text-slate-900">Enable Watermark Policy</p>
-                             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Global overlay protection</p>
-                          </div>
-                       </div>
-                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={brand.watermark_enabled} onChange={(e) => setBrand({...brand, watermark_enabled: e.target.checked})} />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-                      </label>
-                    </div>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-5 rounded-lg bg-zinc-900/60 border border-white/5">
+                         <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-zinc-900 shadow-sm border border-white/5 text-foreground rounded-lg">
+                               <CheckCircle2 size={18} />
+                            </div>
+                            <div className="space-y-0.5">
+                               <p className="text-sm font-semibold text-foreground">Enable Watermark Policy</p>
+                               <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">Global overlay protection</p>
+                            </div>
+                         </div>
+                         <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" className="sr-only peer" checked={brand.watermark_enabled} onChange={(e) => setBrand({...brand, watermark_enabled: e.target.checked})} />
+                          <div className="w-10 h-5.5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-950 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-transparent after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-white"></div>
+                        </label>
+                      </div>
 
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Policy Identifier (Text)</label>
-                      <input
-                        type="text"
-                        placeholder="CONFIDENTIAL"
-                        value={brand.watermark_text || ''}
-                        onChange={(e) => setBrand({ ...brand, watermark_text: e.target.value })}
-                        className="w-full h-12 px-5 rounded-xl border border-slate-200 text-[13px] font-bold focus:border-slate-900 outline-none transition-all shadow-sm"
-                      />
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Policy Identifier (Text)</label>
+                        <Input
+                          placeholder="CONFIDENTIAL"
+                          value={brand.watermark_text || ''}
+                          onChange={(e) => setBrand({ ...brand, watermark_text: e.target.value })}
+                          className="h-11 px-5 text-[13px] font-semibold bg-zinc-900 border-white/5 focus:bg-zinc-800 focus:border-white/10 transition-all"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
             {activeTab === 'email' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                 <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm h-fit">
-                    <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900 mb-6">
-                      <Mail size={18} className="text-slate-400" />
-                      Delivery Node Protocol
-                    </h3>
-                    
-                    <div className="space-y-6">
-                      <div className="space-y-3">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">HTML Signal Template</label>
-                        <textarea
-                          value={brand.email_html || ''}
-                          onChange={(e) => setBrand({ ...brand, email_html: e.target.value })}
-                          className="w-full h-48 px-4 py-3 rounded-xl border border-slate-200 text-[12px] font-mono focus:border-slate-900 outline-none transition-all resize-none bg-slate-50"
-                        />
+                 <Card className="border-white/5 bg-zinc-900/60 shadow-sm h-fit">
+                    <CardContent className="p-8">
+                      <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-6">
+                        <Mail size={18} className="text-foreground-muted" />
+                        Delivery Node Protocol
+                      </h3>
+                      
+                      <div className="space-y-6">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">HTML Signal Template</label>
+                          <textarea
+                            value={brand.email_html || ''}
+                            onChange={(e) => setBrand({ ...brand, email_html: e.target.value })}
+                            className="w-full h-48 px-4 py-3 rounded-lg border border-white/5 text-[12px] font-mono focus:bg-zinc-800 focus:border-white/10 outline-none transition-all resize-none bg-zinc-900 text-foreground"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Global Style CSS</label>
+                          <textarea
+                            value={brand.email_css || ''}
+                            onChange={(e) => setBrand({ ...brand, email_css: e.target.value })}
+                            className="w-full h-32 px-4 py-3 rounded-lg border border-white/5 text-[12px] font-mono focus:bg-zinc-800 focus:border-white/10 outline-none transition-all resize-none bg-zinc-900 text-foreground"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-3">
-                        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Global Style CSS</label>
-                        <textarea
-                          value={brand.email_css || ''}
-                          onChange={(e) => setBrand({ ...brand, email_css: e.target.value })}
-                          className="w-full h-32 px-4 py-3 rounded-xl border border-slate-200 text-[12px] font-mono focus:border-slate-900 outline-none transition-all resize-none bg-slate-50"
-                        />
-                      </div>
-                    </div>
-                 </div>
+                    </CardContent>
+                 </Card>
 
-                 <div className="bg-slate-900 rounded-3xl border border-slate-800 p-5 shadow-2xl flex flex-col min-h-[520px]">
+                 <div className="bg-foreground rounded-[32px] border border-white/5 p-5 shadow-2xl flex flex-col min-h-[520px]">
                     <div className="flex items-center justify-between px-3 mb-6">
-                       <div className="flex items-center gap-2.5">
-                          <Eye size={14} className="text-slate-500" />
-                          <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Node Rendering Engine</span>
+                       <div className="flex items-center gap-3">
+                          <Eye size={14} className="text-background/40" />
+                          <span className="text-[11px] font-bold text-background/40 uppercase tracking-widest">Node Rendering Engine</span>
                        </div>
-                       <div className="flex gap-2">
-                          <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-slate-800" />
+                       <div className="flex gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-background/5" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-background/5" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-background/5" />
                        </div>
                     </div>
-                    <div className="flex-1 rounded-2xl bg-white overflow-hidden border border-slate-800 shadow-inner">
+                    <div className="flex-1 rounded-2xl bg-background overflow-hidden border border-background/[0.08] shadow-inner">
                        <iframe
                          title="Email Preview"
                          srcDoc={`<html><head><style>${brand.email_css}</style></head><body>${brand.email_html}</body></html>`}
                          className="w-full h-full border-none"
                        />
                     </div>
-                    <div className="mt-5 p-4 bg-slate-800/30 rounded-2xl border border-slate-800/50">
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <div className="mt-5 p-4 bg-background/5 rounded-2xl border border-background/[0.05]">
+                       <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest mb-2 flex items-center gap-2">
                          <Sparkles size={12} /> Macro Injection Logic
                        </p>
-                       <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                         Integrate dynamic data using <code className="text-slate-300 font-black">{"{{client_name}}"}</code>, 
-                         <code className="text-slate-300 font-black">{"{{period}}"}</code>, and 
-                         <code className="text-slate-300 font-black">{"{{report_link}}"}</code> macros.
+                       <p className="text-[11px] text-background/60 font-medium leading-relaxed">
+                         Integrate dynamic data using <code className="text-background/90 font-bold">{"{{client_name}}"}</code>, 
+                         <code className="text-background/90 font-bold">{"{{period}}"}</code>, and 
+                         <code className="text-background/90 font-bold">{"{{report_link}}"}</code> macros.
                        </p>
                     </div>
                  </div>
@@ -464,132 +483,139 @@ export default function CustomizePage() {
 
             {activeTab === 'layout' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                   <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900 mb-2">
-                     <LayoutTemplate size={18} className="text-slate-400" />
-                     Enterprise Hierarchy Grid
-                  </h3>
-                  <p className="text-[12px] font-medium text-slate-500 mb-8 border-b border-slate-100 pb-4">
-                    Define the structural DNA for generated PDF intelligence nodes.
-                  </p>
+                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
+                  <CardContent className="p-8">
+                     <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-2">
+                       <LayoutTemplate size={18} className="text-foreground-muted" />
+                       Enterprise Hierarchy Grid
+                    </h3>
+                    <p className="text-[13px] font-medium text-foreground-muted mb-8 border-b border-white/5 pb-4">
+                      Define the structural DNA for generated PDF intelligence nodes.
+                    </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-                    {[
-                      { id: 'standard', name: 'Strategic Full', desc: 'Granular, multi-page deep dive with nested analytics.' },
-                      { id: 'compact', name: 'Velocity Modern', desc: 'High-density metrics optimized for executive speed.' },
-                      { id: 'executive', name: 'Decision Brief', desc: 'Single-page highlight reel focusing on bottom-line KPIs.' }
-                    ].map(layout => (
-                      <button
-                        key={layout.id}
-                        onClick={() => setBrand({ ...brand, report_layout: layout.id as any })}
-                        className={`flex flex-col text-left p-5 rounded-2xl border-2 transition-all ${
-                          brand.report_layout === layout.id 
-                            ? 'border-slate-900 bg-slate-50 shadow-md' 
-                            : 'border-slate-100 bg-white hover:border-slate-200'
-                        }`}
-                      >
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5 ${
-                           brand.report_layout === layout.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-100 text-slate-400'
-                        }`}>
-                           <LayoutTemplate size={20} />
-                        </div>
-                        <p className="text-[14px] font-bold text-slate-900">{layout.name}</p>
-                        <p className="text-[11px] font-medium text-slate-500 mt-2 leading-relaxed">{layout.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-100 pt-8">
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Global Font Dimension</label>
-                       <select
-                        value={brand.report_font_size || 'medium'}
-                        onChange={(e) => setBrand({ ...brand, report_font_size: e.target.value })}
-                        className="w-full h-12 px-4 rounded-xl border border-slate-200 text-sm font-bold bg-white focus:border-slate-900 outline-none transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="small">Small (Extreme Density)</option>
-                        <option value="medium">Medium (Standard Enterprise)</option>
-                        <option value="large">Large (High Accessibility)</option>
-                      </select>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+                      {[
+                        { id: 'standard', name: 'Strategic Full', desc: 'Granular, multi-page deep dive with nested analytics.' },
+                        { id: 'compact', name: 'Velocity Modern', desc: 'High-density metrics optimized for executive speed.' },
+                        { id: 'executive', name: 'Decision Brief', desc: 'Single-page highlight reel focusing on bottom-line KPIs.' }
+                      ].map(layout => (
+                        <button
+                          key={layout.id}
+                          onClick={() => setBrand({ ...brand, report_layout: layout.id as any })}
+                          className={cn(
+                            "flex flex-col text-left p-5 rounded-xl border transition-all",
+                            brand.report_layout === layout.id 
+                              ? "border-white bg-white text-black shadow-sm" 
+                              : "border-white/5 bg-zinc-900 hover:bg-zinc-800"
+                          )}
+                        >
+                          <div className={cn(
+                             "w-10 h-10 rounded-lg flex items-center justify-center mb-5",
+                             brand.report_layout === layout.id ? "bg-foreground text-background shadow-md" : "bg-zinc-900 text-foreground-muted opacity-40"
+                          )}>
+                             <LayoutTemplate size={18} />
+                          </div>
+                          <p className="text-sm font-bold text-foreground">{layout.name}</p>
+                          <p className="text-[11px] font-medium text-foreground-muted mt-2 leading-relaxed opacity-60">{layout.desc}</p>
+                        </button>
+                      ))}
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Metric Information Density</label>
-                       <select
-                        value={brand.metric_density || 'standard'}
-                        onChange={(e) => setBrand({ ...brand, metric_density: e.target.value })}
-                        className="w-full h-12 px-4 rounded-xl border border-slate-200 text-sm font-bold bg-white focus:border-slate-900 outline-none transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="standard">Standard (Strategic)</option>
-                        <option value="high">High (Data Native)</option>
-                      </select>
-                    </div>
-                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/5 pt-8">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Global Font Dimension</label>
+                         <select
+                          value={brand.report_font_size || 'medium'}
+                          onChange={(e) => setBrand({ ...brand, report_font_size: e.target.value })}
+                          className="w-full h-11 px-4 rounded-lg border border-white/5 text-[13px] font-semibold bg-zinc-900 focus:bg-zinc-800 focus:border-white/10 outline-none transition-all appearance-none cursor-pointer text-foreground"
+                        >
+                          <option value="small">Small (Extreme Density)</option>
+                          <option value="medium">Medium (Standard Enterprise)</option>
+                          <option value="large">Large (High Accessibility)</option>
+                        </select>
+                      </div>
 
-                </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Metric Information Density</label>
+                          <select
+                          value={brand.metric_density || 'standard'}
+                          onChange={(e) => setBrand({ ...brand, metric_density: e.target.value })}
+                          className="w-full h-11 px-4 rounded-lg border border-white/5 text-[13px] font-semibold bg-zinc-900 focus:bg-zinc-800 focus:border-white/10 outline-none transition-all appearance-none cursor-pointer text-foreground"
+                        >
+                          <option value="standard">Standard (Strategic)</option>
+                          <option value="high">High (Data Native)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
 
             {activeTab === 'sections' && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                   <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900 mb-2">
-                     <Layers size={18} className="text-slate-400" />
-                     Active Module Registry
-                  </h3>
-                  <p className="text-[12px] font-medium text-slate-500 mb-8 border-b border-slate-100 pb-4">
-                    Toggle and initialize specific analytics modules within the generation pipeline.
-                  </p>
+                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
+                  <CardContent className="p-8">
+                     <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-2">
+                       <Layers size={18} className="text-foreground-muted" />
+                       Active Module Registry
+                    </h3>
+                    <p className="text-[13px] font-medium text-zinc-400 mb-8 border-b border-white/5 pb-4">
+                      Toggle and initialize specific analytics modules within the generation pipeline.
+                    </p>
 
-                  <div className="space-y-3">
-                    {[
-                      { id: 'cover', name: 'Identity Header', desc: 'Agency branding, client credentials, and period metadata.' },
-                      { id: 'summary', name: 'Strategic Brief', desc: 'AI-distilled performance narrative and primary KPIs.' },
-                      { id: 'google_ads', name: 'Search Engine Intel', desc: 'Google Ads efficiency, search intent, and conversion data.' },
-                      { id: 'meta_ads', name: 'Social Graph Analysis', desc: 'Meta Ads creative density and cross-platform spend.' },
-                      { id: 'ga4', name: 'User Flow Analytics', desc: 'Traffic origin, site interaction density, and GA4 events.' },
-                      { id: 'conclusion', name: 'Tactical Roadmap', desc: 'Strategic recommendations and upcoming period objectives.' }
-                    ].map(section => {
-                      const isActive = (brand.pdf_sections || []).includes(section.id as any);
-                      return (
-                        <div 
-                          key={section.id}
-                          className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${
-                            isActive ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-50/50 border-slate-100 opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-center gap-5">
-                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                               isActive ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-200 text-slate-400'
-                            }`}>
-                               <Layers size={18} />
+                    <div className="space-y-3">
+                      {[
+                        { id: 'cover', name: 'Identity Header', desc: 'Agency branding, client credentials, and period metadata.' },
+                        { id: 'summary', name: 'Strategic Brief', desc: 'AI-distilled performance narrative and primary KPIs.' },
+                        { id: 'google_ads', name: 'Search Engine Intel', desc: 'Google Ads efficiency, search intent, and conversion data.' },
+                        { id: 'meta_ads', name: 'Social Graph Analysis', desc: 'Meta Ads creative density and cross-platform spend.' },
+                        { id: 'ga4', name: 'User Flow Analytics', desc: 'Traffic origin, site interaction density, and GA4 events.' },
+                        { id: 'conclusion', name: 'Tactical Roadmap', desc: 'Strategic recommendations and upcoming period objectives.' }
+                      ].map(section => {
+                        const isActive = (brand.pdf_sections || []).includes(section.id as any);
+                        return (
+                          <div 
+                            key={section.id}
+                            className={cn(
+                              "flex items-center justify-between p-5 rounded-xl border transition-all",
+                              isActive ? "bg-zinc-900/80 border-white/10 shadow-sm" : "bg-zinc-900/20 border-white/5 opacity-40 hover:opacity-100"
+                            )}
+                          >
+                            <div className="flex items-center gap-5">
+                              <div className={cn(
+                                 "w-10 h-10 rounded-lg flex items-center justify-center",
+                                 isActive ? "bg-white text-black shadow-md" : "bg-zinc-900 text-zinc-400/40"
+                              )}>
+                                 <Layers size={18} />
+                              </div>
+                              <div className="space-y-0.5">
+                                 <p className="text-sm font-bold text-foreground">{section.name}</p>
+                                 <p className="text-[11px] font-medium text-foreground-muted opacity-60">{section.desc}</p>
+                              </div>
                             </div>
-                            <div>
-                               <p className="text-[14px] font-bold text-slate-900">{section.name}</p>
-                               <p className="text-[11px] font-medium text-slate-500">{section.desc}</p>
-                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input 
+                                type="checkbox" 
+                                className="sr-only peer" 
+                                checked={isActive} 
+                                onChange={(e) => {
+                                  const sections = brand.pdf_sections || [];
+                                  if (e.target.checked) {
+                                    setBrand({ ...brand, pdf_sections: [...sections, section.id as any] });
+                                  } else {
+                                    setBrand({ ...brand, pdf_sections: sections.filter(s => s !== section.id) });
+                                  }
+                                }} 
+                              />
+                              <div className="w-10 h-5.5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-950 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-transparent after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-white"></div>
+                            </label>
                           </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              className="sr-only peer" 
-                              checked={isActive} 
-                              onChange={(e) => {
-                                const sections = brand.pdf_sections || [];
-                                if (e.target.checked) {
-                                  setBrand({ ...brand, pdf_sections: [...sections, section.id as any] });
-                                } else {
-                                  setBrand({ ...brand, pdf_sections: sections.filter(s => s !== section.id) });
-                                }
-                              }} 
-                            />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             )}
           </div>
@@ -597,43 +623,44 @@ export default function CustomizePage() {
       </div>
 
       {/* RIGHT PANEL: Report View Preview */}
-      <div className="hidden xl:flex flex-col w-[390px] border border-slate-200 rounded-3xl overflow-hidden bg-white self-start sticky top-6 shadow-2xl shadow-slate-200/50">
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div>
-            <h3 className="text-[15px] font-black text-slate-900 leading-none">Global Preview</h3>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
-               <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200 animate-pulse" />
+      <Card className="hidden xl:flex flex-col w-[390px] border-white/5 bg-zinc-950 self-start sticky top-6 shadow-2xl shadow-white/5 overflow-hidden">
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-zinc-900/60">
+          <div className="space-y-1">
+            <h3 className="text-[15px] font-bold text-foreground leading-none">Global Preview</h3>
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2 opacity-60">
+               <span className="w-2 h-2 rounded-full bg-green-400 shadow-sm shadow-green-400/20 animate-pulse" />
                Logic Rendering
             </p>
           </div>
-          <div className="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm text-slate-400">
+          <div className="p-2.5 bg-zinc-900 border border-white/10 rounded-lg shadow-sm text-zinc-400">
              <Layout size={18} />
           </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30">
+        <CardContent className="flex-1 overflow-y-auto p-8 bg-zinc-900/30">
           <div 
-            className="w-full aspect-[1/1.4] rounded-sm shadow-2xl relative overflow-hidden flex flex-col bg-white border border-slate-200"
+            className="w-full aspect-[1/1.4] rounded-sm shadow-2xl relative overflow-hidden flex flex-col bg-white border border-white/10"
             style={{ fontFamily: brand.report_font || 'Inter' }}
           >
              {/* Report Cover Preview Frame */}
              <div className="h-1/3 p-7 flex flex-col justify-end relative" style={{ background: brand.primary_color || '#0f172a', color: brand.secondary_color || '#ffffff' }}>
                 {/* Logo in Preview */}
-                <div className={`absolute p-5 ${
+                <div className={cn(
+                  "absolute p-5",
                   brand.logo_position === 'top-left' ? 'top-0 left-0' :
                   brand.logo_position === 'top-right' ? 'top-0 right-0' :
                   brand.logo_position === 'center' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' :
                   brand.logo_position === 'bottom-left' ? 'bottom-0 left-0' :
                   brand.logo_position === 'bottom-right' ? 'bottom-0 right-0' : 'top-0 left-0'
-                }`}>
+                )}>
                     {brand.logo_url && <Image src={brand.logo_url} height={28} width={100} className="h-7 w-auto object-contain drop-shadow-sm" alt="Preview logo" />}
                 </div>
 
-                <p className="text-[10px] font-black tracking-[0.2em] uppercase opacity-70 mb-2" style={{ color: brand.accent_color || '#6366f1' }}>Performance Record</p>
-                <h4 className="text-v2xl font-black leading-tight tracking-tight">Enterprise Organic Growth Node</h4>
-                <div className="flex items-center gap-3 mt-5 opacity-50">
-                   <div className="w-10 h-0.5 rounded-full bg-current" />
-                   <span className="text-[10px] font-black uppercase tracking-widest">March Phase</span>
+                <p className="text-[9px] font-bold tracking-[0.2em] uppercase opacity-60 mb-1.5" style={{ color: brand.accent_color || '#6366f1' }}>Performance Record</p>
+                <h4 className="text-xl font-bold leading-tight tracking-tight">Enterprise Organic Growth Node</h4>
+                <div className="flex items-center gap-2.5 mt-5 opacity-40">
+                   <div className="w-8 h-0.5 rounded-full bg-current" />
+                   <span className="text-[9px] font-bold uppercase tracking-widest">March Phase</span>
                 </div>
              </div>
              
@@ -641,53 +668,53 @@ export default function CustomizePage() {
                 {/* Watermark in Preview */}
                 {brand.watermark_enabled && brand.watermark_text && (
                   <div className="absolute inset-0 flex items-center justify-center rotate-[-35deg] pointer-events-none overflow-hidden pr-10">
-                    <span className="text-[28px] font-black text-slate-900/5 whitespace-nowrap uppercase tracking-[1em]">
+                    <span className="text-2xl font-black text-foreground/[0.03] whitespace-nowrap uppercase tracking-[1em]">
                       {brand.watermark_text}
                     </span>
                   </div>
                 )}
 
-                <div className="space-y-3">
-                  <div className="w-1/3 h-2.5 rounded-full bg-slate-200" />
-                  <div className="w-full h-2 rounded-full bg-slate-100" />
-                  <div className="w-full h-2 rounded-full bg-slate-100" />
+                <div className="space-y-3 opacity-40">
+                  <div className="w-1/3 h-2 rounded-full bg-surface-200" />
+                  <div className="w-full h-1.5 rounded-full bg-surface-100" />
+                  <div className="w-full h-1.5 rounded-full bg-surface-100" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mt-5">
-                  <div className="h-20 rounded-2xl border border-slate-100 p-4 space-y-3">
-                     <div className="w-1/2 h-2 rounded-full bg-slate-100" />
-                     <div className="w-3/4 h-3.5 rounded-full" style={{ background: `${brand.primary_color}15` }} />
+                  <div className="h-20 rounded-xl border border-white/5 p-4 space-y-3 bg-zinc-900/40">
+                     <div className="w-1/2 h-1.5 rounded-full bg-zinc-800" />
+                     <div className="w-3/4 h-3 rounded-full" style={{ background: `${brand.primary_color}15` }} />
                   </div>
-                  <div className="h-20 rounded-2xl border border-slate-100 p-4 space-y-3">
-                     <div className="w-1/2 h-2 rounded-full bg-slate-100" />
-                     <div className="w-3/4 h-3.5 rounded-full" style={{ background: `${brand.primary_color}15` }} />
+                  <div className="h-20 rounded-xl border border-white/5 p-4 space-y-3 bg-zinc-900/40">
+                     <div className="w-1/2 h-1.5 rounded-full bg-zinc-800" />
+                     <div className="w-3/4 h-3 rounded-full" style={{ background: `${brand.primary_color}15` }} />
                   </div>
                 </div>
 
-                <div className="mt-auto pt-7 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded bg-slate-900 flex items-center justify-center text-[9px] font-black text-white shadow-sm">R</div>
-                        <span className="text-[9px] font-black text-slate-400 tracking-widest uppercase">Global Node</span>
+                <div className="mt-auto pt-7 border-t border-white/5">
+                  <div className="flex items-center justify-between opacity-30">
+                     <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded bg-foreground flex items-center justify-center text-[8px] font-bold text-background shadow-sm">R</div>
+                        <span className="text-[8px] font-bold text-foreground-muted tracking-widest uppercase">Global Node</span>
                      </div>
-                     {brand.show_powered_by && <span className="text-[8px] font-black text-slate-200 tracking-tighter">POWERED BY REPORTLY</span>}
+                     {brand.show_powered_by && <span className="text-[7px] font-bold text-foreground-muted tracking-tighter">POWERED BY REPORTLY</span>}
                   </div>
                 </div>
              </div>
           </div>
           
-          <div className="mt-8 p-5 bg-slate-900/5 rounded-2xl border border-slate-900/10">
+          <div className="mt-8 p-5 bg-zinc-900 rounded-xl border border-white/5">
              <div className="flex items-center gap-2.5 mb-2.5">
-                <div className="p-1 px-2 bg-slate-900 text-white rounded text-[10px] font-black tracking-widest">LOGIC</div>
-                <span className="text-[12px] font-bold text-slate-900">Adaptive Preview</span>
+                <div className="p-1 px-2 bg-white text-black rounded-[4px] text-[9px] font-bold tracking-widest">LOGIC</div>
+                <span className="text-sm font-semibold text-foreground">Adaptive Preview</span>
              </div>
-             <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+             <p className="text-[12px] text-zinc-400 leading-relaxed font-medium opacity-80">
                This frame renders using your selected font ({brand.report_font}) and hex palette. 
                Layout scaling is approximated for the high-density grid.
              </p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

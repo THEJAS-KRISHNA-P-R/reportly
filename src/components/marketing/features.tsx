@@ -98,7 +98,7 @@ const features = [
 export function Features() {
   return (
     <section className="marketing-section py-20" style={{ background: '#FFFFFF' }}>
-      <div className="marketing-content-shell space-y-16">
+      <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px] space-y-16">
         {/* Header */}
         <div className="text-center" style={{ maxWidth: 640, margin: '0 auto' }}>
           <p className="text-[9px] font-black tracking-[0.3em] uppercase mb-3" style={{ color: '#AAAAAA' }}>

@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,6 +19,7 @@ import { useAuth } from '@/lib/auth-context';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Overview', href: '/admin' },
+  { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: List, label: 'Queue', href: '/admin/jobs' },
   { icon: AlertTriangle, label: 'DLQ', href: '/admin/dlq' },
   { icon: Flag, label: 'Flags', href: '/admin/flags' },

@@ -70,7 +70,7 @@ export function FloatingNavbar() {
         </div>
 
         {/* Auth Buttons */}
-        <div className="flex items-center gap-3 ml-4 border-l border-border pl-4">
+        <div className="flex items-center gap-3 ml-4 border-l border-black/10 pl-4">
           {user ? (
             <Button
               asChild
@@ -156,7 +156,7 @@ export function FloatingNavbar() {
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              className="absolute top-16 left-0 right-0 bg-white border-b border-border"
+              className="absolute top-16 left-0 right-0 bg-white border-b border-black/10"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -177,7 +177,7 @@ export function FloatingNavbar() {
                     {item.label}
                   </motion.a>
                 ))}
-                <div className="pt-4 border-t border-border mt-4 space-y-2">
+                <div className="pt-4 border-t border-black/10 mt-4 space-y-2">
                   {user ? (
                     <Button
                       asChild

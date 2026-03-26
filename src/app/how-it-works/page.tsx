@@ -13,11 +13,11 @@ export default function HowItWorksPage() {
   return (
     <>
       <MarketingNav />
-      <main style={{ paddingTop: 112 }}>
+      <main className="bg-white pt-[112px] pb-24">
         <HowItWorks />
 
         <section className="marketing-section pb-16" style={{ background: '#FDFDFD' }}>
-          <div className="marketing-content-shell">
+          <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
             <div className="rounded-2xl border border-slate-200 bg-white p-6">
               <h2 className="text-2xl font-bold tracking-tight text-slate-900">Execution flow by phase</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -27,9 +27,9 @@ export default function HowItWorksPage() {
                   ['Compose', 'Generate a first-pass narrative from validated metrics.'],
                   ['Review', 'Analyst edits, approves, and controls final delivery.'],
                 ].map(([title, body]) => (
-                  <div key={title} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</p>
-                    <p className="mt-1 text-sm text-slate-700">{body}</p>
+                  <div key={title} className="rounded-xl border border-slate-200 bg-slate-50 p-5 md:p-6 transition-all duration-300 hover:bg-white hover:shadow-md hover:border-slate-300 group cursor-default">
+                    <p className="text-base font-black tracking-wide text-slate-900 transition-colors duration-300 group-hover:text-blue-600">{title}</p>
+                    <p className="mt-2 text-sm md:text-base font-medium text-slate-600">{body}</p>
                   </div>
                 ))}
               </div>

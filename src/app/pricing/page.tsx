@@ -13,12 +13,12 @@ export default function PricingPage() {
   return (
     <>
       <MarketingNav />
-      <main style={{ paddingTop: 112 }}>
+      <main className="bg-white pt-[112px] pb-24">
         <Pricing />
 
         {/* FAQ */}
-        <section className="marketing-section" style={{ background: '#FFFFFF' }}>
-          <div className="marketing-content-shell" style={{ maxWidth: 760, margin: '0 auto' }}>
+        <section className="marketing-section">
+          <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
             <h2 className="text-2xl font-semibold tracking-tight mb-8" style={{ color: '#000000' }}>
               Frequently asked questions
             </h2>

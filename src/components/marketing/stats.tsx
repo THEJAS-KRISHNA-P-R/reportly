@@ -3,10 +3,9 @@
 import { CountUp } from '@/components/ui/count-up';
 
 const statsData = [
-  { end: 90,   suffix: '+',  label: 'Hours saved',        sublabel: 'per agency per year' },
-  { end: 3,    suffix: ' min', label: 'To generate',       sublabel: 'a full report' },
-  { end: 100,  suffix: '%',  label: 'Human reviewed',      sublabel: 'before delivery' },
-  { end: 12,   suffix: '+',  label: 'Cities',             sublabel: 'agencies using Reportly' },
+  { end: 90, suffix: '+', label: 'Hours saved', sublabel: 'per agency per year' },
+  { end: 3, suffix: ' min', label: 'To generate', sublabel: 'a full report' },
+  { end: 100, suffix: '%', label: 'Human reviewed', sublabel: 'before delivery' },
 ];
 
 export function Stats() {
@@ -15,14 +14,14 @@ export function Stats() {
       className="marketing-section py-12"
       style={{ background: '#000000' }}
     >
-      <div className="marketing-content-shell">
+      <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
         <p
           className="text-center text-[8px] font-black tracking-widest uppercase mb-8"
           style={{ color: 'rgba(255,255,255,0.25)' }}
         >
           By the numbers
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 md:divide-x"
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 md:divide-x"
           style={{ '--divide-color': 'rgba(255,255,255,0.05)' } as React.CSSProperties}
         >
           {statsData.map((s, i) => (

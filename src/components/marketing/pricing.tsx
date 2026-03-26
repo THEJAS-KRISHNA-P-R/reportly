@@ -76,7 +76,7 @@ export function Pricing() {
 
   return (
     <section id="pricing" className="marketing-section py-16" style={{ background: '#FFFFFF' }}>
-      <div className="marketing-content-shell">
+      <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
         {/* Header */}
         <div className="text-center mb-10" style={{ maxWidth: 640, margin: '0 auto 2.5rem' }}>
           <p className="text-xs font-bold tracking-[0.25em] uppercase mb-3" style={{ color: '#94A3B8' }}>
@@ -158,8 +158,9 @@ export function Pricing() {
                   <ShimmerButton
                     onClick={() => router.push(plan.href)}
                     className="w-full text-center text-sm font-bold py-3.5 shadow-xl"
-                    background="rgba(255,255,255,0.15)"
-                    shimmerColor="#ffffff"
+                    background="rgba(3,8,20,0.96)"
+                    shimmerColor="#93c5fd"
+                    shimmerDuration="2.2s"
                     textColor="#ffffff"
                   >
                     {plan.cta}

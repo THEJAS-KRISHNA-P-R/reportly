@@ -63,7 +63,7 @@ export function MarketingNav() {
           animate={{ y: 0,   opacity: 1 }}
           exit={{    y: -80, opacity: 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="fixed top-4 inset-x-0 z-50 mx-auto max-w-7xl px-4"
+          className="fixed top-4 inset-x-0 z-50 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
         >
           <div
             className={`flex items-center justify-between px-6 rounded-2xl transition-all duration-300 ${
@@ -120,7 +120,7 @@ export function MarketingNav() {
 
             {/* Mobile hamburger */}
             <button
-              className="md:hidden flex flex-col gap-1.5 p-2 rounded-lg"
+              className="md:hidden flex flex-col gap-1.5 p-2 rounded-lg transition-transform duration-200 hover:scale-105"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="Toggle menu"
             >

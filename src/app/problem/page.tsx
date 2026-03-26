@@ -13,11 +13,11 @@ export default function ProblemPage() {
   return (
     <>
       <MarketingNav />
-      <main style={{ paddingTop: 112 }}>
+      <main className="bg-white pt-[112px] pb-24">
         <Problem />
 
         <section className="marketing-section pb-16" style={{ background: '#FFFFFF' }}>
-          <div className="marketing-content-shell">
+          <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
             <div className="grid gap-6 md:grid-cols-3">
               {[
                 {
@@ -34,8 +34,8 @@ export default function ProblemPage() {
                 },
               ].map((item) => (
                 <article key={item.title} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <h3 className="text-lg font-bold tracking-tight text-slate-900">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{item.body}</p>
+                  <h3 className="text-lg font-black tracking-tight" style={{ color: '#000000' }}>{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed font-medium" style={{ color: '#444444' }}>{item.body}</p>
                 </article>
               ))}
             </div>

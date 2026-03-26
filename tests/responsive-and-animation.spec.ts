@@ -3,7 +3,11 @@ import { test, expect } from '@playwright/test';
 const pages = [
   { path: '/', keySelector: 'main' },
   { path: '/pricing', keySelector: 'main' },
-  { path: '/about', keySelector: 'main' },
+  { path: '/features', keySelector: 'main' },
+  { path: '/how-it-works', keySelector: 'main' },
+  { path: '/problem', keySelector: 'main' },
+  { path: '/privacy', keySelector: 'main' },
+  { path: '/terms', keySelector: 'main' },
   { path: '/login', keySelector: 'form' },
   { path: '/register', keySelector: 'form' },
 ];

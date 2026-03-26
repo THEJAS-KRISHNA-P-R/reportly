@@ -5,48 +5,34 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["'DM Sans'", 'system-ui', 'sans-serif'],
-        mono: ["'DM Mono'", 'monospace'],
+        sans: ["'Plus Jakarta Sans'", 'system-ui', 'sans-serif'],
+        mono: ["'IBM Plex Mono'", 'monospace'],
       },
       colors: {
         border: 'var(--border)',
-        input: 'var(--input)',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+        'border-strong': 'var(--border-strong)',
+        input: 'var(--border)',
+        ring: 'var(--accent)',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        'foreground-muted': 'var(--foreground-muted)',
+        'foreground-subtle': 'var(--foreground-subtle)',
+        surface: {
+          100: 'var(--surface-100)',
+          200: 'var(--surface-200)',
+          300: 'var(--surface-300)',
         },
         primary: {
           DEFAULT: 'var(--primary)',
-          hover:   'var(--primary-hover)',
-          fg:      'var(--primary-fg)',
-          foreground: 'hsl(var(--primary-foreground))',
-        },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
-        muted: {
-          DEFAULT: 'var(--bg-muted)',
-          foreground: 'hsl(var(--muted-foreground))',
+          foreground: 'var(--primary-foreground)',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: 'var(--accent)',
         },
-        destructive: {
-          DEFAULT: 'var(--error)',
-          foreground: 'hsl(var(--destructive-foreground))',
-        },
-        success: { DEFAULT: 'var(--success)', bg: 'var(--success-bg)' },
-        warning: { DEFAULT: 'var(--warning)', bg: 'var(--warning-bg)' },
-        error:   { DEFAULT: 'var(--error)',   bg: 'var(--error-bg)'   },
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        error: 'var(--error)',
+        destructive: 'var(--error)',
       },
       borderRadius: {
         lg: 'var(--radius)',

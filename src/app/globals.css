@@ -5,48 +5,46 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Enterprise-Grade Responsive Typography (no 10px fonts) */
-  --text-xs:   clamp(0.875rem, 1.25vw, 0.9375rem); /* ~14px - 15px */
-  --text-sm:   clamp(0.9375rem, 1.5vw, 1rem);      /* ~15px - 16px */
-  --text-base: clamp(1rem,    2vw,   1.125rem);    /* ~16px - 18px */
-  --text-lg:   clamp(1.125rem, 2.5vw, 1.25rem);
-  --text-xl:   clamp(1.25rem, 3.5vw, 1.75rem);
-  --text-2xl:  clamp(1.5rem,  4.5vw, 2.25rem);
-  --text-3xl:  clamp(2rem,    6vw,   3.25rem);
-  --text-4xl:  clamp(2.5rem,  8vw,   4.5rem);
+  /* Premium SaaS Typography Hierarchy */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  
+  /* Semantic Color System (Refined Surface & Depth) */
+  --background: #09090b; /* Zinc-950/Black base */
+  --surface-100: rgba(24, 24, 27, 0.6); /* Zinc-900/60% */
+  --surface-200: rgba(39, 39, 42, 0.6); /* Zinc-800/60% */
+  --surface-300: rgba(63, 63, 70, 0.6); /* Zinc-700/60% */
+  
+  --foreground: #FAFAFA;       /* Zinc-50 */
+  --foreground-muted: #A1A1AA; /* Zinc-400 */
+  --foreground-subtle: #71717A; /* Zinc-500 */
+  
+  --border: rgba(255, 255, 255, 0.05); /* Very subtle white border */
+  --border-strong: rgba(255, 255, 255, 0.1); 
+  
+  /* Brand Accents */
+  --primary: #ffffff; 
+  --primary-foreground: #000000;
+  --accent: #ffffff;
+  
+  /* Success/Warning/Error (Accessible) */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
 
-  /* Enterprise Surface System (Structured & Clean) */
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(226, 232, 240, 0.8); /* Slate-200 */
-  --glass-blur: 8px;
-
-  /* Professional Shadow Tiering */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  
-  /* Enterprise Colors (Slate & Indigo Palette) */
-  --bg-primary:    #FFFFFF;
-  --bg-surface:    #F8FAFC; /* Slate-50 */
-  --bg-muted:      #F1F5F9; /* Slate-100 */
-  --bg-dark:       #0F172A; /* Slate-900 */
-  
-  --text-primary:   #1E293B; /* Slate-800 */
-  --text-secondary: #475569; /* Slate-600 */
-  --text-muted:     #94A3B8; /* Slate-400 */
-  
-  --border:         #E2E8F0; /* Slate-200 */
-  --primary:        #4F46E5; /* Indigo-600 */
-  --primary-hover:  #4338CA;
-  --success:        #059669; /* Emerald-600 */
-  
   /* Layout Constants */
-  --sidebar-width: 280px;
-  --sidebar-collapsed-width: 80px;
-  --sidebar-current-width: var(--sidebar-width);
-  --topbar-height:  72px;
+  --radius: 12px;
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 64px;
+  
+  /* Shadows (Depth-focused) */
+  --shadow-sm: 0 8px 32px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
 /* ── Reset & Baseline ────────────────────────────────────── */
@@ -59,73 +57,30 @@
 html {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   scroll-behavior: smooth;
-  color: var(--text-primary);
-  background-color: var(--bg-primary);
+  color: var(--foreground);
+  background-color: var(--background);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
-/* ── Enterprise Component Primitives ───────────────────────── */
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.2s ease-in-out;
-}
-
-.glass-card:hover {
-  box-shadow: var(--shadow-lg);
-}
-
-.glass-elevated {
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-xl);
-}
-
-/* Utility for clean, robust containers */
-.enterprise-container {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-/* Shared shell for non-hero marketing sections */
-.marketing-content-shell {
-  width: min(100%, 1200px);
-  margin: 0 auto;
-  padding-inline: 1rem;
-}
-
-@media (min-width: 768px) {
-  .marketing-content-shell {
-    padding-inline: 2.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .marketing-content-shell {
-    padding-inline: 4rem;
-  }
-}
-
-/* ── Dashboard Shell Layout ─────────────────────────────── */
+/* ── UI Framework ────────────────────────────────────────── */
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: #000000;
 }
 
 .dashboard-main {
@@ -133,14 +88,14 @@ h1, h2, h3, h4 {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dashboard-content {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
-  background-color: var(--bg-surface);
+  padding: 1.5rem; /* p-6 */
+  background-color: transparent;
+  backdrop-filter: blur(40px);
 }
 
 /* ── Performance & Accessibility ───────────────────────────── */

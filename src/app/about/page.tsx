@@ -12,9 +12,9 @@ export default function AboutPage() {
   return (
     <>
       <MarketingNav />
-      <main style={{ paddingTop: 112 }}>
-        <section className="marketing-section" style={{ background: '#FFFFFF' }}>
-          <div className="marketing-content-shell" style={{ maxWidth: 820, margin: '0 auto' }}>
+      <main className="bg-white pt-[112px] pb-24">
+        <section className="marketing-section">
+          <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
             <p className="text-xs font-semibold tracking-widest uppercase mb-6" style={{ color: '#777777' }}>
               About
             </p>

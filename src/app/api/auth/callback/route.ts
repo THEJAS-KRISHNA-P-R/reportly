@@ -64,25 +64,44 @@ export async function GET(request: Request) {
         
         if (agencyError) throw agencyError;
 
-        // b. Link the user to the agency as 'admin' (standardized role)
+        // b. Link the user to the agency as 'admin' with onboarding_completed = false
         const { error: linkError } = await supabaseAdmin
           .from('agency_users')
           .insert({
             agency_id: newAgency.id,
             email: session.user.email,
-            role: 'admin'
+            role: 'admin',
+            onboarding_completed: false,
           });
         
         if (linkError) throw linkError;
 
         // Update profile variable for subsequent logic
-        profile = { agency: { subdomain: null, id: newAgency.id } } as any;
+        profile = { agency: { subdomain: null, id: newAgency.id }, onboarding_completed: false } as any;
+      }
+
+      // Check onboarding_completed status
+      let onboardingCompleted = (profile as any)?.onboarding_completed;
+      if (onboardingCompleted === undefined) {
+        // Fetch it explicitly if not in the initial query
+        const { data: auRow } = await supabaseAdmin
+          .from('agency_users')
+          .select('onboarding_completed')
+          .eq('email', session.user.email)
+          .maybeSingle();
+        onboardingCompleted = auRow?.onboarding_completed ?? false;
       }
 
       const subdomain = (profile?.agency as any)?.subdomain;
       
       // We recognize localhost, 127.0.0.1, and 0.0.0.0 as local origins
       const isLocalHost = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('0.0.0.0');
+
+      // Route to correct destination based on onboarding status
+      if (!onboardingCompleted) {
+        console.log('[AuthRoute] Onboarding incomplete, redirecting to /onboarding');
+        return NextResponse.redirect(`${origin}/onboarding`);
+      }
 
       if (subdomain && isLocalHost) {
         const targetUrl = new URL(`http://${subdomain}.lvh.me:3000/auth/callback`);
@@ -92,10 +111,8 @@ export async function GET(request: Request) {
         return NextResponse.redirect(targetUrl);
       }
 
-      // If no subdomain found, they likely need to onboard
-      const finalNext = subdomain ? next : '/onboarding';
-      console.log('[AuthRoute] Redirecting to:', finalNext);
-      return NextResponse.redirect(`${origin}${finalNext}`);
+      console.log('[AuthRoute] Redirecting to:', next);
+      return NextResponse.redirect(`${origin}${next}`);
     } else {
       console.error('[AuthRoute] Exchange failed:', error);
     }

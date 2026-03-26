@@ -133,11 +133,14 @@ We deliberately chose to pass tokens via **URL Hash (`#`)** instead of Query Par
 
 | Feature | Status | Implementation Detail |
 | :--- | :--- | :--- |
-| **Multitenant Auth** | ✅ STABLE | Localhost Bridge + Token Fragment Hand-off. |
-| **Onboarding Flow** | ✅ PREMIUM | 3-Step Animated Wizard + Atomic Backend Setup. |
-| **Security Guards** | ✅ HARDENED | Mandatory `getUser()` + Subdomain Consistency Check. |
-| **Dev Environment** | ✅ OPTIMIZED | `next.config` whitelisted for `lvh.me` HMR support. |
-| **Linting/Types** | ✅ CLEAN | 0 Errors, 0 Warnings, 100% TypeScript Coverage. |
+| **Multitenant Auth** | ✅ STABLE | Localhost Bridge + Token Fragment Hand-off + Tenant Isolation in Proxy |
+| **Onboarding Flow** | ✅ PREMIUM | 3-Step Animated Wizard + Atomic Backend + Redis Lock + Subdomain Generation |
+| **Security Guards** | ✅ HARDENED | `getUser()` + Subdomain Consistency + Onboarding Gate + Cache-Control |
+| **Session Security** | ✅ HARDENED | Server-side logout + Nuclear cookie clearing + `Clear-Site-Data` + Back-button prevention |
+| **Superadmin Dashboard** | ✅ COMPLETE | Full CRUD user management (list/detail/modify/delete) with audit logging |
+| **Dev Environment** | ✅ OPTIMIZED | `next.config` whitelisted for `lvh.me` HMR support |
+| **Linting/Types** | ✅ CLEAN | `tsc --noEmit` = 0 errors, full TypeScript coverage |
+| **DB Schema** | ✅ HARDENED | `onboarding_completed` flag, `superadmin` role, subdomain format validation |
 
 ---
 
@@ -148,22 +151,69 @@ We deliberately chose to pass tokens via **URL Hash (`#`)** instead of Query Par
 4.  **Step 3**: Built the Atomic Onboarding API to handle Agency + Client + GA4 initialization.
 5.  **Step 4**: Overhauled UI with Framer Motion for a premium "human-first" experience.
 6.  **Step 5**: Final Security Audit (Transition to `getUser()`) and Linting Cleanup.
-
-### Sign-Out Reliability & Session Consolidation
-
-Resolved the unresponsive "Sign out" button issue in both Admin and Superuser panels by addressing context fragmentation and potential browser lock hangs.
-
-1.  **Hardened Logout Pattern**: The `logout` function in `AuthContext` now uses a `Promise.race` with a 1.5s timeout. This ensures that even if `supabase.auth.signOut()` hangs (common on insecure `lvh.me` origins), the user is always redirected and their local state is cleared.
-2.  **Eliminated Provider Fragmentation**: Removed redundant `AuthProvider` instances from `AdminLayout`, `LoginPage`, `RegisterPage`, and `OnboardingPage`. The entire application now consistently consumes the root `AuthProvider` defined in `RootLayout`.
-3.  **Domain Persistence**: Verified that sign-out correctly redirects to the root `lvh.me:3000/login` to ensure any subdomain-specific state is wiped and the user lands on a clean, secure entry point.
-
-### Local Origin Sanitization (0.0.0.0 Redirect Fix)
-
-Resolved the issue where new users were redirected to the unbrowseable bind address `http://0.0.0.0:3000/onboarding` instead of `localhost`.
-
-- **On-the-Fly Origin Sanitization**: The `src/app/api/auth/callback/route.ts` now identifies if the incoming request origin contains `0.0.0.0` and automatically replaces it with `localhost` before performing any redirects.
-- **Environment Consistency**: Updated the `AuthContext` to explicitly recognize `0.0.0.0` as a local environment origin. This ensures that even if the dev server is bound to all interfaces, the browser-side logic correctly routes the user to `localhost:3000`.
-- **Seamless New-User Onboarding**: Verified that new account sign-ins now correctly land on the `localhost:3000/onboarding` flow, preserving the "human-first" experience without manual URL intervention.
+7.  **Step 6**: Premium Minimalist UI transformation (monochrome slate/white/black palette).
+8.  **Step 7**: Master Architecture Rewrite — 6-phase overhaul (see Section 10).
+9.  **Step 8**: Auth callback hang fix — timeout race on `setSession()` for LockManager deadlock.
+10. **Step 9**: Logout hardening — AbortController timeout + unconditional local cleanup.
 
 ---
-*Last Updated: 2026-03-25*
+
+## 10. Master Architecture Rewrite (2026-03-26)
+
+A system-level re-architecture of authentication, onboarding, multitenancy, session security, and superadmin controls. **6 phases, strict order.**
+
+### Phase 1: Database Schema Hardening
+
+Applied Supabase migration `add_onboarding_completed_and_superadmin`:
+
+| Change | Detail |
+| :--- | :--- |
+| `onboarding_completed` column | Boolean on `agency_users`, default `false`. Replaces heuristic name check. |
+| `role` constraint expansion | `admin \| member \| superadmin` (was `admin \| member`) |
+| Subdomain format constraint | `^[a-z0-9][a-z0-9-]{1,48}[a-z0-9]$` — rejects invalid formats |
+| Performance indexes | On `subdomain`, `email`, `onboarding_completed` |
+
+### Phase 2: Proxy Edge Handler Hardening (`proxy.ts`)
+
+> **Key Discovery**: Next.js 16.2 treats `proxy.ts` as the native edge handler — `middleware.ts` is deprecated. The proxy was already active; no `middleware.ts` needed.
+
+Three critical layers added to `proxy.ts`:
+
+1.  **Onboarding Gate**: Non-superadmin users who haven't completed onboarding are locked to `/onboarding`. Redirect FROM protected pages TO `/onboarding`, and block re-entry after completion. Redis-cached (5 min TTL).
+2.  **Tenant Mismatch Check**: If on a subdomain, verifies `user.email` belongs to that subdomain's agency via `agency_users` join. Returns `403 TENANT_MISMATCH` JSON on failure. Redis-cached (5 min TTL).
+3.  **Cache-Control: no-store**: Applied to ALL protected route responses via `NO_CACHE_HEADERS` constant. Kills back-button access after logout.
+
+### Phase 3: Auth Flow Hardening
+
+| File | Change |
+| :--- | :--- |
+| `signout/route.ts` | Nuclear signout: Supabase destroy → Redis cache invalidation → Cookie expiry → `Clear-Site-Data` header |
+| `auth-context.tsx` | Server-first logout with 3s `AbortController` timeout. Always runs local `signOut()` as backup (1.5s timeout race). Uses `window.location.replace('/login')` to prevent back-button |
+| `callback/route.ts` | Checks `onboarding_completed` flag before redirect; new users get `onboarding_completed: false` |
+| `auth/callback/page.tsx` | 4-second timeout race on `setSession()` to avoid LockManager deadlock on `lvh.me`. Falls back to `getSession()` → `getUser()` |
+
+### Phase 4: Onboarding Flow Control
+
+| File | Change |
+| :--- | :--- |
+| `onboardingGuard.ts` | Replaced heuristic ("name ≠ My Agency") with explicit `onboarding_completed` boolean check. Added `markOnboardingComplete()` helper with Redis cache invalidation |
+| `onboarding/route.ts` | Redis lock prevents double-submit (30s TTL). Auto-generates URL-safe subdomain from agency name with uniqueness check. Sets `onboarding_completed = true` atomically. Caches `subdomain → agency_id` in Redis |
+
+### Phase 5: Superadmin Dashboard
+
+| Endpoint | Purpose |
+| :--- | :--- |
+| `GET /api/admin/users` | Paginated user list with agency join, search/filter, enriched stats (clients, reports, connections) |
+| `GET /api/admin/users/[id]` | Full user detail with clients, reports, connections, audit log |
+| `PATCH /api/admin/users/[id]` | Modify plan/limits/role/status with Redis cache invalidation and audit logging |
+| `DELETE /api/admin/users/[id]` | Cascade delete (respects FK order) with confirmation token `"DELETE_USER_AND_ALL_DATA"` |
+| `/admin/users` UI | Searchable paginated table, side detail panel, revoke/restore toggle, modify limits modal, delete confirmation modal |
+
+### Phase 6: Security Verification
+
+- `npx tsc --noEmit` → **Exit code 0** (zero type errors)
+- `http://localhost:3000/login` → **HTTP 200**
+- Dev server running clean, no middleware/proxy conflict
+
+---
+*Last Updated: 2026-03-26*

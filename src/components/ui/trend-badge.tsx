@@ -12,7 +12,7 @@ export function TrendBadge({ value, label }: TrendBadgeProps) {
   
   return (
     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider ${
-      isPositive ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
+      isPositive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
     }`}>
       {isPositive ? <ArrowUpRight size={12} strokeWidth={2.5} /> : <ArrowDownRight size={12} strokeWidth={2.5} />}
       <span>{Math.abs(value)}%</span>

@@ -196,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           redirectTo,
           queryParams: {
             access_type: 'offline',
-            prompt: 'select_account consent',
+            prompt: 'select_account',
           },
           scopes: 'openid email profile https://www.googleapis.com/auth/analytics.readonly',
           skipBrowserRedirect: false,
@@ -263,37 +263,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      console.log('[Auth] Initiating logout...');
+      console.log('[Auth] Initiating server-side logout...');
       
-      // Use a race to prevent signOut from hanging on insecure origins (lvh.me)
-      await Promise.race([
-        supabase.auth.signOut(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('SignOut Timeout')), 1500))
-      ]).catch(err => {
-        console.warn('[Auth] SignOut failed or timed out, proceeding with local cleanup:', err.message);
-      });
+      // 1. Call server route with a timeout — if server is down, don't hang
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      try {
+        const response = await fetch('/api/auth/signout', { 
+          method: 'POST',
+          credentials: 'same-origin',
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok && !response.redirected) {
+          console.warn('[Auth] Server signout returned non-OK, proceeding with local cleanup');
+        }
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        console.warn('[Auth] Server signout fetch failed, performing local cleanup:', fetchErr);
+      }
 
     } catch (err) {
-      console.error('[Auth] Logout catch block:', err);
-    } finally {
-      console.log('[Auth] Performing local session cleanup');
-      setUser(null);
-      
-      // Redirect to root domain login to ensure fresh state
-      const isLocalhost = typeof window !== 'undefined' && 
-        (window.location.hostname.includes('localhost') || 
-         window.location.hostname.includes('lvh.me') || 
-         window.location.hostname === '0.0.0.0');
-      
-      if (isLocalhost) {
-        window.location.href = 'http://lvh.me:3000/login';
-      } else {
-        const parts = window.location.hostname.split('.');
-        const rootDomain = parts.slice(-2).join('.');
-        window.location.href = `${window.location.protocol}//${rootDomain}/login`;
-      }
-      setLoading(false);
+      console.error('[Auth] Logout error:', err);
     }
+    
+    // 2. Always do local cleanup regardless of server response
+    console.log('[Auth] Performing local session cleanup');
+    await Promise.race([
+      supabase.auth.signOut().catch(() => {}),
+      new Promise(r => setTimeout(r, 1500)),
+    ]);
+    
+    setUser(null);
+    setLoading(false);
+    
+    // Hard redirect to login — use window.location.replace to prevent back-button returning
+    window.location.replace('/login');
   }, [supabase]);
 
   return (

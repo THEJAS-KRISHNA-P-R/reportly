@@ -32,7 +32,7 @@ export function Problem() {
       className="marketing-section py-16"
       style={{ background: '#FFFFFF' }}
     >
-      <div className="marketing-content-shell">
+      <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
         {/* Header */}
         <div className="text-center mb-10" style={{ maxWidth: 640, margin: '0 auto 2.5rem' }}>
           <p

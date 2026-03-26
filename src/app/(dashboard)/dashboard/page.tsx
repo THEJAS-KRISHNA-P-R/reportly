@@ -35,6 +35,7 @@ export default function DashboardPage() {
       try {
         setLoading(true);
         // 1. Fetch Agency Stats
+        let reports: any[] = [];
         const agencyRes = await fetch('/api/agencies/me');
         if (agencyRes.ok) {
           const agencyData = await agencyRes.json();
@@ -43,7 +44,7 @@ export default function DashboardPage() {
           const reportsRes = await fetch('/api/reports');
           const reportsPayload = reportsRes.ok ? await reportsRes.json() : { ok: false, data: { reports: [] } };
           const reportsEnvelope = unwrapData<{ reports: any[]; pagination?: any }>(reportsPayload, { reports: [] });
-          const reports = reportsEnvelope.reports || [];
+          reports = reportsEnvelope.reports || [];
 
           setRecentReports(reports.slice(0, 5).map((r: any) => ({
              id: r.id,
@@ -70,12 +71,17 @@ export default function DashboardPage() {
         if (clientsRes.ok) {
           const clientsPayload = await clientsRes.json();
           const clientsData = unwrapData<any[]>(clientsPayload, []);
-          setTopClients(clientsData.slice(0, 5).map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            reports_count: 0, // Placeholder
-            last_report_date: undefined
-          })));
+          setTopClients(clientsData.slice(0, 5).map((c: any) => {
+            const clientReports = reports.filter((r: any) => r.client_id === c.id || r.clients?.id === c.id);
+            // sort reports to find newest
+            const sortedReports = [...clientReports].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            return {
+              id: c.id,
+              name: c.name,
+              reports_count: clientReports.length,
+              last_report_date: sortedReports.length > 0 ? sortedReports[0].created_at : undefined
+            };
+          }));
         }
       } catch (err) {
         console.error('Dashboard Fetch Error:', err);
@@ -89,13 +95,13 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-10 px-4 md:px-8 py-6 max-w-[1600px] mx-auto w-full">
-      <header className="flex flex-col gap-2">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900 animate-fade-in">
+    <div className="flex flex-col gap-8 px-4 py-6 max-w-[1400px] mx-auto w-full animate-fade-in">
+      <header className="flex flex-col gap-1.5 px-1">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
           Review your insights
         </h2>
-        <p className="text-[15px] font-medium text-slate-500 max-w-2xl leading-relaxed">
-          Welcome back. There are <span className="text-slate-900 font-bold underline decoration-indigo-500/30 underline-offset-4">{stats?.pending_reviews || 0} reports</span> awaiting your final validation and delivery today.
+        <p className="text-sm font-medium text-foreground-muted max-w-2xl leading-relaxed">
+          Welcome back. There are <span className="text-foreground font-semibold underline decoration-accent/30 underline-offset-4">{stats?.pending_reviews || 0} reports</span> awaiting your final validation and delivery today.
         </p>
       </header>
 
@@ -103,7 +109,7 @@ export default function DashboardPage() {
       <StatsCards stats={stats} loading={loading} />
 
       {/* Primary Analytics Grid */}
-      <div className="grid gap-8 lg:grid-cols-3 items-start">
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
         {/* Recent Reports Area */}
         <div className="lg:col-span-2">
           <RecentReports reports={recentReports} loading={loading} />
@@ -111,41 +117,41 @@ export default function DashboardPage() {
 
         {/* Global Action Node */}
         <div className="flex flex-col gap-6">
-          <div className="rounded-2xl bg-slate-900 p-8 shadow-xl text-white relative overflow-hidden group border border-slate-800">
-            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-105 transition-transform duration-500">
-              <FileText size={140} strokeWidth={1} />
+          <div className="rounded-xl bg-zinc-900/60 p-6 shadow-sm text-primary-foreground relative overflow-hidden group border border-white/5">
+            <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-105 transition-transform duration-500">
+              <FileText size={120} strokeWidth={1} />
             </div>
             <div className="relative z-10">
-              <h3 className="text-lg font-bold tracking-tight">Rapid Actions</h3>
-              <p className="text-[13px] font-medium text-slate-400 mt-1 mb-6">Workflow shortcuts for agency owners.</p>
-              <div className="space-y-3">
-                <Button asChild className="w-full h-11 bg-white text-slate-900 hover:bg-slate-50 rounded-xl font-bold transition-all shadow-sm active:scale-[0.98]">
+              <h3 className="text-lg font-semibold tracking-tight">Rapid Actions</h3>
+              <p className="text-xs font-medium text-primary-foreground/70 mt-1 mb-5">Workflow shortcuts for agency owners.</p>
+              <div className="space-y-2">
+                <Button asChild variant="outline" className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90 border-transparent font-semibold shadow-sm">
                   <a href="/clients/new">Register New Client</a>
                 </Button>
-                <Button asChild className="w-full h-11 bg-white/5 text-white hover:bg-white/10 border border-white/10 rounded-xl font-bold transition-all active:scale-[0.98]">
+                <Button asChild variant="outline" className="w-full bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15 border-primary-foreground/10 font-semibold transition-all">
                   <a href="/reports">Generate New Report</a>
                 </Button>
               </div>
             </div>
           </div>
           
-          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hidden lg:block">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Optimization Tip</h4>
+          <div className="p-5 rounded-xl bg-zinc-900/40 border border-white/5 shadow-sm hidden lg:block">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <h4 className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted">Optimization Tip</h4>
             </div>
-            <p className="text-[14px] font-medium leading-relaxed text-slate-600">
-              Reports with <span className="font-bold text-slate-900">AI Narrative Insights</span> correlate with 40% higher client retention. Review insights before deployment.
+            <p className="text-sm font-medium leading-relaxed text-foreground-muted">
+              Reports with <span className="font-semibold text-foreground">AI Narrative Insights</span> correlate with 40% higher client retention. Review insights before deployment.
             </p>
           </div>
         </div>
       </div>
 
       {/* Client Portfolio Summary */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-xl font-bold tracking-tight text-slate-900">Active Portfolio</h2>
-          <Button asChild variant="ghost" className="font-bold text-xs uppercase tracking-widest text-slate-400 hover:text-slate-900 hover:bg-slate-100/50 rounded-lg pr-1">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">Active Portfolio</h2>
+          <Button asChild variant="ghost" className="font-semibold text-xs uppercase tracking-widest text-foreground-muted hover:text-foreground pr-1">
             <a href="/clients">Manage All Clients</a>
           </Button>
         </div>

@@ -4,9 +4,23 @@ import { cookies } from 'next/headers';
 import { securityHeaders } from '@/lib/security/headers';
 import { getPolicyDecision, getRouteGroup, resolveUserRole } from '@/lib/security/routePolicy';
 
+// Cache-Control header to prevent back-button access after logout
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
+
 const CRON_PATHS  = ['/api/cron'];
 
-function applySecurityHeaders(res: NextResponse, hostname: string = ''): NextResponse {
+function applySecurityHeaders(res: NextResponse, hostname: string = '', isProtected: boolean = false): NextResponse {
+  // Always apply cache-control on protected routes (kills back-button access)
+  if (isProtected) {
+    Object.entries(NO_CACHE_HEADERS).forEach(([key, value]) => {
+      res.headers.set(key, value);
+    });
+  }
+
   // Disable security headers on lvh.me in development to avoid HMR/Hydration issues
   if (process.env.NODE_ENV !== 'production' && (hostname.includes('lvh.me') || hostname.includes('localhost'))) {
     return res;
@@ -220,6 +234,93 @@ export async function proxy(request: NextRequest) {
 
   const role = resolveUserRole(userEmail, process.env.SUPER_ADMIN_EMAIL);
 
+  // ── ONBOARDING GATE ──────────────────────────────────────────────
+  // Non-superadmin users who haven't completed onboarding are locked to /onboarding
+  if (role !== 'super_admin' && routeGroup === 'protected-page') {
+    try {
+      const redis = await getUpstashRedis();
+      const onboardCacheKey = `onboard:${user.email}`;
+      let onboardingCompleted = await redis.get(onboardCacheKey);
+
+      if (onboardingCompleted === null) {
+        // Cache miss — check DB
+        const { createClient } = await import('@supabase/supabase-js');
+        const db = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        const { data: auRow } = await db
+          .from('agency_users')
+          .select('onboarding_completed, agency_id')
+          .eq('email', user.email)
+          .maybeSingle();
+
+        onboardingCompleted = auRow?.onboarding_completed ?? false;
+        // Cache for 5 minutes
+        await redis.set(onboardCacheKey, onboardingCompleted, { ex: 300 });
+      }
+
+      if (!onboardingCompleted && pathname !== '/onboarding') {
+        console.log(`[Proxy] Onboarding incomplete for ${user.email}, redirecting`);
+        return applySecurityHeaders(
+          NextResponse.redirect(new URL('/onboarding', request.url)),
+          hostname,
+          true
+        );
+      }
+
+      if (onboardingCompleted && pathname === '/onboarding') {
+        console.log(`[Proxy] Onboarding already completed for ${user.email}, redirecting to dashboard`);
+        return applySecurityHeaders(
+          NextResponse.redirect(new URL('/dashboard', request.url)),
+          hostname,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('[Proxy] Onboarding gate error (allowing through):', err);
+    }
+  }
+
+  // ── TENANT MISMATCH CHECK ────────────────────────────────────────
+  // If on a subdomain, verify the authenticated user actually belongs to that agency
+  if (agencyIdBySubdomain && role !== 'super_admin') {
+    try {
+      const redis = await getUpstashRedis();
+      const tenantCacheKey = `tenant:${user.email}:${agencyIdBySubdomain}`;
+      let tenantMatch = await redis.get(tenantCacheKey);
+
+      if (tenantMatch === null) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const db = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        const { data: link } = await db
+          .from('agency_users')
+          .select('id')
+          .eq('email', user.email)
+          .eq('agency_id', agencyIdBySubdomain)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        tenantMatch = link ? 'ok' : 'denied';
+        await redis.set(tenantCacheKey, tenantMatch, { ex: 300 });
+      }
+
+      if (tenantMatch === 'denied') {
+        console.error(`[Proxy] TENANT MISMATCH: ${user.email} tried to access subdomain ${subdomain} (agency ${agencyIdBySubdomain})`);
+        return new NextResponse(
+          JSON.stringify({ error: 'Cross-tenant access denied', code: 'TENANT_MISMATCH' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } catch (err) {
+      console.error('[Proxy] Tenant check error (blocking for safety):', err);
+      return new NextResponse('Internal Server Error', { status: 500 });
+    }
+  }
+
   // Super-admin production IP allowlist for admin surface.
   if (role === 'super_admin' && process.env.NODE_ENV === 'production') {
     if (routeGroup === 'admin-page' || routeGroup === 'admin-api') {
@@ -232,6 +333,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const decision = getPolicyDecision(pathname, role);
+  const isProtectedRoute = routeGroup === 'protected-page' || routeGroup === 'protected-api' || routeGroup === 'admin-page' || routeGroup === 'admin-api';
 
   if (decision.action === 'allow') {
     const requestHeaders = new Headers(request.headers);
@@ -245,7 +347,7 @@ export async function proxy(request: NextRequest) {
       request: {
         headers: requestHeaders,
       },
-    }), hostname);
+    }), hostname, isProtectedRoute);
   }
 
   if (decision.action === 'forbidden') {

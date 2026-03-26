@@ -59,97 +59,96 @@ export function Topbar() {
   const clientsAtLimit = clientsUsed >= clientsLimit;
 
   return (
-    <header className="h-[var(--topbar-height)] flex items-center justify-between px-6 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 transition-all">
+    <header className="h-[var(--topbar-height)] flex items-center justify-between px-4 bg-white/5 dark:bg-black/40 backdrop-blur-lg border-b border-white/10 sticky top-0 z-40 transition-all">
       <div className="flex items-center gap-4">
-        <div className="md:hidden p-2 rounded-lg bg-slate-100 text-slate-600 mr-2">
-           <LayoutGrid size={20} />
+        <div className="md:hidden p-2 rounded-lg bg-zinc-900 border border-white/5 text-zinc-400 mr-2">
+           <LayoutGrid size={18} />
         </div>
         <Breadcrumbs />
         {planId !== 'free' && (
           <span
-            className="hidden sm:inline-block text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
+            className="hidden sm:inline-block text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-primary/5 text-primary border border-primary/10"
           >
             {planId}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         {/* Usage Pills */}
-        <div className="hidden lg:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-3">
           {planId !== 'agency' && planId !== 'pro' && (
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                reportsAtLimit ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+              className={`flex items-center gap-2 px-2.5 py-1 rounded-md transition-all ${
+                reportsAtLimit ? 'bg-red-500/10 text-red-400' : 'bg-white/5 text-zinc-400'
               }`}
             >
-              <span className="text-[11px] font-bold uppercase tracking-wider">Reports</span>
-              <span className="text-sm font-bold">{reportsUsed}/{reportsLimit}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">Reports</span>
+              <span className="text-sm font-medium">{reportsUsed}/{reportsLimit}</span>
             </div>
           )}
           {planId !== 'agency' && (
             <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
-                clientsAtLimit ? 'bg-red-50 text-red-700 border-red-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+              className={`flex items-center gap-2 px-2.5 py-1 rounded-md transition-all ${
+                clientsAtLimit ? 'bg-red-500/10 text-red-400' : 'bg-white/5 text-zinc-400'
               }`}
             >
-              <span className="text-[11px] font-bold uppercase tracking-wider">Clients</span>
-              <span className="text-sm font-bold">{clientsUsed}/{clientsLimit}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">Clients</span>
+              <span className="text-sm font-medium">{clientsUsed}/{clientsLimit}</span>
             </div>
           )}
         </div>
 
-        <div className="h-8 w-px bg-slate-200 hidden md:block" />
+        <div className="h-6 w-px bg-white/10 hidden md:block" />
 
-        <button className="relative w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all">
+        <button className="relative w-9 h-9 rounded-lg border border-white/5 bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-200">
           <Bell size={18} />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error ring-2 ring-background" />
         </button>
 
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-3 pl-3 pr-2 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100/80 transition-all group"
+            className="flex items-center gap-2 pl-2 pr-2 py-1.5 rounded-lg border border-transparent hover:bg-white/5 transition-all duration-200 group"
           >
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-sm">
+            <div className="w-8 h-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-sm">
               {user?.name?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="hidden sm:flex flex-col items-start pr-1">
-              <span className="text-[13px] font-bold text-slate-700 leading-none mb-0.5">{user?.name}</span>
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Account</span>
+              <span className="text-sm font-medium text-foreground leading-none">{user?.name}</span>
             </div>
-            <ChevronDown size={14} className={`text-slate-400 group-hover:text-slate-600 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown size={14} className={`text-foreground-muted group-hover:text-foreground transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-              <div className="px-5 py-4 border-b border-slate-100 mb-1">
-                <p className="text-sm font-bold text-slate-900 truncate">{user?.name}</p>
-                <p className="text-xs font-medium text-slate-400 truncate mt-0.5">{user?.email}</p>
+            <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-white/10 rounded-lg shadow-md p-1 z-50 animate-fade-in backdrop-blur-xl">
+              <div className="px-3 py-2 border-b border-white/5 mb-1">
+                <p className="text-xs font-semibold text-foreground truncate">{user?.name}</p>
+                <p className="text-[10px] font-medium text-foreground-muted truncate">{user?.email}</p>
               </div>
               <div className="space-y-0.5">
                 <Link
                   href="/settings"
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-all"
+                  className="flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
                   onClick={() => setDropdownOpen(false)}
                 >
                   Settings
                 </Link>
                 <Link
                   href="/billing"
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-all"
+                  className="flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
                   onClick={() => setDropdownOpen(false)}
                 >
                   Billing
                 </Link>
               </div>
-              <div className="mt-1 pt-1 border-t border-slate-100">
+              <div className="mt-1 pt-1 border-t border-white/5">
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
                     logout();
                   }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-[13px] font-bold text-red-600 hover:bg-red-50 transition-all"
+                  className="flex items-center gap-3 w-full px-3 py-1.5 rounded-md text-sm font-semibold text-error/80 hover:text-error hover:bg-error/5 transition-all"
                 >
                    Sign out
                 </button>

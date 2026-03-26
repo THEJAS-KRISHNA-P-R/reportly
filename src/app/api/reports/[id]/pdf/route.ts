@@ -71,7 +71,7 @@ export async function POST(
          retrievedAt: new Date(),
          validated: snapshotResult.validated_metrics,
          freshnessStatus: snapshotResult.freshness_status,
-         confidence: report.confidence_summary || { overall: 'high', perMetric: {} },
+         confidence: report.confidence_summary || { overall: 'high', score: 100, perMetric: {} },
          warnings: [],
          passedValidation: true
       },

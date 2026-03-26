@@ -32,7 +32,7 @@ export function HowItWorks() {
       className="marketing-section py-16"
       style={{ background: '#FDFDFD' }}
     >
-      <div className="marketing-content-shell">
+      <div className="mx-auto w-full max-w-5xl px-6 md:px-[100px]">
         {/* Header */}
         <div className="text-center mb-10" style={{ maxWidth: 640, margin: '0 auto 2.5rem' }}>
           <p
@@ -66,32 +66,26 @@ export function HowItWorks() {
               <motion.div
                 key={i}
                 variants={fadeUp}
-                className="flex flex-col gap-4"
+                className="relative flex flex-col p-6 md:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group"
               >
-                <div className="flex items-center gap-3 relative">
+                <div className="flex items-center justify-between">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 z-10 shadow-lg"
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center font-black text-base shadow-xl transition-transform duration-300 group-hover:scale-110"
                     style={{ background: '#000000', color: '#FFFFFF' }}
                   >
                     {step.number}
                   </div>
-                  {i < steps.length - 1 && (
-                    <div
-                      className="hidden md:block absolute left-10 right-0 h-px top-1/2 -translate-y-1/2"
-                      style={{ background: '#F0F0F0' }}
-                    />
-                  )}
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 transition-colors duration-300 group-hover:bg-slate-100">
+                    <Icon size={24} className="text-slate-700" strokeWidth={2} />
+                  </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Icon size={14} color="#000000" strokeWidth={2.5} />
-                    <h3 className="font-bold text-sm tracking-tight" style={{ color: '#000000' }}>
-                      {step.title}
-                    </h3>
-                  </div>
-                  <p className="text-xs leading-relaxed opacity-50" style={{ color: '#000000' }}>
+                <div className="flex flex-col gap-3 mt-6">
+                  <h3 className="font-black text-lg md:text-xl tracking-tight text-slate-900">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm md:text-base leading-relaxed font-medium text-slate-600">
                     {step.body}
                   </p>
                 </div>

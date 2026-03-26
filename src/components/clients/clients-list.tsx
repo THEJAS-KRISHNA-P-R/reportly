@@ -17,12 +17,31 @@ interface ClientsListProps {
   loading?: boolean;
 }
 
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 export function ClientsList({ clients = [], loading = false }: ClientsListProps) {
   if (loading) {
     return (
-      <div className="grid gap-4">
+      <div className="flex flex-col gap-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-24 rounded-3xl bg-white shadow-[0_10px_40px_rgba(0,0,0,0.02)] animate-pulse" />
+          <Card key={i} className="shadow-sm border-white/5 bg-zinc-900/60">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-3 w-1/4" />
+              </div>
+              <div className="flex items-center gap-8">
+                <div className="hidden sm:block space-y-1.5">
+                  <Skeleton className="h-4 w-8 ml-auto" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+                <Skeleton className="h-9 w-9 rounded-lg" />
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
@@ -30,20 +49,22 @@ export function ClientsList({ clients = [], loading = false }: ClientsListProps)
 
   if (!clients || clients.length === 0) {
     return (
-      <div className="p-16 text-center bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] flex flex-col items-center gap-6">
-        <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-300">
-          <Users size={32} />
-        </div>
-        <div>
-          <h3 className="text-2xl font-black tracking-tighter text-black">No clients yet</h3>
-          <p className="mt-2 text-sm font-medium opacity-40 max-w-[280px]">
-            Create your first client to start generating automated reports.
-          </p>
-        </div>
-        <Button asChild className="rounded-xl font-black text-xs uppercase tracking-widest px-8 shadow-lg shadow-black/10">
-          <Link href="/clients/new">Create Client</Link>
-        </Button>
-      </div>
+      <Card className="shadow-sm border-dashed border-2 border-white/5 bg-zinc-900/40">
+        <CardContent className="flex flex-col items-center gap-4 py-12">
+          <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 border border-white/5">
+            <Users size={24} />
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-foreground">No clients yet</h3>
+            <p className="mt-1 text-sm text-foreground-muted max-w-[240px]">
+              Create your first client to start generating automated reports.
+            </p>
+          </div>
+          <Button asChild className="rounded-md font-semibold text-xs uppercase tracking-widest px-6 shadow-sm">
+            <Link href="/clients/new">Create Client</Link>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -53,34 +74,38 @@ export function ClientsList({ clients = [], loading = false }: ClientsListProps)
         <Link
           key={client.id}
           href={`/clients/${client.id}`}
-          className="flex items-center justify-between p-5 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group"
+          className="group block"
         >
-          <div className="flex-1 min-w-0 pr-4">
-            <h3 className="text-[15px] font-bold tracking-tight text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{client.name}</h3>
-            {client.website && (
-              <p className="mt-0.5 text-[12px] font-medium text-slate-400 truncate tracking-wide">{client.website}</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="text-right hidden sm:block">
-              <p className="text-[16px] font-bold tracking-tight text-slate-900 leading-none">{client.reports_count}</p>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">Reports</p>
-            </div>
-
-            {client.last_report_date && (
-              <div className="text-right hidden md:block pl-6 border-l border-slate-100">
-                <p className="text-[14px] font-bold text-slate-900 leading-none">
-                  {new Date(client.last_report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </p>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1 text-nowrap">Last Active</p>
+          <Card className="shadow-sm hover:border-white/20 hover:bg-zinc-900/80 transition-all border-white/5 bg-zinc-900/60">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex-1 min-w-0 pr-6">
+                <h3 className="text-[15px] font-bold text-foreground truncate group-hover:text-primary transition-colors">{client.name}</h3>
+                {client.website && (
+                  <p className="mt-1 text-xs font-medium text-foreground-muted truncate tracking-tight opacity-60">{client.website}</p>
+                )}
               </div>
-            )}
-            
-            <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all border border-slate-100 group-hover:border-indigo-600">
-              <span className="text-xs font-bold font-mono">→</span>
-            </div>
-          </div>
+
+              <div className="flex items-center gap-8">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-bold tracking-tight text-foreground leading-none">{client.reports_count}</p>
+                  <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mt-1.5 opacity-60">Reports</p>
+                </div>
+
+                {client.last_report_date && (
+                  <div className="text-right hidden md:block pl-8 border-l border-white/5">
+                    <p className="text-sm font-bold text-foreground leading-none">
+                      {new Date(client.last_report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                    <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mt-1.5 opacity-60 text-nowrap">Last Pulse</p>
+                  </div>
+                )}
+                
+                <div className="w-9 h-9 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-black transition-all border border-white/5 group-hover:border-transparent">
+                  <ArrowRight size={16} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </Link>
       ))}
     </div>

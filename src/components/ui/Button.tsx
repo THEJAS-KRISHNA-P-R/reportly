@@ -5,29 +5,26 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 animate-fade-in",
   {
     variants: {
       variant: {
-        primary: 'bg-[#000000] text-white hover:bg-[#1A1A1A] hover:shadow-md hover:-translate-y-0.5 active:bg-[#333333] active:shadow-sm active:translate-y-0 disabled:bg-[#E5E5E5] disabled:text-[#888888] focus-visible:outline-[#000000]',
-        secondary: 'bg-white text-[#0A0A0A] border border-[#E5E5E5] hover:bg-[#F5F4F2] hover:border-[#CCCCCC] hover:shadow-sm active:bg-[#EEEEEC] active:shadow-none disabled:bg-[#F7F7F5] disabled:opacity-50 focus-visible:outline-[#0A0A0A]',
-        outline: 'border border-[#E5E5E5] bg-white text-[#0A0A0A] hover:bg-[#F5F4F2] hover:border-[#CCCCCC] hover:shadow-sm active:bg-[#EEEEEC] focus-visible:ring-2 focus-visible:ring-[#0A0A0A] focus-visible:ring-offset-2',
-        ghost: 'text-[#3D3D3D] hover:text-[#0A0A0A] hover:bg-[#F0F0EE] active:bg-[#E8E8E6] transition-colors duration-150 focus-visible:outline-[#0A0A0A]',
-        destructive: 'bg-white text-[#8B1F2A] border border-[#E5E5E5] hover:bg-[#FFF4F4] hover:border-[#8B1F2A]/30 active:bg-[#FFE8E8] focus-visible:outline-[#8B1F2A]',
-        link: 'text-[#000000] underline-offset-4 hover:underline focus-visible:outline-[#000000]',
-        dark: 'bg-white/10 text-white border border-white/15 hover:bg-white/18 hover:border-white/25 active:bg-white/8 focus-visible:outline-white',
+        primary: 'bg-white text-black hover:bg-white/90 shadow-sm active:scale-[0.98]',
+        secondary: 'bg-zinc-800/60 text-white hover:bg-zinc-800/80 active:scale-[0.98]',
+        outline: 'border border-white/10 bg-transparent text-white hover:bg-white/5 active:scale-[0.98]',
+        ghost: 'bg-transparent hover:bg-white/5 text-white',
+        destructive: 'bg-red-500/10 text-red-400 hover:bg-red-500/20 active:scale-[0.98]',
+        link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-9 px-4 py-2 has-[>svg]:px-3',
-        sm: 'h-8 gap-1.5 px-3 has-[>svg]:px-2.5',
-        lg: 'h-10 px-6 has-[>svg]:px-4',
+        default: 'h-9 px-4 py-2',
+        sm: 'h-8 px-3 text-xs',
+        lg: 'h-10 px-6 text-base',
         icon: 'size-9',
-        'icon-sm': 'size-8',
-        'icon-lg': 'size-10',
       },
     },
     defaultVariants: {
-      variant: 'secondary',
+      variant: 'primary',
       size: 'default',
     },
   },

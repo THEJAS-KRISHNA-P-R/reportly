@@ -21,10 +21,10 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { useAgencyStore } from '@/lib/store/agencyStore';
 import { AgencyBranding } from '@/types/report';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { Scaffold } from '@/components/layout/Scaffold';
 
 export default function CustomizePage() {
   const [activeTab, setActiveTab] = useState('branding');
@@ -152,11 +152,11 @@ export default function CustomizePage() {
   };
 
   const tabs = [
-    { id: 'branding', icon: Palette, label: 'Identity \u0026 Style' },
-    { id: 'watermark', icon: Droplets, label: 'Digital Security' },
-    { id: 'layout', icon: LayoutTemplate, label: 'Visual Hierarchy' },
-    { id: 'sections', icon: Layers, label: 'Metric Modules' },
-    { id: 'email', icon: Mail, label: 'Delivery Node' },
+    { id: 'branding', icon: Palette, label: 'Identity & Style' },
+    { id: 'watermark', icon: Droplets, label: 'Security' },
+    { id: 'layout', icon: LayoutTemplate, label: 'Layout' },
+    { id: 'sections', icon: Layers, label: 'Modules' },
+    { id: 'email', icon: Mail, label: 'Delivery' },
   ];
 
   const logoPositions = [
@@ -168,154 +168,139 @@ export default function CustomizePage() {
   ];
 
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="flex flex-col items-center gap-2">
-        <div className="w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin" />
-        <p className="text-[12px] font-bold uppercase tracking-widest text-slate-400">Syncing Profile...</p>
-      </div>
-    </div>
+  const actions = (
+    <Button
+      onClick={handleSave}
+      disabled={saving}
+      className="h-9 px-4 font-bold shadow-sm flex items-center gap-2"
+    >
+      {saving ? <RotateCcw size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+      {saving ? 'Syncing...' : 'Save Configuration'}
+    </Button>
   );
 
   return (
-    <div className="flex flex-col min-h-full xl:flex-row gap-8 pb-10 animate-fade-in">
-      <div className="flex-1">
-        <div className="max-w-4xl mx-auto">
-          {/* Header Action Bar */}
-          <Card className="mb-8 border-white/5 bg-zinc-900/60 shadow-sm overflow-hidden">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight text-foreground">Customization Command</h1>
-                <p className="text-sm font-medium text-foreground-muted mt-1">
-                  Establish high-density branding protocols across all client nodes.
-                </p>
-              </div>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="h-10 px-6 rounded-lg bg-primary text-sm font-semibold shadow-sm text-primary-foreground transition-all hover:opacity-90 flex items-center gap-2"
-              >
-                {saving ? <RotateCcw size={16} className="animate-spin" /> : <Settings2 size={16} />}
-                {saving ? 'Synchronizing...' : 'Save Configuration'}
-              </Button>
-            </CardContent>
-          </Card>
+    <Scaffold
+      title="Customize"
+      description="Configure your agency's branding, report layout, and delivery settings."
+      actions={actions}
+    >
+      <div className="flex flex-col xl:flex-row gap-8">
+        {/* Left: Navigation & Forms */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Sub-navigation */}
+            <div className="w-full md:w-48 shrink-0">
+              <nav className="flex flex-col gap-0.5 sticky top-6">
+                {tabs.map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-all text-left",
+                        isActive 
+                          ? "bg-surface-200 text-foreground" 
+                          : "text-foreground-muted hover:text-foreground hover:bg-surface-100"
+                      )}
+                    >
+                      <Icon size={14} className={cn("shrink-0", isActive ? "text-foreground" : "text-foreground-subtle")} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
 
-          <div className="flex gap-2 p-1.5 bg-zinc-900/80 backdrop-blur-md rounded-xl mb-8 w-fit overflow-x-auto no-scrollbar border border-white/5 shadow-lg">
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "flex items-center gap-2.5 px-5 py-2.5 text-[13px] font-semibold rounded-lg transition-all whitespace-nowrap",
-                    isActive 
-                      ? "bg-white text-black shadow-sm" 
-                      : "text-zinc-400 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <Icon size={14} className={isActive ? 'text-primary' : ''} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="space-y-6">
-            {activeTab === 'branding' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* Logo Section */}
-                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
-                  <CardContent className="p-8">
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-                         <ImageIcon size={18} className="text-zinc-400" />
-                         Agency Signature
-                      </h3>
+            {/* Form Area */}
+            <div className="flex-1 space-y-10 min-w-0">
+              {activeTab === 'branding' && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Logo Section */}
+                  <section className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-medium text-foreground">Logo</h3>
+                      <p className="text-sm text-foreground-muted">Upload your organization logo for report headers.</p>
                     </div>
-                    <div className="flex flex-col md:flex-row gap-8 items-start">
-                       <div 
-                         className="w-44 h-44 rounded-xl border border-white/5 bg-zinc-900 flex flex-col items-center justify-center overflow-hidden relative group cursor-pointer transition-all hover:bg-zinc-800"
-                         onClick={() => fileInputRef.current?.click()}
-                       >
-                         {brand.logo_url ? (
-                           <Image src={brand.logo_url} alt="Logo" fill className="object-contain p-6" />
-                         ) : (
-                           <div className="flex flex-col items-center text-foreground-muted">
-                             <Upload size={24} className="mb-2" />
-                             <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">Select Signal</span>
-                           </div>
-                         )}
-                         {uploading && (
-                           <div className="absolute inset-0 bg-background/80 backdrop-blur-md flex items-center justify-center">
-                              <RotateCcw size={20} className="animate-spin text-foreground" />
-                           </div>
-                         )}
-                       </div>
-                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
-
-                       <div className="flex-1 space-y-6">
-                          <div className="grid grid-cols-1 gap-4">
-                            <div className="space-y-3">
-                               <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Logo Alignment Grid</label>
-                               <div className="flex flex-wrap gap-2">
-                                 {logoPositions.map(pos => (
-                                   <button
-                                     key={pos.id}
-                                     onClick={() => setBrand({ ...brand, logo_position: pos.id })}
-                                     className={cn(
-                                       "px-4 py-2 text-[11px] font-bold rounded-lg border transition-all",
-                                       brand.logo_position === pos.id 
-                                         ? "bg-white text-black border-white shadow-sm" 
-                                         : "bg-zinc-900 text-zinc-400 border-transparent hover:border-white/10 hover:bg-zinc-800"
-                                     )}
-                                   >
-                                     {pos.label}
-                                   </button>
-                                 ))}
-                               </div>
+                    
+                    <div className="bg-white border border-border rounded-xl p-6 md:p-8">
+                      <div className="flex flex-col sm:flex-row gap-8 items-start">
+                        <div 
+                          className="w-40 h-40 shrink-0 rounded-xl border border-border bg-surface-200 flex flex-col items-center justify-center overflow-hidden relative group cursor-pointer transition-all hover:bg-surface-300 shadow-sm"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          {brand.logo_url ? (
+                            <Image src={brand.logo_url} alt="Logo" fill className="object-contain p-6" />
+                          ) : (
+                            <div className="flex flex-col items-center text-slate-400">
+                              <Upload size={24} className="mb-2" />
+                              <span className="text-[10px] font-bold uppercase tracking-widest">Upload Logo</span>
                             </div>
-                            <div className="bg-zinc-900/40 rounded-lg p-4 border border-white/5">
-                               <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mb-1.5 opacity-60">Specifications</p>
-                               <p className="text-[12px] text-foreground-muted leading-relaxed font-medium">
-                                 SVG or high-resolution PNG is mandatory for enterprise-grade PDF rendering. 
-                                 Recommended maximum height: 80px.
-                               </p>
+                          )}
+                          {uploading && (
+                            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                               <RotateCcw size={20} className="animate-spin text-slate-900" />
+                            </div>
+                          )}
+                        </div>
+                        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+
+                        <div className="flex-1 space-y-6 w-full">
+                          <div className="space-y-4">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Logo Placement</label>
+                            <div className="flex flex-wrap gap-2">
+                              {logoPositions.map(pos => (
+                                <button
+                                  key={pos.id}
+                                  onClick={() => setBrand({ ...brand, logo_position: pos.id })}
+                                  className={cn(
+                                    "px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all",
+                                    brand.logo_position === pos.id 
+                                      ? "bg-slate-900 text-white border-slate-900 shadow-sm" 
+                                      : "bg-white text-slate-600 border-border hover:border-slate-400"
+                                  )}
+                                >
+                                  {pos.label}
+                                </button>
+                              ))}
                             </div>
                           </div>
-                       </div>
+                          <div className="bg-slate-50 rounded-lg p-4 border border-border text-[12px] text-slate-500 leading-relaxed font-medium">
+                            Use high-resolution transparent PNG or SVG for optimal quality.
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </section>
 
-                {/* Colors Section */}
-                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
-                  <CardContent className="p-8">
-                    <div className="flex items-center justify-between mb-8">
-                      <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-                         <Palette size={18} className="text-foreground-muted" />
-                         Brand Chromatics
-                      </h3>
+                  {/* Colors Section */}
+                  <section className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-base font-medium text-foreground">Colors</h3>
+                        <p className="text-sm text-foreground-muted">Primary and accent colors for document styling.</p>
+                      </div>
                       <button 
                         onClick={suggestAccent}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-200 text-foreground text-[10px] font-medium uppercase tracking-wider hover:bg-surface-300 transition-all border border-border"
                       >
                         <Sparkles size={12} />
-                        Magic Contrast
+                        Optimize
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {[
                         { key: 'primary', label: 'Primary Brand' },
-                        { key: 'secondary', label: 'Contrast Layer' },
-                        { key: 'accent', label: 'Action Highlight' }
+                        { key: 'secondary', label: 'Canvas Layer' },
+                        { key: 'accent', label: 'Highlight' }
                       ].map(type => (
-                        <div key={type.key} className="space-y-3">
-                          <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">{type.label}</label>
-                          <div className="flex items-center gap-3 p-1.5 pl-4 rounded-lg border border-white/5 bg-zinc-900 focus-within:bg-zinc-800 focus-within:border-white/10 transition-all">
-                            <div className="relative w-8 h-8 rounded border border-white/10 overflow-hidden">
+                        <div key={type.key} className="bg-surface-100 border border-border rounded-xl p-4 space-y-3">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{type.label}</label>
+                          <div className="flex items-center gap-3 p-1.5 rounded-lg border border-border bg-white shadow-sm focus-within:ring-2 focus-within:ring-slate-900/5 transition-all">
+                            <div className="relative w-8 h-8 rounded border border-border overflow-hidden shrink-0">
                               <input
                                 type="color"
                                 value={(brand as any)[`${type.key}_color`] || '#000000'}
@@ -323,278 +308,199 @@ export default function CustomizePage() {
                                 className="absolute -inset-4 w-[200%] h-[200%] cursor-pointer border-none p-0 bg-transparent"
                               />
                             </div>
-                             <input
+                            <input
                               type="text"
                               value={(brand as any)[`${type.key}_color`] || '#000000'}
                               onChange={(e) => handleColorChange(type.key as any, e.target.value.toUpperCase())}
-                              className="flex-1 bg-transparent border-none text-[13px] font-mono font-bold uppercase focus:ring-0 p-0 text-foreground"
+                              className="flex-1 bg-transparent border-none text-[13px] font-mono font-bold uppercase focus:ring-0 p-0 text-slate-900"
                             />
                           </div>
                         </div>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  </section>
 
-                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
-                  <CardContent className="p-8">
-                    <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-6">
-                       <Type size={18} className="text-foreground-muted" />
-                       Typography & Standards
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <section className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-medium text-foreground">Typography</h3>
+                      <p className="text-sm text-foreground-muted">Configure global document fonts and attribution.</p>
+                    </div>
+                    <div className="bg-white border border-border rounded-xl p-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
                       <div className="space-y-3">
-                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Report Font Engine</label>
-                          <select
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Report Font Engine</label>
+                        <select
                           value={brand.report_font || 'Inter'}
                           onChange={(e) => setBrand({ ...brand, report_font: e.target.value })}
-                          className="w-full h-11 px-4 rounded-lg border border-white/5 text-[13px] font-semibold bg-zinc-900 focus:bg-zinc-800 focus:border-white/10 outline-none transition-all appearance-none cursor-pointer text-foreground"
+                          className="w-full h-10 px-4 rounded-lg border border-border text-[13px] font-semibold bg-white focus:ring-2 focus:ring-slate-900/5 outline-none transition-all cursor-pointer text-slate-900"
                         >
                           <option value="Inter">Inter (High-Density Baseline)</option>
                           <option value="Helvetica">Helvetica (Standard Enterprise)</option>
                           <option value="Georgia">Georgia (Classic Narrative)</option>
                           <option value="Playfair Display">Playfair (Premium Executive)</option>
-                          <option value="Roboto">Roboto (Technical Grade)</option>
                         </select>
                       </div>
                       
-                      <div className="flex items-center justify-between p-5 rounded-lg bg-zinc-900/60 border border-white/5 self-end">
+                      <div className="flex items-center justify-between p-3.5 px-4 rounded-lg bg-white border border-border shadow-sm">
                         <div className="space-y-0.5">
-                          <p className="text-sm font-semibold text-foreground">White-Label Status</p>
-                          <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">Remove Attribution</p>
+                          <p className="text-sm font-semibold text-slate-900">White-Label Mode</p>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60 text-[8px]">Remove Attribution</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input type="checkbox" className="sr-only peer" checked={brand.show_powered_by} onChange={(e) => setBrand({...brand, show_powered_by: e.target.checked})} />
-                          <div className="w-10 h-5.5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-950 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-transparent after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-white"></div>
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                         </label>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </section>
+                </div>
+              )}
 
-            {activeTab === 'watermark' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
-                  <CardContent className="p-8">
-                     <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-2">
-                       <Droplets size={18} className="text-foreground-muted" />
-                       Digital Asset Security
-                    </h3>
-                    <p className="text-[13px] font-medium text-foreground-muted mb-8 border-b border-white/5 pb-4">
-                      Protect enterprise intellectual property with custom watermark overlays.
-                    </p>
+              {activeTab === 'watermark' && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <section className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-medium text-foreground">Watermark</h3>
+                      <p className="text-sm text-foreground-muted">Protect intellectual property with custom overlays.</p>
+                    </div>
 
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between p-5 rounded-lg bg-zinc-900/60 border border-white/5">
-                         <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-zinc-900 shadow-sm border border-white/5 text-foreground rounded-lg">
-                               <CheckCircle2 size={18} />
-                            </div>
-                            <div className="space-y-0.5">
-                               <p className="text-sm font-semibold text-foreground">Enable Watermark Policy</p>
-                               <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest opacity-60">Global overlay protection</p>
-                            </div>
-                         </div>
-                         <label className="relative inline-flex items-center cursor-pointer">
+                    <div className="bg-white border border-border rounded-xl p-6 space-y-6">
+                      <div className="flex items-center justify-between p-4 px-5 rounded-lg bg-white border border-border shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-slate-50 border border-border text-slate-600 rounded-lg shrink-0">
+                            <Droplets size={18} />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-semibold text-slate-900">Enable Watermark Policy</p>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Global overlay protection</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
                           <input type="checkbox" className="sr-only peer" checked={brand.watermark_enabled} onChange={(e) => setBrand({...brand, watermark_enabled: e.target.checked})} />
-                          <div className="w-10 h-5.5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-950 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-transparent after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-white"></div>
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                         </label>
                       </div>
 
                       <div className="space-y-3">
-                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Policy Identifier (Text)</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Watermark Signal (Text)</label>
                         <Input
                           placeholder="CONFIDENTIAL"
                           value={brand.watermark_text || ''}
                           onChange={(e) => setBrand({ ...brand, watermark_text: e.target.value })}
-                          className="h-11 px-5 text-[13px] font-semibold bg-zinc-900 border-white/5 focus:bg-zinc-800 focus:border-white/10 transition-all"
+                          className="h-10 px-4 text-sm font-medium bg-white border-border focus:ring-1 focus:ring-slate-900/5 transition-all text-slate-900"
                         />
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </section>
+                </div>
+              )}
 
-            {activeTab === 'email' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                 <Card className="border-white/5 bg-zinc-900/60 shadow-sm h-fit">
-                    <CardContent className="p-8">
-                      <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-6">
-                        <Mail size={18} className="text-foreground-muted" />
-                        Delivery Node Protocol
-                      </h3>
-                      
-                      <div className="space-y-6">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">HTML Signal Template</label>
-                          <textarea
-                            value={brand.email_html || ''}
-                            onChange={(e) => setBrand({ ...brand, email_html: e.target.value })}
-                            className="w-full h-48 px-4 py-3 rounded-lg border border-white/5 text-[12px] font-mono focus:bg-zinc-800 focus:border-white/10 outline-none transition-all resize-none bg-zinc-900 text-foreground"
-                          />
-                        </div>
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Global Style CSS</label>
-                          <textarea
-                            value={brand.email_css || ''}
-                            onChange={(e) => setBrand({ ...brand, email_css: e.target.value })}
-                            className="w-full h-32 px-4 py-3 rounded-lg border border-white/5 text-[12px] font-mono focus:bg-zinc-800 focus:border-white/10 outline-none transition-all resize-none bg-zinc-900 text-foreground"
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                 </Card>
-
-                 <div className="bg-foreground rounded-[32px] border border-white/5 p-5 shadow-2xl flex flex-col min-h-[520px]">
-                    <div className="flex items-center justify-between px-3 mb-6">
-                       <div className="flex items-center gap-3">
-                          <Eye size={14} className="text-background/40" />
-                          <span className="text-[11px] font-bold text-background/40 uppercase tracking-widest">Node Rendering Engine</span>
-                       </div>
-                       <div className="flex gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-background/5" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-background/5" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-background/5" />
-                       </div>
-                    </div>
-                    <div className="flex-1 rounded-2xl bg-background overflow-hidden border border-background/[0.08] shadow-inner">
-                       <iframe
-                         title="Email Preview"
-                         srcDoc={`<html><head><style>${brand.email_css}</style></head><body>${brand.email_html}</body></html>`}
-                         className="w-full h-full border-none"
-                       />
-                    </div>
-                    <div className="mt-5 p-4 bg-background/5 rounded-2xl border border-background/[0.05]">
-                       <p className="text-[10px] font-bold text-background/40 uppercase tracking-widest mb-2 flex items-center gap-2">
-                         <Sparkles size={12} /> Macro Injection Logic
-                       </p>
-                       <p className="text-[11px] text-background/60 font-medium leading-relaxed">
-                         Integrate dynamic data using <code className="text-background/90 font-bold">{"{{client_name}}"}</code>, 
-                         <code className="text-background/90 font-bold">{"{{period}}"}</code>, and 
-                         <code className="text-background/90 font-bold">{"{{report_link}}"}</code> macros.
-                       </p>
-                    </div>
-                 </div>
-              </div>
-            )}
-
-            {activeTab === 'layout' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
-                  <CardContent className="p-8">
-                     <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-2">
-                       <LayoutTemplate size={18} className="text-foreground-muted" />
-                       Enterprise Hierarchy Grid
-                    </h3>
-                    <p className="text-[13px] font-medium text-foreground-muted mb-8 border-b border-white/5 pb-4">
-                      Define the structural DNA for generated PDF intelligence nodes.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-                      {[
-                        { id: 'standard', name: 'Strategic Full', desc: 'Granular, multi-page deep dive with nested analytics.' },
-                        { id: 'compact', name: 'Velocity Modern', desc: 'High-density metrics optimized for executive speed.' },
-                        { id: 'executive', name: 'Decision Brief', desc: 'Single-page highlight reel focusing on bottom-line KPIs.' }
-                      ].map(layout => (
-                        <button
-                          key={layout.id}
-                          onClick={() => setBrand({ ...brand, report_layout: layout.id as any })}
-                          className={cn(
-                            "flex flex-col text-left p-5 rounded-xl border transition-all",
-                            brand.report_layout === layout.id 
-                              ? "border-white bg-white text-black shadow-sm" 
-                              : "border-white/5 bg-zinc-900 hover:bg-zinc-800"
-                          )}
-                        >
-                          <div className={cn(
-                             "w-10 h-10 rounded-lg flex items-center justify-center mb-5",
-                             brand.report_layout === layout.id ? "bg-foreground text-background shadow-md" : "bg-zinc-900 text-foreground-muted opacity-40"
-                          )}>
-                             <LayoutTemplate size={18} />
-                          </div>
-                          <p className="text-sm font-bold text-foreground">{layout.name}</p>
-                          <p className="text-[11px] font-medium text-foreground-muted mt-2 leading-relaxed opacity-60">{layout.desc}</p>
-                        </button>
-                      ))}
+              {activeTab === 'layout' && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <section className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-medium text-foreground">Layout</h3>
+                      <p className="text-sm text-foreground-muted">Define the structural baseline for generated reports.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-white/5 pt-8">
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Global Font Dimension</label>
-                         <select
-                          value={brand.report_font_size || 'medium'}
-                          onChange={(e) => setBrand({ ...brand, report_font_size: e.target.value })}
-                          className="w-full h-11 px-4 rounded-lg border border-white/5 text-[13px] font-semibold bg-zinc-900 focus:bg-zinc-800 focus:border-white/10 outline-none transition-all appearance-none cursor-pointer text-foreground"
-                        >
-                          <option value="small">Small (Extreme Density)</option>
-                          <option value="medium">Medium (Standard Enterprise)</option>
-                          <option value="large">Large (High Accessibility)</option>
-                        </select>
+                    <div className="bg-white border border-border rounded-xl p-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                        {[
+                          { id: 'standard', name: 'Strategic', desc: 'Granular, multi-page dive.' },
+                          { id: 'compact', name: 'Velocity', desc: 'High-density, rapid speed.' },
+                          { id: 'executive', name: 'Decision', desc: 'Single-page highlight reel.' }
+                        ].map(layout => (
+                          <button
+                            key={layout.id}
+                            onClick={() => setBrand({ ...brand, report_layout: layout.id as any })}
+                            className={cn(
+                              "flex flex-col text-left p-4 rounded-xl border transition-all",
+                              brand.report_layout === layout.id 
+                                ? "border-slate-900 bg-white text-slate-900 shadow-sm" 
+                                : "border-border bg-white text-slate-500 hover:border-slate-400"
+                            )}
+                          >
+                            <div className={cn(
+                               "w-8 h-8 rounded-lg flex items-center justify-center mb-4 transition-colors",
+                               brand.report_layout === layout.id ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-400"
+                            )}>
+                               <LayoutTemplate size={16} />
+                            </div>
+                            <p className="text-xs font-bold">{layout.name}</p>
+                            <p className="text-[10px] font-semibold mt-1 opacity-60 leading-normal">{layout.desc}</p>
+                          </button>
+                        ))}
                       </div>
 
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-bold text-foreground-muted uppercase tracking-wider">Metric Information Density</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-border">
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Global Scaling</label>
                           <select
-                          value={brand.metric_density || 'standard'}
-                          onChange={(e) => setBrand({ ...brand, metric_density: e.target.value })}
-                          className="w-full h-11 px-4 rounded-lg border border-white/5 text-[13px] font-semibold bg-zinc-900 focus:bg-zinc-800 focus:border-white/10 outline-none transition-all appearance-none cursor-pointer text-foreground"
-                        >
-                          <option value="standard">Standard (Strategic)</option>
-                          <option value="high">High (Data Native)</option>
-                        </select>
+                            value={brand.report_font_size || 'medium'}
+                            onChange={(e) => setBrand({ ...brand, report_font_size: e.target.value })}
+                            className="w-full h-10 px-3 rounded-lg border border-border text-xs font-bold bg-white outline-none cursor-pointer text-slate-900"
+                          >
+                            <option value="small">Small (Extreme Density)</option>
+                            <option value="medium">Medium (Standard)</option>
+                            <option value="large">Large (High Access)</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Information Density</label>
+                          <select
+                            value={brand.metric_density || 'standard'}
+                            onChange={(e) => setBrand({ ...brand, metric_density: e.target.value })}
+                            className="w-full h-10 px-3 rounded-lg border border-border text-xs font-bold bg-white outline-none cursor-pointer text-slate-900"
+                          >
+                            <option value="standard">Standard (Strategic)</option>
+                            <option value="high">High (Data Native)</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </section>
+                </div>
+              )}
 
-            {activeTab === 'sections' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <Card className="border-white/5 bg-zinc-900/60 shadow-sm">
-                  <CardContent className="p-8">
-                     <h3 className="text-sm font-bold flex items-center gap-2 text-foreground mb-2">
-                       <Layers size={18} className="text-foreground-muted" />
-                       Active Module Registry
-                    </h3>
-                    <p className="text-[13px] font-medium text-zinc-400 mb-8 border-b border-white/5 pb-4">
-                      Toggle and initialize specific analytics modules within the generation pipeline.
-                    </p>
+              {activeTab === 'sections' && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <section className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-medium text-foreground">Modules</h3>
+                      <p className="text-sm text-foreground-muted">Toggle active sections within the generation pipeline.</p>
+                    </div>
 
-                    <div className="space-y-3">
+                    <div className="bg-white border border-border rounded-xl p-6 space-y-3">
                       {[
-                        { id: 'cover', name: 'Identity Header', desc: 'Agency branding, client credentials, and period metadata.' },
-                        { id: 'summary', name: 'Strategic Brief', desc: 'AI-distilled performance narrative and primary KPIs.' },
-                        { id: 'google_ads', name: 'Search Engine Intel', desc: 'Google Ads efficiency, search intent, and conversion data.' },
-                        { id: 'meta_ads', name: 'Social Graph Analysis', desc: 'Meta Ads creative density and cross-platform spend.' },
-                        { id: 'ga4', name: 'User Flow Analytics', desc: 'Traffic origin, site interaction density, and GA4 events.' },
-                        { id: 'conclusion', name: 'Tactical Roadmap', desc: 'Strategic recommendations and upcoming period objectives.' }
+                        { id: 'cover', name: 'Identity Header', desc: 'Agency branding and period metadata.' },
+                        { id: 'summary', name: 'Strategic Brief', desc: 'AI-distilled performance narrative.' },
+                        { id: 'google_ads', name: 'Search Engine Intel', desc: 'Google Ads efficiency metrics.' },
+                        { id: 'meta_ads', name: 'Social Graph Analysis', desc: 'Meta Ads creative density.' },
+                        { id: 'ga4', name: 'User Flow Analytics', desc: 'Traffic origin and site density.' },
+                        { id: 'conclusion', name: 'Tactical Roadmap', desc: 'Strategic recommendations.' }
                       ].map(section => {
                         const isActive = (brand.pdf_sections || []).includes(section.id as any);
                         return (
                           <div 
                             key={section.id}
                             className={cn(
-                              "flex items-center justify-between p-5 rounded-xl border transition-all",
-                              isActive ? "bg-zinc-900/80 border-white/10 shadow-sm" : "bg-zinc-900/20 border-white/5 opacity-40 hover:opacity-100"
+                              "flex items-center justify-between p-4 px-5 rounded-xl border transition-all",
+                              isActive ? "bg-white border-slate-900 shadow-sm" : "bg-white/50 border-border opacity-60 hover:opacity-100"
                             )}
                           >
-                            <div className="flex items-center gap-5">
+                            <div className="flex items-center gap-4">
                               <div className={cn(
-                                 "w-10 h-10 rounded-lg flex items-center justify-center",
-                                 isActive ? "bg-white text-black shadow-md" : "bg-zinc-900 text-zinc-400/40"
+                                 "w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+                                 isActive ? "bg-slate-900 text-white shadow-sm" : "bg-slate-50 text-slate-400"
                               )}>
-                                 <Layers size={18} />
+                                 <Layers size={16} />
                               </div>
-                              <div className="space-y-0.5">
-                                 <p className="text-sm font-bold text-foreground">{section.name}</p>
-                                 <p className="text-[11px] font-medium text-foreground-muted opacity-60">{section.desc}</p>
+                              <div className="space-y-0.5 min-w-0">
+                                 <p className="text-xs font-bold text-slate-900 truncate">{section.name}</p>
+                                 <p className="text-[10px] font-semibold text-slate-500 truncate">{section.desc}</p>
                               </div>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
+                            <label className="relative inline-flex items-center cursor-pointer ml-4">
                               <input 
                                 type="checkbox" 
                                 className="sr-only peer" 
@@ -608,113 +514,153 @@ export default function CustomizePage() {
                                   }
                                 }} 
                               />
-                              <div className="w-10 h-5.5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-950 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-transparent after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-white"></div>
+                              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                             </label>
                           </div>
                         );
                       })}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+                  </section>
+                </div>
+              )}
 
-      {/* RIGHT PANEL: Report View Preview */}
-      <Card className="hidden xl:flex flex-col w-[390px] border-white/5 bg-zinc-950 self-start sticky top-6 shadow-2xl shadow-white/5 overflow-hidden">
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-zinc-900/60">
-          <div className="space-y-1">
-            <h3 className="text-[15px] font-bold text-foreground leading-none">Global Preview</h3>
-            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2 opacity-60">
-               <span className="w-2 h-2 rounded-full bg-green-400 shadow-sm shadow-green-400/20 animate-pulse" />
-               Logic Rendering
-            </p>
-          </div>
-          <div className="p-2.5 bg-zinc-900 border border-white/10 rounded-lg shadow-sm text-zinc-400">
-             <Layout size={18} />
+              {activeTab === 'email' && (
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <section className="space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-base font-medium text-foreground">Delivery</h3>
+                      <p className="text-sm text-foreground-muted">Configure outbound email templates and styling.</p>
+                    </div>
+
+                    <div className="bg-white border border-border rounded-xl p-6 gap-6 grid grid-cols-1">
+                        <div className="space-y-4">
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">HTML Template</label>
+                            <textarea
+                              value={brand.email_html || ''}
+                              onChange={(e) => setBrand({ ...brand, email_html: e.target.value })}
+                              className="w-full h-48 px-4 py-3 rounded-lg border border-border text-[12px] font-mono focus:ring-1 focus:ring-slate-900/5 outline-none transition-all resize-none bg-white text-slate-900 shadow-sm"
+                            />
+                          </div>
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CSS Styles</label>
+                            <textarea
+                              value={brand.email_css || ''}
+                              onChange={(e) => setBrand({ ...brand, email_css: e.target.value })}
+                              className="w-full h-32 px-4 py-3 rounded-lg border border-border text-[12px] font-mono focus:ring-1 focus:ring-slate-900/5 outline-none transition-all resize-none bg-white text-slate-900 shadow-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-900 rounded-2xl p-6 shadow-xl flex flex-col min-h-[400px]">
+                           <div className="flex items-center justify-between mb-4">
+                              <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                                <Eye size={12} /> Preview
+                              </span>
+                              <div className="flex gap-1">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                                 <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                                 <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                              </div>
+                           </div>
+                           <div className="flex-1 rounded-xl bg-white overflow-hidden shadow-inner p-4 text-[13px]">
+                              <iframe
+                                title="Email Preview"
+                                srcDoc={`<html><head><style>${brand.email_css}</style></head><body>${brand.email_html}</body></html>`}
+                                className="w-full h-full border-none"
+                              />
+                           </div>
+                        </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        
-        <CardContent className="flex-1 overflow-y-auto p-8 bg-zinc-900/30">
-          <div 
-            className="w-full aspect-[1/1.4] rounded-sm shadow-2xl relative overflow-hidden flex flex-col bg-white border border-white/10"
-            style={{ fontFamily: brand.report_font || 'Inter' }}
-          >
-             {/* Report Cover Preview Frame */}
-             <div className="h-1/3 p-7 flex flex-col justify-end relative" style={{ background: brand.primary_color || '#0f172a', color: brand.secondary_color || '#ffffff' }}>
-                {/* Logo in Preview */}
+
+        {/* Right: Live Preview */}
+        <aside className="hidden xl:block w-[400px] shrink-0">
+          <div className="sticky top-6 space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-foreground">Report Preview</h3>
+              <div className="flex items-center gap-2 px-2 py-1 rounded bg-surface-200 border border-border text-[10px] font-medium text-foreground-muted uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                Live
+              </div>
+            </div>
+
+            <div 
+              className="w-full aspect-[1/1.414] bg-white border border-border-strong shadow-2xl rounded-sm overflow-hidden flex flex-col transition-all duration-500"
+              style={{ fontFamily: brand.report_font || 'Inter' }}
+            >
+              {/* Report Header Preview */}
+              <div 
+                className="h-[35%] p-8 flex flex-col justify-end relative transition-colors duration-500" 
+                style={{ backgroundColor: (brand.primary_color || '#0f172a') as string, color: (brand.secondary_color || '#ffffff') as string }}
+              >
                 <div className={cn(
-                  "absolute p-5",
+                  "absolute p-6",
                   brand.logo_position === 'top-left' ? 'top-0 left-0' :
                   brand.logo_position === 'top-right' ? 'top-0 right-0' :
                   brand.logo_position === 'center' ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' :
                   brand.logo_position === 'bottom-left' ? 'bottom-0 left-0' :
                   brand.logo_position === 'bottom-right' ? 'bottom-0 right-0' : 'top-0 left-0'
                 )}>
-                    {brand.logo_url && <Image src={brand.logo_url} height={28} width={100} className="h-7 w-auto object-contain drop-shadow-sm" alt="Preview logo" />}
+                    {brand.logo_url && <Image src={brand.logo_url} height={20} width={20} className="w-5 h-5 object-contain opacity-40 brightness-0 invert" alt="Brand Logo" />}
                 </div>
 
-                <p className="text-[9px] font-bold tracking-[0.2em] uppercase opacity-60 mb-1.5" style={{ color: brand.accent_color || '#6366f1' }}>Performance Record</p>
-                <h4 className="text-xl font-bold leading-tight tracking-tight">Enterprise Organic Growth Node</h4>
-                <div className="flex items-center gap-2.5 mt-5 opacity-40">
-                   <div className="w-8 h-0.5 rounded-full bg-current" />
-                   <span className="text-[9px] font-bold uppercase tracking-widest">March Phase</span>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] opacity-40 transition-colors" style={{ color: (brand.accent_color || '#000000') as string }}>Insights Report</p>
+                  <h4 className="text-xl font-bold leading-tight">Strategic Growth Node</h4>
+                  <div className="h-0.5 w-12 rounded-full bg-current opacity-20 mt-4" />
                 </div>
-             </div>
-             
-             <div className="flex-1 p-7 flex flex-col gap-5 relative">
-                {/* Watermark in Preview */}
+              </div>
+
+              {/* Report Body Preview */}
+              <div className="flex-1 p-8 relative flex flex-col gap-6">
                 {brand.watermark_enabled && brand.watermark_text && (
-                  <div className="absolute inset-0 flex items-center justify-center rotate-[-35deg] pointer-events-none overflow-hidden pr-10">
-                    <span className="text-2xl font-black text-foreground/[0.03] whitespace-nowrap uppercase tracking-[1em]">
+                  <div className="absolute inset-0 flex items-center justify-center rotate-[-35deg] pointer-events-none opacity-[0.03] select-none">
+                    <span className="text-2xl font-black uppercase tracking-[1em] whitespace-nowrap">
                       {brand.watermark_text}
                     </span>
                   </div>
                 )}
 
-                <div className="space-y-3 opacity-40">
-                  <div className="w-1/3 h-2 rounded-full bg-surface-200" />
-                  <div className="w-full h-1.5 rounded-full bg-surface-100" />
-                  <div className="w-full h-1.5 rounded-full bg-surface-100" />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 mt-5">
-                  <div className="h-20 rounded-xl border border-white/5 p-4 space-y-3 bg-zinc-900/40">
-                     <div className="w-1/2 h-1.5 rounded-full bg-zinc-800" />
-                     <div className="w-3/4 h-3 rounded-full" style={{ background: `${brand.primary_color}15` }} />
-                  </div>
-                  <div className="h-20 rounded-xl border border-white/5 p-4 space-y-3 bg-zinc-900/40">
-                     <div className="w-1/2 h-1.5 rounded-full bg-zinc-800" />
-                     <div className="w-3/4 h-3 rounded-full" style={{ background: `${brand.primary_color}15` }} />
-                  </div>
+                <div className="space-y-3">
+                  <div className="h-2 w-1/3 bg-slate-100 rounded-full" />
+                  <div className="h-1.5 w-full bg-slate-50 rounded-full" />
+                  <div className="h-1.5 w-full bg-slate-50 rounded-full" />
                 </div>
 
-                <div className="mt-auto pt-7 border-t border-white/5">
-                  <div className="flex items-center justify-between opacity-30">
-                     <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded bg-foreground flex items-center justify-center text-[8px] font-bold text-background shadow-sm">R</div>
-                        <span className="text-[8px] font-bold text-foreground-muted tracking-widest uppercase">Global Node</span>
-                     </div>
-                     {brand.show_powered_by && <span className="text-[7px] font-bold text-foreground-muted tracking-tighter">POWERED BY REPORTLY</span>}
-                  </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  {[1, 2].map(i => (
+                    <div key={i} className="h-24 rounded-xl border border-border p-4 space-y-4 bg-slate-50/50">
+                      <div className="h-1.5 w-1/2 bg-slate-200 rounded-full" />
+                      <div className="h-4 w-3/4 rounded-lg bg-current opacity-[0.08]" style={{ backgroundColor: (brand.primary_color || '#000000') as string }} />
+                    </div>
+                  ))}
                 </div>
-             </div>
+
+                <div className="mt-auto pt-6 border-t border-border flex items-center justify-between opacity-30">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded bg-slate-900 flex items-center justify-center text-[8px] font-bold text-white">R</div>
+                    <span className="text-[8px] font-bold tracking-widest uppercase">Entity Node</span>
+                  </div>
+                  {brand.show_powered_by && <span className="text-[6px] font-bold tracking-tighter uppercase">Powered by Reportly</span>}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-xl border border-border bg-surface-100 space-y-3">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Preview Mode</h4>
+              <p className="text-[12px] text-slate-500 font-medium leading-relaxed">
+                Adaptive frame rendering with {brand.report_layout} layout and {brand.report_font} typography engine.
+              </p>
+            </div>
           </div>
-          
-          <div className="mt-8 p-5 bg-zinc-900 rounded-xl border border-white/5">
-             <div className="flex items-center gap-2.5 mb-2.5">
-                <div className="p-1 px-2 bg-white text-black rounded-[4px] text-[9px] font-bold tracking-widest">LOGIC</div>
-                <span className="text-sm font-semibold text-foreground">Adaptive Preview</span>
-             </div>
-             <p className="text-[12px] text-zinc-400 leading-relaxed font-medium opacity-80">
-               This frame renders using your selected font ({brand.report_font}) and hex palette. 
-               Layout scaling is approximated for the high-density grid.
-             </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </aside>
+      </div>
+    </Scaffold>
   );
 }

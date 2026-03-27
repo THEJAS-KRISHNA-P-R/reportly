@@ -1,57 +1,77 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
   FileText, 
-  BarChart3, 
-  Palette, 
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  HelpCircle,
+  BarChart3 as BarChart,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const navItems = [
-  { icon: LayoutDashboard, label: 'Overview',  href: '/dashboard' },
-  { icon: Users,           label: 'Clients',   href: '/clients' },
-  { icon: FileText,        label: 'Reports',   href: '/reports' },
-  { icon: BarChart3,       label: 'Analytics', href: '/analytics' },
-  { icon: Palette,         label: 'Customize', href: '/customize' },
-  { icon: Settings,        label: 'Settings',  href: '/settings' },
-];
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from '@/lib/utils';
+import { useClientStore } from '@/store/client-store';
+import { GLOBAL_NAV_ITEMS, CLIENT_NAV_ITEMS } from '@/config/nav-items';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const { activeClient, setActiveClient } = useClientStore();
+  
+  const navItems = activeClient
+    ? CLIENT_NAV_ITEMS.map(item => ({
+        ...item,
+        href: item.href === '/client' 
+          ? `/client/${activeClient.id}` 
+          : `/client/${activeClient.id}/${item.href.split('/').pop()}`
+      }))
+    : GLOBAL_NAV_ITEMS;
+
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined' && window.innerWidth < 1200) setIsCollapsed(true);
   }, []);
 
-  if (!mounted) return <aside className="w-16 h-screen bg-zinc-950/80 backdrop-blur-md border-r border-white/5" />;
+  useEffect(() => {
+    if (pathname === "/overview") {
+      setActiveClient(null);
+    }
+  }, [pathname, setActiveClient]);
+
+  if (!mounted) return <aside className="w-14 h-screen bg-white border-r border-border" />;
 
   return (
-    <>
-      {/* Mobile Toggle */}
-      <div className="md:hidden fixed top-3 left-3 z-50">
+    <TooltipProvider delayDuration={0}>
+      {/* Mobile Toggle Button */}
+      <div className="md:hidden fixed top-2 left-2 z-[60]">
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-lg bg-background border border-border shadow-sm text-foreground-muted hover:text-foreground"
+          className="p-2 rounded-md bg-white border border-border shadow-sm text-slate-500 hover:text-slate-900"
         >
-          {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
       </div>
 
-      {/* Mobile Overlay */}
+      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div 
@@ -59,87 +79,150 @@ export function Sidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsMobileMenuOpen(false)}
-            className="md:hidden fixed inset-0 bg-foreground/10 backdrop-blur-sm z-40"
+            className="md:hidden fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[50]"
           />
         )}
       </AnimatePresence>
 
-      {/* Sidebar Content */}
       <motion.aside 
         initial={false}
-        animate={{ 
-          width: isCollapsed ? 64 : 240,
-          x: isMobileMenuOpen ? 0 : (typeof window !== 'undefined' && window.innerWidth < 768 ? -240 : 0)
-        }}
         onMouseEnter={() => setIsCollapsed(false)}
         onMouseLeave={() => setIsCollapsed(true)}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        className="h-screen flex flex-col justify-between fixed md:sticky top-0 left-0 bg-zinc-950/80 backdrop-blur-md border-r border-white/5 z-45 overflow-hidden group/sidebar"
+        animate={{ 
+          width: isCollapsed ? 56 : 240,
+          x: isMobileMenuOpen ? 0 : (typeof window !== 'undefined' && window.innerWidth < 768 ? -240 : 0)
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className={cn(
+          "flex flex-col border-r border-border bg-white transition-all duration-200 ease-in-out z-40 shrink-0 shadow-sm",
+          isCollapsed ? "w-14" : "w-60",
+          "fixed md:sticky top-0 h-screen",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
       >
-        <div className="flex flex-col flex-1 p-2">
-          {/* Brand/Logo */}
-          <div className="flex items-center h-12 px-2 mb-6 mt-1">
-            <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 shrink-0 rounded-lg bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold shadow-sm">
-                {user?.agency_name?.[0]?.toUpperCase() || 'R'}
-              </div>
-              {!isCollapsed && (
-                <motion.span 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="font-semibold text-foreground tracking-tight truncate"
-                >
-                  {user?.agency_name || 'Reportly'}
-                </motion.span>
-              )}
-            </Link>
-          </div>
+        <div className="flex flex-col h-full bg-white">
+        {/* Navigation Section */}
+        <div className="flex-1 flex flex-col p-2 pt-4 space-y-1 overflow-y-auto no-scrollbar relative">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
 
-          {/* Navigation */}
-          <nav className="flex flex-col gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            const content = (
+              <Link
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 h-9 rounded-md transition-all duration-200 group relative",
+                  isCollapsed ? "justify-center px-0" : "px-2.5",
+                  isActive 
+                    ? "bg-surface-200 text-foreground" 
+                    : "text-foreground-muted hover:text-foreground hover:bg-surface-200/50"
+                )}
+              >
+                <Icon 
+                  size={16} 
+                  className={cn(
+                    "shrink-0 transition-colors duration-200",
+                    isActive ? "text-foreground" : "text-foreground-muted group-hover:text-foreground"
+                  )} 
+                />
+                {!isCollapsed && (
+                  <motion.span 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-sm font-medium truncate"
+                  >
+                    {item.label}
+                  </motion.span>
+                )}
+                {isActive && (
+                  <motion.div 
+                    layoutId="sidebar-active-pill"
+                    className="absolute left-0 w-1 h-4 bg-primary rounded-r-full"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </Link>
+            );
 
+            if (isCollapsed) {
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  title={isCollapsed ? item.label : ''}
-                  className={`flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition-all duration-200 relative ${
-                    isActive 
-                      ? 'bg-white text-black shadow-sm' 
-                      : 'text-zinc-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <Icon size={18} className="shrink-0" />
-                  {!isCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="truncate"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </Link>
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    {content}
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-slate-900 text-white border-none font-medium text-xs py-1.5 px-3">
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
               );
-            })}
-          </nav>
+            }
+
+            return <div key={item.href}>{content}</div>;
+          })}
         </div>
 
-        {/* Action Area/User */}
-        <div className="p-2 border-t border-white/5 mt-auto">
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 px-2 py-2 w-full rounded-lg text-sm font-medium text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+        {/* Sidebar Footer */}
+        <div className="p-2 border-t border-border space-y-1">
+          <Tooltip key="help">
+            <TooltipTrigger asChild>
+              <button 
+                className={cn(
+                  "flex items-center gap-3 h-9 w-full rounded-md text-foreground-muted hover:text-foreground hover:bg-surface-200 transition-all",
+                  isCollapsed ? "justify-center px-0" : "px-2.5"
+                )}
+              >
+                <HelpCircle size={16} className="shrink-0" />
+                {!isCollapsed && (
+                  <motion.span 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-sm font-medium"
+                  >
+                    Support
+                  </motion.span>
+                )}
+              </button>
+            </TooltipTrigger>
+            {isCollapsed && <TooltipContent side="right">Support</TooltipContent>}
+          </Tooltip>
+
+          <Tooltip key="logout">
+            <TooltipTrigger asChild>
+              <button 
+                onClick={() => logout()}
+                className={cn(
+                  "flex items-center gap-3 h-9 w-full rounded-md text-foreground-muted hover:text-red-600 hover:bg-red-50 transition-all",
+                  isCollapsed ? "justify-center px-0" : "px-2.5"
+                )}
+              >
+                <LogOut size={16} className="shrink-0" />
+                {!isCollapsed && (
+                  <motion.span 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-sm font-medium"
+                  >
+                    Sign Out
+                  </motion.span>
+                )}
+              </button>
+            </TooltipTrigger>
+            {isCollapsed && <TooltipContent side="right">Sign Out</TooltipContent>}
+          </Tooltip>
+
+          <button 
+            className={cn(
+              "flex items-center gap-3 h-9 w-full rounded-md text-foreground-subtle transition-all cursor-default",
+              isCollapsed ? "justify-center px-0" : "px-2.5"
+            )}
           >
-            <LogOut size={18} className="shrink-0" />
-            {!isCollapsed && <span>Sign out</span>}
+            <div className="w-4 h-4 rounded-full bg-surface-200 animate-pulse hidden" />
+            {!isCollapsed && <span className="text-[10px] font-medium uppercase tracking-widest opacity-40">System Active</span>}
           </button>
         </div>
+      </div>
       </motion.aside>
-    </>
+    </TooltipProvider>
   );
 }

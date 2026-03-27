@@ -56,26 +56,22 @@ export function StatsCards({ stats, loading = false }: StatsCardsProps) {
       {items.map((item) => (
         <Card 
           key={item.label} 
-          className={cn(
-            "group transition-all duration-300 hover:border-white/10 bg-zinc-900/60 border-white/5 shadow-sm rounded-xl"
-          )}
+          className="bg-white border border-border rounded-xl transition-all duration-200 shadow-sm hover:border-foreground-subtle group active:scale-[0.98]"
         >
           <CardContent className="p-6">
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <div 
-                  className="w-10 h-10 rounded-lg flex items-center justify-center bg-zinc-900 text-zinc-400 border border-white/5 group-hover:bg-white group-hover:text-black group-hover:border-white transition-colors duration-300"
-                >
-                  {item.icon}
-                </div>
+            <div className="flex flex-col gap-4">
+              <div 
+                className="w-9 h-9 rounded-lg bg-surface-200 text-foreground-muted border border-border flex items-center justify-center transition-colors group-hover:bg-foreground group-hover:text-background shadow-sm"
+              >
+                {item.icon}
               </div>
               
               <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted/60">{item.label}</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-foreground-muted">{item.label}</p>
                 {loading ? (
                   <Skeleton className="h-8 w-24 mt-1" />
                 ) : (
-                  <p className="text-2xl font-bold tracking-tight text-foreground">
+                  <p className="text-2xl font-semibold text-foreground tracking-tight tabular-nums leading-none">
                     {item.value.toLocaleString()}
                   </p>
                 )}

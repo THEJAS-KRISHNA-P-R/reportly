@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { requireSuperAdmin } from '@/lib/security/superAdmin';
 import { createSupabaseServiceClient } from '@/lib/db/client';
 import { apiError, apiOk } from '@/lib/api-contract';

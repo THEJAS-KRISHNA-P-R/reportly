@@ -86,7 +86,7 @@ export function ReportProgressCard({
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {isActive && <Spinner size={18} className="text-indigo-600" />}
+            {isActive && <Spinner size="md" className="text-indigo-600" />}
             {isFailed && <XCircle size={18} className="text-red-500" />}
             {isComplete && <CheckCircle2 size={18} className="text-emerald-500" />}
             <div>

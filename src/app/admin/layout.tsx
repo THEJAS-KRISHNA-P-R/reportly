@@ -49,7 +49,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
-        <aside className={`hidden shrink-0 border-r border-slate-200 bg-white transition-all duration-300 md:flex md:flex-col ${sidebarCollapsed ? 'w-20' : 'w-72'}`}>
+        <aside className={`sticky top-0 h-screen overflow-y-auto hidden shrink-0 border-r border-slate-200 bg-white transition-all duration-300 md:flex md:flex-col ${sidebarCollapsed ? 'w-20' : 'w-72'}`}>
           <div className={`border-b border-slate-200 ${sidebarCollapsed ? 'px-3 py-5' : 'px-6 py-5'}`}>
             <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : ''} gap-3`}>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">

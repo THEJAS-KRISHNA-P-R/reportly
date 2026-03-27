@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Users } from 'lucide-react';
+import { Users, ArrowRight } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -19,15 +19,13 @@ interface ClientsListProps {
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export function ClientsList({ clients = [], loading = false }: ClientsListProps) {
   if (loading) {
     return (
       <div className="flex flex-col gap-3">
         {[...Array(3)].map((_, i) => (
-          <Card key={i} className="shadow-sm border-white/5 bg-zinc-900/60">
+          <Card key={i} className="glass-card">
             <CardContent className="p-5 flex items-center justify-between">
               <div className="flex-1 space-y-2">
                 <Skeleton className="h-5 w-1/3" />
@@ -49,9 +47,9 @@ export function ClientsList({ clients = [], loading = false }: ClientsListProps)
 
   if (!clients || clients.length === 0) {
     return (
-      <Card className="shadow-sm border-dashed border-2 border-white/5 bg-zinc-900/40">
+      <Card className="bg-surface-100 border-dashed border-2 border-border-subtle rounded-xl">
         <CardContent className="flex flex-col items-center gap-4 py-12">
-          <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-400 border border-white/5">
+          <div className="w-12 h-12 rounded-full bg-surface-300 flex items-center justify-center text-foreground-muted border border-white/[0.05]">
             <Users size={24} />
           </div>
           <div className="text-center">
@@ -69,39 +67,39 @@ export function ClientsList({ clients = [], loading = false }: ClientsListProps)
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {clients.map((client) => (
         <Link
           key={client.id}
           href={`/clients/${client.id}`}
           className="group block"
         >
-          <Card className="shadow-sm hover:border-white/20 hover:bg-zinc-900/80 transition-all border-white/5 bg-zinc-900/60">
-            <CardContent className="p-5 flex items-center justify-between">
+          <Card className="bg-white border border-border shadow-sm hover:border-foreground-subtle transition-all duration-200 rounded-xl">
+            <CardContent className="p-4 px-6 flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-6">
-                <h3 className="text-[15px] font-bold text-foreground truncate group-hover:text-primary transition-colors">{client.name}</h3>
+                <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-foreground transition-colors">{client.name}</h3>
                 {client.website && (
-                  <p className="mt-1 text-xs font-medium text-foreground-muted truncate tracking-tight opacity-60">{client.website}</p>
+                  <p className="mt-0.5 text-xs text-foreground-muted truncate tracking-tight">{client.website}</p>
                 )}
               </div>
 
               <div className="flex items-center gap-8">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold tracking-tight text-foreground leading-none">{client.reports_count}</p>
-                  <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mt-1.5 opacity-60">Reports</p>
+                  <p className="text-sm font-semibold tracking-tight text-foreground tabular-nums leading-none">{client.reports_count}</p>
+                  <p className="text-[10px] font-medium text-foreground-muted uppercase tracking-wider mt-1.5">Reports</p>
                 </div>
 
                 {client.last_report_date && (
-                  <div className="text-right hidden md:block pl-8 border-l border-white/5">
-                    <p className="text-sm font-bold text-foreground leading-none">
+                  <div className="text-right hidden md:block pl-8 border-l border-border">
+                    <p className="text-sm font-semibold text-foreground tabular-nums leading-none">
                       {new Date(client.last_report_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </p>
-                    <p className="text-[10px] font-bold text-foreground-muted uppercase tracking-widest mt-1.5 opacity-60 text-nowrap">Last Pulse</p>
+                    <p className="text-[10px] font-medium text-foreground-muted uppercase tracking-wider mt-1.5 text-nowrap">Last Pulse</p>
                   </div>
                 )}
                 
-                <div className="w-9 h-9 rounded-lg bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:bg-white group-hover:text-black transition-all border border-white/5 group-hover:border-transparent">
-                  <ArrowRight size={16} />
+                <div className="w-8 h-8 rounded-lg bg-surface-200 flex items-center justify-center text-foreground-muted border border-border group-hover:bg-foreground group-hover:text-background transition-colors shadow-sm">
+                  <ArrowRight size={14} />
                 </div>
               </div>
             </CardContent>

@@ -7,6 +7,7 @@ import { ClientsList } from '@/components/clients/clients-list';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { FileText } from 'lucide-react';
+import { Scaffold } from '@/components/layout/Scaffold';
 
 type Envelope<T> =
   | T
@@ -83,8 +84,7 @@ export default function DashboardPage() {
             };
           }));
         }
-      } catch (err) {
-        console.error('Dashboard Fetch Error:', err);
+      } catch {
         toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
@@ -95,68 +95,64 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-8 px-4 py-6 max-w-[1400px] mx-auto w-full animate-fade-in">
-      <header className="flex flex-col gap-1.5 px-1">
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          Review your insights
-        </h2>
-        <p className="text-sm font-medium text-foreground-muted max-w-2xl leading-relaxed">
-          Welcome back. There are <span className="text-foreground font-semibold underline decoration-accent/30 underline-offset-4">{stats?.pending_reviews || 0} reports</span> awaiting your final validation and delivery today.
-        </p>
-      </header>
+    <Scaffold
+      title="Overview"
+      description={`Welcome back. You have ${stats?.pending_reviews || 0} reports awaiting review today.`}
+    >
+      <div className="space-y-8">
+        {/* Quick Stats Grid */}
+        <StatsCards stats={stats} loading={loading} />
 
-      {/* Quick Stats Grid */}
-      <StatsCards stats={stats} loading={loading} />
+        {/* Primary Content Grid */}
+        <div className="grid gap-6 lg:grid-cols-3 items-start">
+          {/* Recent Reports Area */}
+          <div className="lg:col-span-2">
+            <RecentReports reports={recentReports} loading={loading} />
+          </div>
 
-      {/* Primary Analytics Grid */}
-      <div className="grid gap-6 lg:grid-cols-3 items-start">
-        {/* Recent Reports Area */}
-        <div className="lg:col-span-2">
-          <RecentReports reports={recentReports} loading={loading} />
-        </div>
-
-        {/* Global Action Node */}
-        <div className="flex flex-col gap-6">
-          <div className="rounded-xl bg-zinc-900/60 p-6 shadow-sm text-primary-foreground relative overflow-hidden group border border-white/5">
-            <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:scale-105 transition-transform duration-500">
-              <FileText size={120} strokeWidth={1} />
-            </div>
-            <div className="relative z-10">
-              <h3 className="text-lg font-semibold tracking-tight">Rapid Actions</h3>
-              <p className="text-xs font-medium text-primary-foreground/70 mt-1 mb-5">Workflow shortcuts for agency owners.</p>
-              <div className="space-y-2">
-                <Button asChild variant="outline" className="w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90 border-transparent font-semibold shadow-sm">
-                  <a href="/clients/new">Register New Client</a>
-                </Button>
-                <Button asChild variant="outline" className="w-full bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/15 border-primary-foreground/10 font-semibold transition-all">
-                  <a href="/reports">Generate New Report</a>
-                </Button>
+          {/* Actions & Insights */}
+          <div className="flex flex-col gap-6">
+            <div className="bg-white border border-border rounded-xl p-6 relative overflow-hidden group shadow-sm transition-all hover:border-foreground-subtle">
+              <div className="absolute top-0 right-0 p-4 opacity-[0.02] group-hover:opacity-[0.05] transition-all duration-700 text-foreground">
+                <FileText size={100} strokeWidth={1.5} />
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-base font-semibold tracking-tight text-foreground">Quick Actions</h3>
+                <p className="text-sm text-foreground-muted mt-1 mb-6 leading-relaxed">Standardized shortcuts for agency management.</p>
+                <div className="space-y-2">
+                  <Button asChild variant="primary" className="w-full h-9 font-medium shadow-sm transition-transform active:scale-[0.98]">
+                    <a href="/clients/new">Register Client</a>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full h-9 font-medium border-border hover:bg-surface-200 transition-all active:scale-[0.98]">
+                    <a href="/reports">Generate Report</a>
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="p-5 rounded-xl bg-zinc-900/40 border border-white/5 shadow-sm hidden lg:block">
-            <div className="flex items-center gap-2 mb-2.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <h4 className="text-[10px] font-semibold uppercase tracking-wider text-foreground-muted">Optimization Tip</h4>
+            
+            <div className="bg-surface-200/50 p-5 hidden lg:block rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <h4 className="text-[10px] font-medium uppercase tracking-wider text-foreground-muted">Optimization Tip</h4>
+              </div>
+              <p className="text-sm leading-relaxed text-foreground-muted">
+                Reports with <span className="font-medium text-foreground">AI Narrative Insights</span> correlate with <span className="text-foreground font-medium">40% higher</span> client retention.
+              </p>
             </div>
-            <p className="text-sm font-medium leading-relaxed text-foreground-muted">
-              Reports with <span className="font-semibold text-foreground">AI Narrative Insights</span> correlate with 40% higher client retention. Review insights before deployment.
-            </p>
           </div>
         </div>
-      </div>
 
-      {/* Client Portfolio Summary */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Active Portfolio</h2>
-          <Button asChild variant="ghost" className="font-semibold text-xs uppercase tracking-widest text-foreground-muted hover:text-foreground pr-1">
-            <a href="/clients">Manage All Clients</a>
-          </Button>
+        {/* Portfolio Summary */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold tracking-tight">Active Portfolio</h2>
+            <Button asChild variant="ghost" className="font-medium text-xs text-foreground-muted hover:text-foreground h-8 px-2 transition-colors">
+              <a href="/clients">Manage All</a>
+            </Button>
+          </div>
+          <ClientsList clients={topClients} loading={loading} />
         </div>
-        <ClientsList clients={topClients} loading={loading} />
       </div>
-    </div>
+    </Scaffold>
   );
 }

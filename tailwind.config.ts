@@ -11,16 +11,19 @@ const config: Config = {
       colors: {
         border: 'var(--border)',
         'border-strong': 'var(--border-strong)',
+        'border-subtle': 'var(--border-subtle)',
         input: 'var(--border)',
         ring: 'var(--accent)',
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         'foreground-muted': 'var(--foreground-muted)',
         'foreground-subtle': 'var(--foreground-subtle)',
+        'foreground-faint': 'var(--foreground-faint)',
         surface: {
           100: 'var(--surface-100)',
           200: 'var(--surface-200)',
           300: 'var(--surface-300)',
+          400: 'var(--surface-400)',
         },
         primary: {
           DEFAULT: 'var(--primary)',
@@ -31,8 +34,10 @@ const config: Config = {
         },
         success: 'var(--success)',
         warning: 'var(--warning)',
-        error: 'var(--error)',
-        destructive: 'var(--error)',
+        danger: 'var(--danger)',
+        info: 'var(--info)',
+        error: 'var(--danger)',
+        destructive: 'var(--danger)',
       },
       borderRadius: {
         lg: 'var(--radius)',

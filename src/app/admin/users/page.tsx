@@ -83,7 +83,7 @@ export default function AdminUsersPage() {
       setUsers(data.users || []);
       setTotalPages(data.pagination?.totalPages || 1);
       setTotal(data.pagination?.total || 0);
-    } catch (err) {
+    } catch {
       toast.error('Failed to fetch users');
     } finally {
       setLoading(false);
@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
         plan_client_limit: agency?.plan_client_limit || 5,
         role: data.user?.role || 'admin',
       });
-    } catch (err) {
+    } catch {
       toast.error('Failed to load user details');
     } finally {
       setDetailLoading(false);
@@ -127,8 +127,8 @@ export default function AdminUsersPage() {
       toast.success(currentActive ? 'User access revoked' : 'User access restored');
       fetchUsers();
       if (selectedUser === userId) fetchDetail(userId);
-    } catch (err) {
-      toast.error('Action failed');
+    } catch {
+      toast.error('Sync failed');
     } finally {
       setActionLoading(false);
     }
@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
       setShowEditModal(false);
       fetchUsers();
       fetchDetail(selectedUser);
-    } catch (err) {
+    } catch {
       toast.error('Failed to save changes');
     } finally {
       setActionLoading(false);
@@ -170,7 +170,7 @@ export default function AdminUsersPage() {
       setSelectedUser(null);
       setDetail(null);
       fetchUsers();
-    } catch (err) {
+    } catch {
       toast.error('Failed to delete user');
     } finally {
       setActionLoading(false);

@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageLoader } from '@/components/ui/page-loader';
 import { ReportProgressCard } from '@/components/reports/report-progress-card';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Scaffold } from '@/components/layout/Scaffold';
 
 type ReportListResponse =
   | any[]
@@ -100,144 +101,127 @@ export default function ReportsPage() {
     r.month.includes(search)
   );
 
-  return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-4 py-6 animate-fade-in">
-      {/* Search & Actions Area */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between px-1">
-        <div className="flex flex-col gap-1.5">
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Intelligence Archive</h2>
-          <p className="text-sm font-medium text-foreground-muted opacity-60">Historical performance records and delivery status.</p>
-        </div>
-        
-        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
-          <div className="relative min-w-0 flex-1 sm:w-80 sm:flex-none">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground-muted opacity-60" />
-            <input
-              type="text"
-              placeholder="Search clients or periods..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-10 pl-11 pr-4 rounded-lg bg-zinc-900/60 border border-white/5 text-sm font-medium outline-none transition-all focus:border-white/20 focus:bg-zinc-900 w-full placeholder:text-zinc-500"
-            />
-          </div>
-          <Link
-            href="/clients"
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-black transition-all hover:bg-white/90 shadow-sm"
-          >
-            <Plus size={16} /> Generate Report
-          </Link>
-        </div>
+  const actions = (
+    <div className="flex items-center gap-3">
+      <div className="relative group min-w-[320px] hidden sm:block">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
+        <input
+          type="text"
+          placeholder="Filter reports..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-9 pl-9 pr-4 rounded-md bg-surface-200 border border-transparent text-sm outline-none transition-all focus:border-border focus:bg-white w-full placeholder:text-slate-400 text-slate-900"
+        />
       </div>
+      <Button asChild variant="primary" className="h-9 px-4 font-bold shadow-sm">
+        <Link href="/clients">
+          <Plus size={16} className="mr-1.5" /> Generate Report
+        </Link>
+      </Button>
+    </div>
+  );
 
-      {/* Main Content Area */}
-      <div className="flex flex-col gap-8">
-        {loading ? (
-          <PageLoader rows={3} />
-        ) : filtered.length === 0 ? (
-          <Card className="shadow-sm border-dashed border-2 border-white/5 bg-zinc-900/40">
-            <CardContent className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-16 h-16 rounded-lg bg-zinc-900 flex items-center justify-center mb-6 text-zinc-500 border border-white/5">
-                <FileText size={24} />
+  return (
+    <>
+      <Scaffold
+        title="Reports"
+        description="View and manage your historical report records and delivery status."
+        actions={actions}
+      >
+        <div className="space-y-6">
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center min-h-[400px]">
+              <PageLoader />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="border border-dashed border-border rounded-xl h-[400px] flex flex-col items-center justify-center text-center p-8 bg-surface-200/50">
+              <div className="w-12 h-12 rounded-lg bg-surface-300 flex items-center justify-center mb-4 text-foreground-subtle border border-border">
+                <FileText size={20} />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-1">No records localized</h3>
-              <p className="text-sm font-medium text-foreground-muted max-w-xs mx-auto opacity-60">
-                Your intelligence archive is empty. Reports appear once generated from client nodes.
+              <h3 className="text-lg font-medium text-foreground mb-1">No reports found</h3>
+              <p className="text-sm text-foreground-muted max-w-sm mb-6">
+                Reports will appear here once they have been generated for your clients.
               </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filtered.map(report => {
-              const clientName = report.clients?.name || 'Unknown Node';
-              
-              return (
-                <Card 
-                  key={report.id} 
-                  className="group relative flex flex-col shadow-sm border-white/5 hover:border-white/10 bg-zinc-900/60 transition-all duration-300"
-                >
-                  <CardContent className="p-5 flex flex-col h-full">
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map(report => {
+                const clientName = report.clients?.name || 'Unknown Client';
+                
+                return (
+                  <div 
+                    key={report.id} 
+                    className="bg-white border border-border rounded-xl p-6 flex flex-col h-full hover:border-foreground-subtle transition-all duration-200 shadow-sm"
+                  >
                     <Link 
                       href={`/reports/${report.id}`}
-                      className="flex-1 cursor-pointer"
+                      className="flex-1 cursor-pointer group"
                     >
-                      <div className="mb-8 flex items-start justify-between">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-900 text-sm font-bold text-zinc-400 transition-all duration-300 group-hover:bg-white group-hover:text-black border border-white/5">
+                      <div className="mb-6 flex items-start justify-between">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-200 text-sm font-medium text-foreground-muted border border-border transition-colors group-hover:bg-surface-300">
                           {clientName.charAt(0).toUpperCase()}
                         </div>
-                        <Badge variant={getStatusVariant(report.status)} className="capitalize font-bold text-[9px] tracking-widest rounded-full px-3 py-0.5 border-transparent">
+                        <Badge variant="outline" className="capitalize font-medium text-[10px] rounded-full px-2.5 py-0.5 border-border text-foreground-muted bg-surface-200">
                           {report.status}
                         </Badge>
                       </div>
 
                       <div className="space-y-1 mb-6">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-foreground-muted">{report.month}</p>
-                        <h3 className="text-lg font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-foreground-subtle">{report.month}</p>
+                        <h3 className="text-base font-medium text-foreground leading-tight">
                           {clientName}
                         </h3>
                       </div>
                     </Link>
                     
-                    <div className="grid grid-cols-2 gap-3 mt-auto pt-6 border-t border-white/5">
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           if (report.pdf_url) {
-                             setPreviewUrl(report.pdf_url);
-                           } else {
-                             toast.info('PDF is still being processed. Please wait.');
-                           }
-                         }}
-                         disabled={report.status === 'generating'}
-                         className={cn(
-                           "flex items-center justify-center gap-2 h-10 rounded-lg text-[11px] font-bold transition-all border",
-                           report.pdf_url 
-                            ? "bg-zinc-900 text-white hover:bg-white/10 border-white/10" 
-                            : "bg-zinc-900/50 text-zinc-500 cursor-not-allowed border-transparent"
-                         )}
-                       >
-                         <Eye size={14} /> View Node
-                       </button>
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           handleExport(report);
-                         }}
-                         className="flex items-center justify-center gap-2 h-10 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-white/5 text-[11px] font-bold transition-all"
-                       >
-                         <Download size={14} /> Export Data
-                       </button>
+                    <div className="grid grid-cols-2 gap-2 mt-auto pt-5 border-t border-border">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (report.pdf_url) {
+                            setPreviewUrl(report.pdf_url);
+                          } else {
+                            toast.info('PDF is still being processed.');
+                          }
+                        }}
+                        disabled={report.status === 'generating'}
+                        className={cn(
+                          "flex items-center justify-center gap-2 h-8 rounded-md text-xs font-medium transition-all",
+                          report.pdf_url 
+                            ? "bg-foreground text-background hover:opacity-90" 
+                            : "bg-surface-300 text-foreground-subtle cursor-not-allowed"
+                        )}
+                      >
+                        <Eye size={14} /> View
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExport(report);
+                        }}
+                        className="flex items-center justify-center gap-2 h-8 rounded-md bg-surface-200 text-foreground-muted hover:text-foreground hover:bg-surface-300 border border-border text-xs font-medium transition-all"
+                      >
+                        <Download size={14} /> Export
+                      </button>
                     </div>
 
-                     {/* Live Progress Indicator for generating/queued reports */}
-                     {(report.status === 'generating' || report.status === 'queued') && (
-                       <div className="mt-4">
-                         <ReportProgressCard
-                           reportId={report.id}
-                           initialStatus={report.status}
-                           initialStep={report.current_step}
-                         />
-                       </div>
-                     )}
-
-                     {/* Failure Visibility */}
-                     {report.status === 'failed' && report.error_reason && (
-                       <div className="mt-4 rounded-lg bg-error/5 p-3 border border-error/10 flex items-start gap-2">
-                         <AlertTriangle size={14} className="text-error mt-0.5 shrink-0" />
-                         <div className="text-[11px] text-error">
-                           <p className="font-bold">Generation Failed</p>
-                           <p className="mt-0.5 opacity-90 break-words line-clamp-2" title={report.error_reason}>
-                             {report.error_reason}
-                           </p>
-                         </div>
-                       </div>
-                     )}
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-      </div>
+                    {/* Progress Indicator */}
+                    {(report.status === 'generating' || report.status === 'queued') && (
+                      <div className="mt-4">
+                        <ReportProgressCard
+                          reportId={report.id}
+                          initialStatus={report.status}
+                          initialStep={report.current_step}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </Scaffold>
 
       {/* Preview Modal */}
       <AnimatePresence>
@@ -248,42 +232,42 @@ export default function ReportsPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setPreviewUrl(null)}
-              className="absolute inset-0 bg-primary/20 backdrop-blur-sm"
+              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.98, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              className="relative w-full h-full max-w-5xl bg-zinc-900/90 backdrop-blur-3xl rounded-lg overflow-hidden shadow-2xl flex flex-col border border-white/10"
+              className="bg-surface-100 border border-border shadow-2xl relative w-full h-full max-w-5xl flex flex-col rounded-xl overflow-hidden"
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-200">
                  <div className="flex items-center gap-2.5">
-                   <div className="p-1.5 bg-primary/5 text-primary rounded-md">
+                   <div className="p-1.5 bg-slate-900/5 text-slate-900 rounded-md">
                      <FileText size={16} />
                    </div>
-                   <span className="text-xs font-semibold text-foreground uppercase tracking-widest">Enterprise PDF Preview</span>
+                   <span className="text-xs font-bold text-slate-900 uppercase tracking-widest">Enterprise PDF Preview</span>
                  </div>
                  <button 
                    onClick={() => setPreviewUrl(null)}
-                   className="p-1.5 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+                   className="p-1.5 rounded-md hover:bg-slate-300 text-slate-500 hover:text-slate-900 transition-all"
                  >
                    <X size={18} />
                  </button>
               </div>
-              <div className="flex-1 bg-zinc-950/50 flex">
+              <div className="flex-1 bg-surface-100 flex">
                 {previewUrl.startsWith('http') ? (
                   <iframe src={previewUrl} className="w-full h-full border-none" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center p-20 text-center">
                     <div>
-                      <Check size={40} className="mx-auto text-success mb-4" />
-                      <p className="text-lg font-semibold text-foreground">PDF Ready for Download</p>
-                      <p className="text-sm text-foreground-muted mt-1.5 mb-6">This report is stored in the encrypted storage node.</p>
+                      <Check size={40} className="mx-auto text-green-500 mb-4" />
+                      <p className="text-lg font-bold text-slate-900">PDF Ready for Download</p>
+                      <p className="text-sm text-slate-500 mt-1.5 mb-6">This report is stored in the encrypted storage node.</p>
                       <a 
                         href={previewUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90 shadow-sm"
+                        className="inline-flex h-9 items-center gap-2 rounded-md bg-slate-900 px-5 text-sm font-bold text-white hover:bg-slate-800 shadow-sm"
                       >
                          Open PDF Node →
                       </a>
@@ -295,6 +279,6 @@ export default function ReportsPage() {
           </div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

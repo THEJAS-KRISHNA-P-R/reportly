@@ -256,17 +256,17 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
   };
 
   return (
-    <div className="space-y-5">
-      <header className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+    <div className="flex flex-col gap-4">
+      <header className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Link href="/reports" className="inline-flex items-center gap-1.5 font-medium hover:text-slate-900">
+              <Link href="/reports" className="inline-flex items-center gap-1.5 font-medium hover:text-primary transition-colors">
                 <ArrowLeft size={15} />
                 Reports
               </Link>
-              <span>/</span>
-              <span className="truncate">{report.clients?.name || 'Client'}</span>
+              <span className="text-slate-300">/</span>
+              <span className="truncate font-medium text-slate-400">{report.clients?.name || 'Client'}</span>
             </div>
             <h1 className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
               {report.month || report.period_start || 'Report Editor'}
@@ -274,25 +274,25 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold tracking-tight shadow-sm ${
               reportStatus === 'sent' || reportStatus === 'approved'
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                 : reportStatus === 'failed'
                 ? 'border-rose-200 bg-rose-50 text-rose-700'
                 : reportStatus === 'generating'
-                ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                ? 'border-primary/20 bg-primary/5 text-primary'
                 : 'border-amber-200 bg-amber-50 text-amber-700'
             }`}>
               {reportStatus === 'generating' ? (
-                <RefreshCw size={13} className="animate-spin" />
+                <RefreshCw size={12} className="animate-spin" />
               ) : (
-                <CheckCircle2 size={13} />
+                <CheckCircle2 size={12} />
               )}
               {reportStatus.charAt(0).toUpperCase() + reportStatus.slice(1)}
             </span>
             <Link
               href={`/reports/${id}/audit`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all hover:border-slate-300"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all hover:border-slate-300 active:scale-[0.98]"
             >
               <FileClock size={14} />
               Audit Log
@@ -301,42 +301,51 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-          <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+          <div className="flex gap-1 p-1 bg-surface-200 rounded-xl border border-border">
             <button
               onClick={() => setActiveTab('summary')}
-              className={`rounded-lg px-4 py-1.5 text-[12px] font-bold transition-all ${
-                activeTab === 'summary' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              className={`rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all relative ${
+                activeTab === 'summary' 
+                  ? 'bg-white text-primary shadow-sm ring-1 ring-black/[0.05]' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Summary
+              {activeTab === 'summary' && <motion.div layoutId="tab-accent" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary rounded-full" />}
             </button>
             <button
               onClick={() => setActiveTab('narrative')}
-              className={`rounded-lg px-4 py-1.5 text-[12px] font-bold transition-all ${
-                activeTab === 'narrative' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              className={`rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all relative ${
+                activeTab === 'narrative' 
+                  ? 'bg-white text-primary shadow-sm ring-1 ring-black/[0.05]' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Narrative
+              {activeTab === 'narrative' && <motion.div layoutId="tab-accent" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary rounded-full" />}
             </button>
             <button
               onClick={() => setActiveTab('metrics')}
-              className={`rounded-lg px-4 py-1.5 text-[12px] font-bold transition-all ${
-                activeTab === 'metrics' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              className={`rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all relative ${
+                activeTab === 'metrics' 
+                  ? 'bg-white text-primary shadow-sm ring-1 ring-black/[0.05]' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Metrics
+              {activeTab === 'metrics' && <motion.div layoutId="tab-accent" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary rounded-full" />}
             </button>
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block" />
+            <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
             
             <button
               onClick={() => report.pdf_url ? setPreviewUrl(report.pdf_url) : regeneratePDF()}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition-all ${
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition-all active:scale-[0.98] ${
                 report.pdf_url 
                   ? 'border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300' 
-                  : 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 shadow-sm'
+                  : 'border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 shadow-sm'
               }`}
             >
               <Eye size={14} />
@@ -345,7 +354,7 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
             
             <button
                onClick={handleExport}
-               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all"
+               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all active:scale-[0.98]"
              >
                <BarChart3 size={14} />
                Export CSV
@@ -357,19 +366,19 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
                  download={`Report_${report.clients?.name || 'Client'}.pdf`}
                  target="_blank"
                  rel="noopener noreferrer"
-                 className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-all"
+                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-all active:scale-[0.98]"
                >
                  <Download size={14} />
                  Download PDF
                </a>
              )}
 
-            <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block" />
+            <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
 
             <button
               onClick={regenerateNarrative}
               disabled={regenerating}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 disabled:opacity-60 transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/10 bg-primary/5 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10 disabled:opacity-60 transition-all active:scale-[0.98]"
             >
               <RefreshCw size={14} className={regenerating ? 'animate-spin' : ''} />
               Regenerate
@@ -377,7 +386,7 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
             <button
               onClick={saveDraft}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60 transition-all active:scale-[0.98]"
             >
               <Save size={14} />
               Save
@@ -385,7 +394,7 @@ export default function ReportEditorPage({ params }: { params: Promise<{ id: str
             <button
               onClick={approveAndSend}
               disabled={approving || reportStatus === 'sent'}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 shadow-lg shadow-slate-200 transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 shadow-lg shadow-primary/20 transition-all active:scale-[0.96]"
             >
               <Send size={14} />
               {reportStatus === 'sent' ? 'Sent' : 'Approve & Send'}
